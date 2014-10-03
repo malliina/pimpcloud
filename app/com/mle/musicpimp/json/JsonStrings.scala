@@ -19,7 +19,6 @@ object JsonStrings {
   val ID = "id"
   val TRACK = "track"
   val REQUEST_ID = "request"
-  val SERVER_ID = "server"
   val SERVER_KEY = "s"
   val REGISTERED = "registered"
   val UNREGISTER = "unregister"

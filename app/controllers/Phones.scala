@@ -26,7 +26,7 @@ import scala.util.Try
  *
  * @author mle
  */
-object Phones extends Controller with Secured with BaseSecurity2 with PimpContentController with BaseController {
+object Phones extends Controller with Secured with BaseSecurity2 with BaseController {
   val DEFAULT_LIMIT = 100
   /**
    * For each incoming request:

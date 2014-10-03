@@ -8,7 +8,7 @@ import play.api.mvc._
  *
  * @author mle
  */
-trait Secured extends AccountController with Log {
+trait Secured extends AccountController with PimpContentController with Log {
   val INTENDED_URI = "intended_uri"
 
   protected def logUnauthorized(implicit request: RequestHeader) {
@@ -18,7 +18,10 @@ trait Secured extends AccountController with Log {
   protected override def onUnauthorized(implicit request: RequestHeader): Result = {
     logUnauthorized(request)
     log info s"Intended: ${request.uri}"
-    Redirect(loginRedirectCall).withSession(INTENDED_URI -> request.uri)
+    pimpResult(
+      html = Redirect(loginRedirectCall).withSession(INTENDED_URI -> request.uri),
+      json = Unauthorized
+    )
   }
 
   def loginRedirectCall: Call = routes.Web.login()

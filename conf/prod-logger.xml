@@ -7,6 +7,7 @@
         </encoder>
     </appender>
     <logger name="play" level="INFO"/>
+    <logger name="controllers" level="INFO"/>
     <logger name="application" level="INFO"/>
     <logger name="com" level="INFO"/>
     <root level="INFO">

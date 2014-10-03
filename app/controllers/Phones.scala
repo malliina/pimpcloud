@@ -138,12 +138,12 @@ object Phones extends Controller with Secured with BaseSecurity2 with BaseContro
     })
 
   def receiveUpload = ServerAction(server => {
-    val request = server.request
-    byteRequests.remove(request).fold[EssentialAction](Action(NotFound))(channel => {
-      Action(StreamParsers.multiPartByteStreaming(channel))(request => {
-        val files = request.body.files
+    val requestID = server.request
+    byteRequests.remove(requestID).fold[EssentialAction](Action(NotFound))(channel => {
+      Action(StreamParsers.multiPartByteStreaming(channel))(httpRequest => {
+        val files = httpRequest.body.files
         files.foreach(file => {
-          log info s"File forwarding complete. Size: ${file.ref} bytes. Request: $request."
+          log info s"File forwarding complete. Size: ${file.ref} bytes. Request: $requestID."
         })
         channel.eofAndEnd()
         Ok

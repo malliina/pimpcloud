@@ -34,21 +34,29 @@ object Servers extends Controller with ServerSocket {
       val user = creds.username
       val cloudID =
         if (user.nonEmpty) {
-          if (!(identities exists user)) {
-            // connects with a user-desired ID
-            if (!clients.keys.exists(_ == user)) {
-              identities.trySave(user).fold(alreadyExists => None, id => Some(id))
-            } else {
-              // an ID not in the identitystore is currently connected; this is most likely an anomaly
+          if (identities exists user) {
+            if (isConnected(user)) {
+              log warn s"Unable to register client: $user. Another client with that ID is already connected."
               None
+            } else {
+              // connects with a previously used ID
+              Some(user)
             }
           } else {
-            // connects with a previously used ID
-            Some(user)
+            // connects with a user-desired ID
+            if (isConnected(user)) {
+              log warn s"An ID not in the identitystore is currently connected; this is most likely an anomaly."
+              None
+            } else {
+              identities.trySave(user).fold(alreadyExists => None, id => Some(id))
+            }
           }
         } else {
           // no previous ID -> generates a new ID
-          identities.generateAndSave().fold(ae => None, id => Some(id))
+          identities.generateAndSave().fold(ae => {
+            log error s"A collision occurred while generating a random client ID. Unable to register client."
+            None
+          }, id => Some(id))
         }
       cloudID map (id => AuthResult(id))
     })
@@ -59,7 +67,7 @@ object Servers extends Controller with ServerSocket {
   override def welcomeMessage2(client: Client): Option[Message] =
     Some(Json.toJson(Map(EVENT -> REGISTERED, ID -> client.id)))
 
-  def exists(serverID: String) = clients contains serverID
+  def isConnected(serverID: String) = clients contains serverID
 
   override def onMessage(msg: Message, client: Client): Unit = {
     log debug s"Got message: $msg from client: $client"

@@ -1,0 +1,20 @@
+GET         /                         controllers.Phones.rootFolder
+GET         /login                    controllers.Web.login
+POST        /authenticate             controllers.Web.formAuthenticate
+# Proxy
+GET         /ping                     controllers.Phones.ping
+GET         /pingauth                 controllers.Phones.pingAuth
+GET         /playback                 controllers.Phones.status
+GET         /folders                  controllers.Phones.rootFolder
+GET         /folders/*folder          controllers.Phones.folder(folder)
+GET         /tracks/*id               controllers.Phones.track(id)
+GET         /downloads/*id            controllers.Phones.download(id)
+GET         /search                   controllers.Phones.search
+GET         /alarms                   controllers.Phones.alarms
+POST        /alarms                   controllers.Phones.editAlarm
+POST        /alarms/editor/add        controllers.Phones.newAlarm
+GET         /mobile/ws                com.mle.pimpcloud.ws.PhoneSockets.openSocket
+# Servers
+POST        /track                    controllers.Phones.receiveUpload
+GET         /servers/ws               controllers.Servers.openSocket
+GET         /assets/*file             controllers.Assets.at(path = "/public", file)

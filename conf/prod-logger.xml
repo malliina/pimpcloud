@@ -10,7 +10,6 @@
     <logger name="application" level="INFO"/>
     <logger name="com" level="INFO"/>
     <root level="INFO">
-        <appender-ref ref="STDOUT"/>
         <appender-ref ref="FILE"/>
     </root>
 </configuration>

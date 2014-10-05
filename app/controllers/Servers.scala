@@ -45,14 +45,14 @@ object Servers extends Controller with ServerSocket {
           } else {
             // connects with a user-desired ID
             if (isConnected(user)) {
-              log warn s"An ID not in the identitystore is currently connected; this is most likely an anomaly."
+              log warn s"Client: $user is currently connected but unregistered; this is most likely an anomaly."
               None
             } else {
               identities.trySave(user).fold(alreadyExists => None, id => Some(id))
             }
           }
         } else {
-          // no previous ID -> generates a new ID
+          // no previous ID -> generates a new, random ID
           identities.generateAndSave().fold(ae => {
             log error s"A collision occurred while generating a random client ID. Unable to register client."
             None

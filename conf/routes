@@ -17,4 +17,5 @@ GET         /mobile/ws                com.mle.pimpcloud.ws.PhoneSockets.openSock
 # Servers
 POST        /track                    controllers.Phones.receiveUpload
 GET         /servers/ws               controllers.Servers.openSocket
+GET         /servers/ws2              controllers.Servers.openSocket2
 GET         /assets/*file             controllers.Assets.at(path = "/public", file)

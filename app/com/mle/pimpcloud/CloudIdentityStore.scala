@@ -1,6 +1,6 @@
 package com.mle.pimpcloud
 
-import com.mle.pimpcloud.db.CloudDatabase.AlreadyExists
+import com.mle.pimpcloud.CloudIdentityStore.AlreadyExists
 
 /**
  * @author Michael
@@ -23,4 +23,12 @@ trait CloudIdentityStore {
    * @return true if `id` is available, false otherwise
    */
   def exists(id: CloudID): Boolean
+}
+
+object CloudIdentityStore {
+
+  trait DataMessage
+
+  case class AlreadyExists(id: String) extends DataMessage
+
 }

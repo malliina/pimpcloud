@@ -40,7 +40,7 @@ trait ServerSocket extends StreamSocket with Log {
   }
 
   def logEvent(id: String, action: String) =
-    log info s"MusicPimp client $action: $id. Clients left: ${clients.size}"
+    log info s"MusicPimp client $action: $id. Clients connected: ${clients.size}"
 
   trait SocketMessage
 

@@ -71,7 +71,7 @@ class FutureSocket(val channel: Channel[JsValue], val id: String) extends Log {
     ongoingFutures += (uuid -> responsePromise)
     // sends the payload, including a request ID
     val payload = Json.obj(REQUEST_ID -> uuid.toString, BODY -> message)
-    log info s"Sending request: $uuid with body: $message"
+    log info s"Sending request: $uuid to MusicPimp server: $id with body: $message"
     send(payload).recover {
       case t: Throwable =>
         log.warn(s"Unable to send payload: $payload", t)

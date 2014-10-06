@@ -5,7 +5,8 @@ import com.mle.musicpimp.audio.{Directory, Track}
 import com.mle.musicpimp.cloud.PimpMessages.Version
 import com.mle.musicpimp.cloud.PimpSocket.{json, jsonID}
 import com.mle.musicpimp.json.JsonStrings._
-import com.mle.ws.FutureSocket
+import com.mle.play.ws.SocketClient
+import com.mle.ws.JsonFutureSocket
 import play.api.libs.iteratee.Concurrent.Channel
 import play.api.libs.json.{JsObject, JsValue, Json}
 
@@ -15,10 +16,15 @@ import scala.concurrent.Future
 /**
  * @author Michael
  */
-class PimpSocket(channel: Channel[JsValue], id: String) extends FutureSocket(channel, id) {
+class PimpSocket(channel: Channel[JsValue], id: String)
+  extends JsonFutureSocket(channel, id)
+  with SocketClient[JsValue] {
+
   def ping = simpleProxy(PING)
 
   def pingAuth: Future[Version] = proxyD[Version](json(VERSION))
+
+  def meta(id: String): Future[Track] = proxyD[Track](jsonID(META, id))
 
   /**
    *
@@ -42,7 +48,7 @@ class PimpSocket(channel: Channel[JsValue], id: String) extends FutureSocket(cha
 
   def status = simpleProxy(STATUS)
 
-  private def simpleProxy(cmd: String) = proxy(json(cmd))
+  private def simpleProxy(cmd: String) = defaultProxy(json(cmd))
 }
 
 object PimpSocket {

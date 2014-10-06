@@ -1,11 +1,13 @@
 package com.mle.ws
 
+import com.mle.play.ws.WebSocketBase
+
 import scala.collection.concurrent.TrieMap
 
 /**
  * @author Michael
  */
-trait TrieClientStorage extends WebSocketBase2 {
+trait TrieClientStorage extends WebSocketBase {
   protected val clientsMap = TrieMap.empty[Client, Unit]
 
   override def clients = clientsMap.keys.toSeq

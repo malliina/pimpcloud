@@ -1,32 +1,28 @@
 package com.mle.pimpcloud.ws
 
 import com.mle.musicpimp.cloud.PimpSocket
-import com.mle.musicpimp.json.JsonStrings.{EVENT, PING}
-import com.mle.ws.{JsonSockets, TrieClientStorage}
+import com.mle.play.ws.{JsonWebSockets, SocketClient}
+import com.mle.ws.TrieClientStorage
 import controllers.Phones
 import play.api.libs.iteratee.Concurrent.Channel
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.JsValue
 import play.api.mvc.{Call, RequestHeader}
-import rx.lang.scala.Observable
 
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationLong
 
 /**
  * @author Michael
  */
-object PhoneSockets extends JsonSockets with TrieClientStorage {
-  val pingMessage = Json.obj(EVENT -> PING)
-  val pinger = Observable.interval(20.seconds).subscribe(_ => broadcast(pingMessage))
-
-  override def broadcast(message: PhoneSockets.Message): Unit = clients.foreach(_.phoneChannel push message)
-
+object PhoneSockets extends JsonWebSockets with TrieClientStorage {
   override type AuthResult = PimpSocket
   override type Client = PhoneClient
 
   override def openSocketCall: Call = routes.PhoneSockets.openSocket()
 
   override def authenticate(req: RequestHeader): Future[AuthResult] = Phones.authPhone(req)
+
+  // unused
+  override def authenticateSync(req: RequestHeader): Option[AuthResult] = None
 
   override def newClient(authResult: AuthResult, channel: Channel[Message])(implicit request: RequestHeader): Client =
     PhoneClient(authResult, channel, request)
@@ -38,4 +34,5 @@ object PhoneSockets extends JsonSockets with TrieClientStorage {
   override def welcomeMessage(client: Client): Option[Message] = Some(com.mle.play.json.JsonMessages.welcome)
 }
 
-case class PhoneClient(connectedServer: PimpSocket, phoneChannel: Channel[JsValue], req: RequestHeader)
+case class PhoneClient(connectedServer: PimpSocket, channel: Channel[JsValue], req: RequestHeader)
+  extends SocketClient[JsValue]

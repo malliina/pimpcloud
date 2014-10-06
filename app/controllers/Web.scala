@@ -2,7 +2,7 @@ package controllers
 
 import com.mle.concurrent.FutureImplicits.RichFuture
 import com.mle.pimpcloud.CloudCredentials
-import com.mle.play.controllers.BaseController
+import com.mle.play.controllers.{BaseSecurity, BaseController}
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.mvc._
@@ -14,8 +14,7 @@ import scala.concurrent.Future
 /**
  * @author Michael
  */
-object Web extends Secured with BaseSecurity2 with BaseController {
-  val FEEDBACK = "feedback"
+object Web extends Secured with BaseSecurity with BaseController {
   val serverFormKey = "server"
 
   def ping = Action(NoCache(Ok))

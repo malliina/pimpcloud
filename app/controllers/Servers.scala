@@ -29,7 +29,7 @@ object Servers extends Controller with ServerSocket {
    * @param request
    * @return a valid cloud ID, or None if the cloud ID generation failed
    */
-  override def authenticate(implicit request: RequestHeader): Option[AuthResult] = {
+  override def authenticateSync(request: RequestHeader): Option[AuthResult] = {
 //    Auth.basicCredentials(request).filter(_.password == serverPassword)
 //      .map(_.username).map(user => if (user.nonEmpty) user else newID())
 //      .filterNot(isConnected)
@@ -53,16 +53,16 @@ object Servers extends Controller with ServerSocket {
             Some(id)
           }
         }
-      cloudID map (id => AuthResult(id))
+      cloudID map (id => com.mle.play.controllers.AuthResult(id))
     })
   }
 
   def newCloudID = UUID.randomUUID().toString take 5
 
-  override def welcomeMessage2(client: Client): Option[Message] =
+  override def welcomeMessage(client: Client): Option[Message] =
     Some(Json.toJson(Map(EVENT -> REGISTERED, ID -> client.id)))
 
-  def isConnected(serverID: String) = clients contains serverID
+  def isConnected(serverID: String) = servers contains serverID
 
   override def onMessage(msg: Message, client: Client): Unit = {
     log debug s"Got message: $msg from client: $client"
@@ -79,7 +79,7 @@ object Servers extends Controller with ServerSocket {
       // consequence is that clients may receive unsolicited messages occasionally. But they should ignore those anyway,
       // so we accept this failure.
       if (!clientHandledMessage) {
-        PhoneSockets.clients.filter(_.connectedServer == client).foreach(_.phoneChannel push msg)
+        PhoneSockets.clients.filter(_.connectedServer == client).foreach(_.channel push msg)
       }
     }
   }

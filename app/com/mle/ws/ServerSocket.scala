@@ -1,8 +1,8 @@
 package com.mle.ws
 
 import com.mle.musicpimp.cloud.PimpSocket
+import com.mle.play.ws.JsonWebSockets
 import com.mle.util.Log
-import controllers.StreamSocket
 import play.api.libs.iteratee.Concurrent.Channel
 import play.api.mvc._
 import rx.lang.scala.Subject
@@ -12,35 +12,36 @@ import scala.collection.concurrent.TrieMap
 /**
  * @author Michael
  */
-trait ServerSocket extends StreamSocket with Log {
+trait ServerSocket extends JsonWebSockets with Log {
+  override type AuthResult = com.mle.play.controllers.AuthResult
   val subject = Subject[SocketMessage]()
   override type Client = PimpSocket
 
-  val clients = TrieMap.empty[String, Client]
+  val servers = TrieMap.empty[String, Client]
+
+  override def clients: Seq[Client] = servers.values.toSeq
 
   def openSocketCall: Call
 
-  def wsUrl(implicit request: RequestHeader): String = openSocketCall.webSocketURL(request.secure)
-
-  override def newClient(user: String, channel: Channel[Message])(implicit request: RequestHeader): Client =
-    new PimpSocket(channel, user)
+  override def newClient(user: AuthResult, channel: Channel[Message])(implicit request: RequestHeader): Client =
+    new PimpSocket(channel, user.user)
 
   override def onConnect(client: Client): Unit = {
     val clientID = client.id
-    clients += clientID -> client
+    servers += clientID -> client
     logEvent(clientID, "connected")
     subject onNext Connected(client)
   }
 
   override def onDisconnect(client: Client): Unit = {
     val clientID = client.id
-    clients -= clientID
+    servers -= clientID
     logEvent(clientID, "disconnected")
     subject onNext Disconnected(client)
   }
 
   def logEvent(id: String, action: String) =
-    log info s"MusicPimp client $action: $id. Clients connected: ${clients.size}"
+    log info s"MusicPimp client $action: $id. Clients connected: ${servers.size}"
 
   trait SocketMessage
 

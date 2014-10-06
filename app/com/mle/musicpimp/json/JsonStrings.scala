@@ -29,4 +29,6 @@ object JsonStrings {
   val VERSION = "version"
   val REASON = "reason"
   val STATUS = "status"
+  val META = "meta"
+  val SUCCESS = "success"
 }

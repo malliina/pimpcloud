@@ -12,10 +12,10 @@ import com.mle.musicpimp.json.JsonStrings.{ALARMS, ALARMS_ADD, ALARMS_EDIT, FOLD
 import com.mle.pimpcloud.{CloudCredentials, PimpAuth}
 import com.mle.play.auth.Auth
 import com.mle.play.concurrent.ExecutionContexts.synchronousIO
-import com.mle.play.controllers.BaseController
+import com.mle.play.controllers.{BaseController, BaseSecurity}
 import com.mle.play.http.HttpConstants.{AUDIO_MPEG, NO_CACHE}
 import com.mle.play.streams.StreamParsers
-import com.mle.ws.{FutureSocket, RequestStore}
+import com.mle.ws.{JsonFutureSocket, RequestStore}
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc._
 
@@ -26,7 +26,7 @@ import scala.util.Try
  *
  * @author mle
  */
-object Phones extends Controller with Secured with BaseSecurity2 with BaseController {
+object Phones extends Controller with Secured with BaseSecurity with BaseController {
   val DEFAULT_LIMIT = 100
   /**
    * For each incoming request:
@@ -101,7 +101,7 @@ object Phones extends Controller with Secured with BaseSecurity2 with BaseContro
       }))
     })
 
-  def proxiedJson(socket: PimpSocket, json: JsObject) = (socket proxy json) map (js => Ok(js))
+  def proxiedJson(socket: PimpSocket, json: JsObject) = (socket defaultProxy json) map (js => Ok(js))
 
   /**
    * Relays track `id` to the client from the target.
@@ -115,27 +115,31 @@ object Phones extends Controller with Secured with BaseSecurity2 with BaseContro
 
   def download(id: String) = sendFile(id, _.withHeaders(ACCEPT_RANGES -> "bytes"))
 
-  def sendFile(id: String, f: Result => Result = r => r) = {
-    val name = (Paths get decode(id)).getFileName.toString
-    asProxy(jsonID(TRACK, id), r => f(r.withHeaders(
-      CACHE_CONTROL -> NO_CACHE,
-      CONTENT_TYPE -> AUDIO_MPEG,
-      CONTENT_DISPOSITION -> s"""attachment; filename="$name"""")))
-  }
-
-  def decode(id: String) = URLDecoder.decode(id, "UTF-8")
-
   /**
    * Sends a request to a connected server on behalf of a connected phone. Initiated when a phone makes a request to
    * this server. The response of the remote server is relayed back to the phone.
-   *
    */
-  private def asProxy(message: JsObject,
-                      ifOK: Result => Result = r => r) =
+  def sendFile(id: String, f: Result => Result = r => r): EssentialAction = {
+    val name = (Paths get decode(id)).getFileName.toString
+    val message = jsonID(TRACK, id)
     PhoneAction(socket => {
-      val enumeratorOpt = byteRequests.send(message, socket.channel)
-      Action(enumeratorOpt.fold[Result](BadRequest)(enumerator => ifOK(Ok chunked enumerator)))
+      Action.async(req => {
+        socket.meta(id).map(track => {
+          val enumeratorOpt = byteRequests.send(message, socket.channel)
+          enumeratorOpt.fold[Result](BadRequest)(enumerator => {
+            val result = (Ok chunked enumerator).withHeaders(
+              CONTENT_LENGTH -> track.size.toBytes.toString,
+              CACHE_CONTROL -> NO_CACHE,
+              CONTENT_TYPE -> AUDIO_MPEG,
+              CONTENT_DISPOSITION -> s"""attachment; filename="$name"""")
+            f(result)
+          })
+        }).recoverAll(_ => NotFound)
+      })
     })
+  }
+
+  def decode(id: String) = URLDecoder.decode(id, "UTF-8")
 
   def receiveUpload = ServerAction(server => {
     val requestID = server.request
@@ -169,7 +173,7 @@ object Phones extends Controller with Secured with BaseSecurity2 with BaseContro
   }
 
   def sessionAuth(req: RequestHeader) = {
-    authenticateFromSession(req) flatMap Servers.clients.get
+    authenticateFromSession(req) flatMap Servers.servers.get
   }
 
   def queryAuth(req: RequestHeader) = flattenInvalid {
@@ -181,11 +185,7 @@ object Phones extends Controller with Secured with BaseSecurity2 with BaseContro
   }
 
   def headerAuthAsync(req: RequestHeader) = flattenInvalid {
-    for {
-      creds <- PimpAuth.cloudCredentials(req)
-    } yield {
-      validate(creds)
-    }
+    PimpAuth.cloudCredentials(req).map(validate)
   }
 
   /**
@@ -194,7 +194,7 @@ object Phones extends Controller with Secured with BaseSecurity2 with BaseContro
    * @return a socket or a [[Future]] failed with [[NoSuchElementException]] if validation fails
    */
   def validate(creds: CloudCredentials): Future[Servers.Client] = flattenInvalid {
-    Servers.clients.get(creds.cloudID)
+    Servers.servers.get(creds.cloudID)
       .map(c => c.authenticate(creds.username, creds.password).filter(_ == true).map(_ => c))
   }
 
@@ -204,7 +204,7 @@ object Phones extends Controller with Secured with BaseSecurity2 with BaseContro
   def authServer(req: RequestHeader): Option[Server] = {
     for {
       requestID <- req.headers get REQUEST_ID
-      uuid <- FutureSocket.tryParseUUID(requestID) if byteRequests.exists(uuid)
+      uuid <- JsonFutureSocket.tryParseUUID(requestID) if byteRequests.exists(uuid)
     } yield Server(uuid)
   }
 

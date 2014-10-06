@@ -14,17 +14,14 @@ import scala.concurrent.Future
  * @author Michael
  */
 object PhoneSockets extends JsonWebSockets with TrieClientStorage {
-  override type AuthResult = PimpSocket
+  override type AuthSuccess = PimpSocket
   override type Client = PhoneClient
 
   override def openSocketCall: Call = routes.PhoneSockets.openSocket()
 
-  override def authenticate(req: RequestHeader): Future[AuthResult] = Phones.authPhone(req)
+  override def authenticateAsync(req: RequestHeader): Future[AuthSuccess] = Phones.authPhone(req)
 
-  // unused
-  override def authenticateSync(req: RequestHeader): Option[AuthResult] = None
-
-  override def newClient(authResult: AuthResult, channel: Channel[Message])(implicit request: RequestHeader): Client =
+  override def newClient(authResult: AuthSuccess, channel: Channel[Message])(implicit request: RequestHeader): Client =
     PhoneClient(authResult, channel, request)
 
   override def onMessage(msg: Message, client: Client): Unit = {

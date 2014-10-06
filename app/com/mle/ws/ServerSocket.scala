@@ -13,7 +13,7 @@ import scala.collection.concurrent.TrieMap
  * @author Michael
  */
 trait ServerSocket extends JsonWebSockets with Log {
-  override type AuthResult = com.mle.play.controllers.AuthResult
+  override type AuthSuccess = com.mle.play.controllers.AuthResult
   val subject = Subject[SocketMessage]()
   override type Client = PimpSocket
 
@@ -23,7 +23,7 @@ trait ServerSocket extends JsonWebSockets with Log {
 
   def openSocketCall: Call
 
-  override def newClient(user: AuthResult, channel: Channel[Message])(implicit request: RequestHeader): Client =
+  override def newClient(user: AuthSuccess, channel: Channel[Message])(implicit request: RequestHeader): Client =
     new PimpSocket(channel, user.user)
 
   override def onConnect(client: Client): Unit = {

@@ -6,6 +6,7 @@ import com.mle.musicpimp.json.JsonStrings.{EVENT, ID, REGISTERED}
 import com.mle.pimpcloud.ws.PhoneSockets
 import com.mle.play.auth.Auth
 import com.mle.play.controllers.AuthResult
+import com.mle.play.ws.SyncAuth
 import com.mle.ws.ServerSocket
 import play.api.libs.json.Json
 import play.api.mvc.{Call, Controller, RequestHeader}
@@ -13,7 +14,7 @@ import play.api.mvc.{Call, Controller, RequestHeader}
 /**
  * @author Michael
  */
-object Servers extends Controller with ServerSocket {
+object Servers extends Controller with ServerSocket with SyncAuth {
   // not a secret but avoids unintentional connections
   val serverPassword = "pimp"
   //  val identities: CloudIdentityStore = CloudDatabase.default
@@ -29,7 +30,7 @@ object Servers extends Controller with ServerSocket {
    * @param request
    * @return a valid cloud ID, or None if the cloud ID generation failed
    */
-  override def authenticateSync(request: RequestHeader): Option[AuthResult] = {
+  override def authenticate(request: RequestHeader): Option[AuthSuccess] = {
 //    Auth.basicCredentials(request).filter(_.password == serverPassword)
 //      .map(_.username).map(user => if (user.nonEmpty) user else newID())
 //      .filterNot(isConnected)

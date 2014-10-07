@@ -117,7 +117,15 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
   val BYTES = "bytes"
   val NONE = "none"
 
-  def download(id: String) = sendFile(id, _.withHeaders(ACCEPT_RANGES -> NONE))
+  /**
+   * If `BYTES` and no Content-Length is set -> WP8 downloader fails.
+   * If `BYTES` and Content-Length is set -> ???
+   * If `NONE` and Content-Length is set, WP8 at least downloads up to 10MB files and goes to a "waiting for wifi" mode
+   * for larger files.
+   *
+   * @param id track ID
+   */
+  def download(id: String) = sendFile(id, _.withHeaders(ACCEPT_RANGES -> BYTES))
 
   /**
    * Sends a request to a connected server on behalf of a connected phone. Initiated when a phone makes a request to

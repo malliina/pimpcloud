@@ -15,7 +15,7 @@ import com.mle.play.concurrent.ExecutionContexts.synchronousIO
 import com.mle.play.controllers.{BaseController, BaseSecurity}
 import com.mle.play.http.HttpConstants.{AUDIO_MPEG, NO_CACHE}
 import com.mle.play.streams.StreamParsers
-import com.mle.ws.{JsonFutureSocket, RequestStore}
+import com.mle.ws.{IterateeStore, JsonFutureSocket, RequestStore}
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc._
 
@@ -38,7 +38,8 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
    * 5) Read the request ID from the response and push the response to the channel (or complete the promise)
    * 6) EOF and close the channel; this completes the request-response cycle
    */
-  val byteRequests = new RequestStore[Array[Byte]]()
+//  val byteRequests = new RequestStore[Array[Byte]]()
+  val fileUploads = new IterateeStore[Array[Byte]]()
 
   def ping = ProxiedGetAction(PING)
 
@@ -123,19 +124,17 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
     val name = (Paths get decode(id)).getFileName.toString
     val message = jsonID(TRACK, id)
     PhoneAction(socket => {
-      Action.async(req => {
-        socket.meta(id).map(track => {
-          val enumeratorOpt = byteRequests.send(message, socket.channel)
-          enumeratorOpt.fold[Result](BadRequest)(enumerator => {
-            val result = (Ok chunked enumerator).withHeaders(
-              CONTENT_LENGTH -> track.size.toBytes.toString,
-              CACHE_CONTROL -> NO_CACHE,
-              CONTENT_TYPE -> AUDIO_MPEG,
-              CONTENT_DISPOSITION -> s"""attachment; filename="$name"""")
-            f(result)
-          })
-        }).recoverAll(_ => NotFound)
-      })
+      Action {
+        val enumeratorOpt = fileUploads.send(message, socket.channel)
+        enumeratorOpt.fold[Result](BadRequest)(enumerator => {
+          val result = (Ok feed enumerator).withHeaders(
+            //              CONTENT_LENGTH -> track.size.toBytes.toString,
+            CACHE_CONTROL -> NO_CACHE,
+            CONTENT_TYPE -> AUDIO_MPEG,
+            CONTENT_DISPOSITION -> s"""attachment; filename="$name"""")
+          f(result)
+        })
+      }
     })
   }
 
@@ -143,17 +142,32 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
 
   def receiveUpload = ServerAction(server => {
     val requestID = server.request
-    byteRequests.remove(requestID).fold[EssentialAction](Action(NotFound))(channel => {
-      Action(StreamParsers.multiPartByteStreaming(channel))(httpRequest => {
+    fileUploads.remove(requestID).fold[EssentialAction](Action(NotFound))(iteratee => {
+      log info s"Streaming file. Request: $requestID."
+      Action(StreamParsers.multiPartBodyParser(iteratee))(httpRequest => {
         val files = httpRequest.body.files
         files.foreach(file => {
-          log info s"File forwarding complete. Size: ${file.ref} bytes. Request: $requestID."
+          log info s"File streaming complete. Request: $requestID."
         })
-        channel.eofAndEnd()
         Ok
       })
     })
   })
+
+//  def receiveUpload2 = ServerAction(server => {
+//    val requestID = server.request
+//    byteRequests.remove(requestID).fold[EssentialAction](Action(NotFound))(channel => {
+//      log info s"Streaming response to: $requestID."
+//      Action(StreamParsers.multiPartByteStreaming(channel))(httpRequest => {
+//        val files = httpRequest.body.files
+//        files.foreach(file => {
+//          log info s"File streaming complete. Size: ${file.ref} bytes. Request: $requestID."
+//        })
+//        channel.eofAndEnd()
+//        Ok
+//      })
+//    })
+//  })
 
   def PhoneAction(f: PimpSocket => EssentialAction) = LoggedSecureActionAsync(authPhone)(f)
 
@@ -204,7 +218,7 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
   def authServer(req: RequestHeader): Option[Server] = {
     for {
       requestID <- req.headers get REQUEST_ID
-      uuid <- JsonFutureSocket.tryParseUUID(requestID) if byteRequests.exists(uuid)
+      uuid <- JsonFutureSocket.tryParseUUID(requestID) if fileUploads.exists(uuid)
     } yield Server(uuid)
   }
 

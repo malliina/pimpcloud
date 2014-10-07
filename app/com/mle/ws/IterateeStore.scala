@@ -5,24 +5,22 @@ import java.util.UUID
 import com.mle.musicpimp.json.JsonStrings._
 import com.mle.util.Log
 import play.api.libs.iteratee.Concurrent.Channel
-import play.api.libs.iteratee.{Concurrent, Enumerator}
+import play.api.libs.iteratee.{Concurrent, Enumerator, Iteratee}
 import play.api.libs.json.{JsValue, Json}
 
 import scala.collection.concurrent.TrieMap
 import scala.util.{Failure, Success, Try}
 
 /**
- * Unused, I think Concurrent.joined is preferred to Concurrent.broadcast.
- *
  * @author Michael
  */
-class RequestStore[T] extends Log {
-  val ongoingRequests = TrieMap.empty[UUID, Channel[T]]
+class IterateeStore[T] extends Log {
+  val ongoingRequests = TrieMap.empty[UUID, Iteratee[T, Unit]]
 
   def send(message: JsValue, channel: Channel[JsValue]): Option[Enumerator[T]] = {
-    val (enumerator, responseChannel) = Concurrent.broadcast[T]
+    val (iteratee, enumerator) = Concurrent.joined[T]
     val uuid = UUID.randomUUID()
-    ongoingRequests += (uuid -> responseChannel)
+    ongoingRequests += (uuid -> iteratee)
     val payload = Json.obj(REQUEST_ID -> uuid.toString, BODY -> message)
     log info s"Sending request: $uuid with body: $message"
     val ret = Try(channel push payload)
@@ -32,7 +30,7 @@ class RequestStore[T] extends Log {
       case Failure(t) =>
         log.warn(s"Unable to send payload: $payload", t)
         ongoingRequests -= uuid
-        responseChannel.eofAndEnd()
+        // close something?
         None
     }
   }

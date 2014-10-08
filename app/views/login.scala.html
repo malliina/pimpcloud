@@ -2,31 +2,29 @@
 
     @basePage(title = "Welcome") {
         @util.css2("login.css")
-        @util.div("container") {
-            @bs.rowColumn("col-md-4") {
-                @flash.get(Web.FEEDBACK).map { message =>
-                    <p class="lead">@message</p>
-                }
+        @bs.rowColumn("col-md-4") {
+            @flash.get(Web.FEEDBACK).map { message =>
+                <p class="lead">@message</p>
             }
-            @bs.rowColumn("col-md-3") {
-                <form class="form-signin" name="loginForm" action="@routes.Web.formAuthenticate()" method="POST">
-                    <h2 class="form-signin-heading">Please sign in</h2>
-                    <input type="text" class="form-control" name="@Web.serverFormKey" id="@Web.serverFormKey" placeholder="Server" autofocus>
-                    <input type="text" class="form-control" name="@Web.userFormKey" id="@Web.userFormKey" placeholder="Username" autofocus>
-                    <input type="password" class="form-control" name="@Web.passFormKey" id="@Web.passFormKey" placeholder="Password">
-                    <button type="submit" id="loginbutton" class="btn btn-lg btn-primary btn-block">Sign in</button>
-                </form>
+        }
+        @bs.rowColumn("col-md-3") {
+            <form class="form-signin" name="loginForm" action="@routes.Web.formAuthenticate()" method="POST">
+                <h2 class="form-signin-heading">Please sign in</h2>
+                <input type="text" class="form-control" name="@Web.serverFormKey" id="@Web.serverFormKey" placeholder="Server" autofocus>
+                <input type="text" class="form-control" name="@Web.userFormKey" id="@Web.userFormKey" placeholder="Username" autofocus>
+                <input type="password" class="form-control" name="@Web.passFormKey" id="@Web.passFormKey" placeholder="Password">
+                <button type="submit" id="loginbutton" class="btn btn-lg btn-primary btn-block">Sign in</button>
+            </form>
+        }
+        @bs.rowColumn("col-md-4") {
+            @*.orElse(loginForm.errors.headOption)*@
+            @loginForm.globalError.map { error =>
+                <p class="error lead">@error.message</p>
             }
-            @bs.rowColumn("col-md-4") {
-                @*.orElse(loginForm.errors.headOption)*@
-                @loginForm.globalError.map { error =>
-                    <p class="error lead">@error.message</p>
-                }
-            }
-            @bs.rowColumn("col-md-4") {
-                @motd.map { message =>
-                    <p>@message</p>
-                }
+        }
+        @bs.rowColumn("col-md-4") {
+            @motd.map { message =>
+                <p>@message</p>
             }
         }
         <script type="text/javascript" charset="utf-8">

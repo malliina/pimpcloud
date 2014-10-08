@@ -1,31 +1,29 @@
 @(dir: com.mle.musicpimp.audio.Directory, feedback: Option[String] = None)(implicit request: RequestHeader)
 @import com.mle.pimpcloud.ws.PhoneSockets
 
-    @basePage("Home") {
-        @util.div("container") {
-            @bs.headerRow("Library")
-            @bs.rowColumn("col-md-12"){
-                @searchForm()
-            }
-            @bs.rowColumn("col-md-12"){
-                <p id="status"></p>
-            }
-            @feedback.map { fb =>
-                @bs.rowColumn("col-md-12") {
-                    <p class="lead">@fb</p>
-                }
-            }
-            @bs.rowColumn("col-md-12") {
-                <ul class="list-unstyled">
-                @dir.folders.map { folder =>
-                    <li><a href="@routes.Phones.folder(folder.id)">@folder.title</a></li>
-                }
-                @dir.tracks.map { track =>
-                    <li>@trackActions(track.id) <a href="@routes.Phones.track(track.id)">@track.title</a></li>
-                }
-                </ul>
-            }
-        }
-        @util.script2("json.js", "playerws.js")
-        @wsopen(PhoneSockets.wsUrl(request))
+@basePage("Home") {
+    @bs.headerRow("Library")
+    @bs.rowColumn("col-md-12"){
+        @searchForm()
     }
+    @bs.rowColumn("col-md-12"){
+        <p id="status"></p>
+    }
+    @feedback.map { fb =>
+        @bs.rowColumn("col-md-12") {
+            <p class="lead">@fb</p>
+        }
+    }
+    @bs.rowColumn("col-md-12") {
+        <ul class="list-unstyled">
+        @dir.folders.map { folder =>
+            <li><a href="@routes.Phones.folder(folder.id)">@folder.title</a></li>
+        }
+        @dir.tracks.map { track =>
+            <li>@trackActions(track.id) <a href="@routes.Phones.track(track.id)">@track.title</a></li>
+        }
+        </ul>
+    }
+    @util.script2("json.js", "playerws.js")
+    @wsopen(PhoneSockets.wsUrl(request))
+}

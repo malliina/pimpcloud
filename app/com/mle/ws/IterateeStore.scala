@@ -22,7 +22,7 @@ class IterateeStore[T] extends Log {
     val uuid = UUID.randomUUID()
     ongoingRequests += (uuid -> iteratee)
     val payload = Json.obj(REQUEST_ID -> uuid.toString, BODY -> message)
-    log info s"Sending request: $uuid with body: $message"
+    log debug s"Sending request: $uuid with body: $message"
     val ret = Try(channel push payload)
     ret match {
       case Success(()) =>

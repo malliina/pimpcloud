@@ -11,7 +11,7 @@ import play.api.mvc._
 trait Secured extends AccountController with PimpContentController with Log {
   protected override def onUnauthorized(implicit request: RequestHeader): Result = {
     logUnauthorized(request)
-    log info s"Intended: ${request.uri}"
+    log debug s"Intended: ${request.uri}"
     pimpResult(
       html = Redirect(loginRedirectCall).withSession(INTENDED_URI -> request.uri),
       json = Unauthorized

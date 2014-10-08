@@ -1,0 +1,10 @@
+@()(implicit flash: Flash)
+
+@basePage("Goodbye!") {
+    @bs.rowColumn("col-md-6") {
+        @flash.get(Admin.messageKey).map { message =>
+            <p class="lead">@message</p>
+        }
+        <p>Try to <a href="@routes.Admin.index()">sign in</a> again.</p>
+    }
+}

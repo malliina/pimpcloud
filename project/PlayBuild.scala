@@ -16,7 +16,7 @@ object PlayBuild extends Build {
       "Sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/",
       "Sonatype releases" at "https://oss.sonatype.org/content/repositories/releases/"),
     libraryDependencies ++= Seq(
-      mleGroup %% "util-play" % "1.6.1",
+      mleGroup %% "util-play" % "1.6.5",
       mleGroup %% "play-base" % "0.1.0",
       "org.java-websocket" % "Java-WebSocket" % "1.3.0",
       "com.h2database" % "h2" % "1.4.181",

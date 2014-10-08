@@ -17,8 +17,6 @@ import play.api.mvc.{Call, Controller, RequestHeader}
 object Servers extends Controller with ServerSocket with SyncAuth {
   // not a secret but avoids unintentional connections
   val serverPassword = "pimp"
-  //  val identities: CloudIdentityStore = CloudDatabase.default
-
   override def openSocketCall: Call = routes.Servers.openSocket()
 
   def newID(): String = UUID.randomUUID().toString take 5
@@ -30,7 +28,7 @@ object Servers extends Controller with ServerSocket with SyncAuth {
    * @param request
    * @return a valid cloud ID, or None if the cloud ID generation failed
    */
-  override def authenticate(request: RequestHeader): Option[AuthSuccess] = {
+  override def authenticate(implicit request: RequestHeader): Option[AuthSuccess] = {
 //    Auth.basicCredentials(request).filter(_.password == serverPassword)
 //      .map(_.username).map(user => if (user.nonEmpty) user else newID())
 //      .filterNot(isConnected)
@@ -57,8 +55,6 @@ object Servers extends Controller with ServerSocket with SyncAuth {
       cloudID map (id => com.mle.play.controllers.AuthResult(id))
     })
   }
-
-  def newCloudID = UUID.randomUUID().toString take 5
 
   override def welcomeMessage(client: Client): Option[Message] =
     Some(Json.toJson(Map(EVENT -> REGISTERED, ID -> client.id)))

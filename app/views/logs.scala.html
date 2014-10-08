@@ -1,22 +1,22 @@
 @(feedback: Option[String] = None)(implicit request: RequestHeader)
 
-    @basePage("Logs") {
-        @bs.headerRow("Logs")
-        @bs.rowColumn("col-md-12") {
-            @feedback.map { str =>
-                <p class="lead">@str</p>
-            }
-            <p id="status" class="lead">Initializing...</p>
+@baseIndex("logs") {
+    @bs.headerRow("Logs")
+    @bs.rowColumn("col-md-12") {
+        @feedback.map { str =>
+            <p class="lead">@str</p>
         }
-        @bs.rowColumn("col-md-12") {
-            <table class="table table-striped table-hover">
-                <thead>
-                    <tr><th>Time</th><th>Message</th><th>Logger</th><th>Level</th></tr>
-                </thead>
-                <tbody id="logTableBody">
-                </tbody>
-            </table>
-        }
+        <p id="status" class="lead">Initializing...</p>
     }
-    <script src="@routes.Assets.at("js/rx.js")"></script>
-    @wsopen(Admin.wsUrl)
+    @bs.rowColumn("col-md-12") {
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr><th>Time</th><th>Message</th><th>Logger</th><th>Level</th></tr>
+            </thead>
+            <tbody id="logTableBody">
+            </tbody>
+        </table>
+    }
+}
+<script src="@routes.Assets.at("js/rx.js")"></script>
+@wsopen(Admin.wsUrl)

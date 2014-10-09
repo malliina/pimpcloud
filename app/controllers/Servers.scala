@@ -2,21 +2,30 @@ package controllers
 
 import java.util.UUID
 
-import com.mle.musicpimp.json.JsonStrings.{EVENT, ID, REGISTERED}
+import com.mle.musicpimp.cloud.PimpSocket
+import com.mle.musicpimp.json.JsonStrings.{ADDRESS, BODY, EVENT, ID, REGISTERED, SERVERS}
 import com.mle.pimpcloud.ws.PhoneSockets
 import com.mle.play.auth.Auth
-import com.mle.play.controllers.AuthResult
 import com.mle.play.ws.SyncAuth
 import com.mle.ws.ServerSocket
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.mvc.{Call, Controller, RequestHeader}
 
 /**
  * @author Michael
  */
-object Servers extends Controller with ServerSocket with SyncAuth {
+object Servers extends Controller with ServerSocket with SyncAuth with UsersEvents {
   // not a secret but avoids unintentional connections
   val serverPassword = "pimp"
+
+  val writer = new Writes[PimpSocket] {
+    override def writes(o: PimpSocket): JsValue = Json.obj(
+      ID -> o.id,
+      ADDRESS -> o.headers.remoteAddress
+    )
+  }
+  val usersJson = users.map(list => Json.obj(EVENT -> SERVERS, BODY -> list.map(Json.toJson(_)(writer))))
+
   override def openSocketCall: Call = routes.Servers.openSocket()
 
   def newID(): String = UUID.randomUUID().toString take 5
@@ -29,9 +38,9 @@ object Servers extends Controller with ServerSocket with SyncAuth {
    * @return a valid cloud ID, or None if the cloud ID generation failed
    */
   override def authenticate(implicit request: RequestHeader): Option[AuthSuccess] = {
-//    Auth.basicCredentials(request).filter(_.password == serverPassword)
-//      .map(_.username).map(user => if (user.nonEmpty) user else newID())
-//      .filterNot(isConnected)
+    //    Auth.basicCredentials(request).filter(_.password == serverPassword)
+    //      .map(_.username).map(user => if (user.nonEmpty) user else newID())
+    //      .filterNot(isConnected)
 
     Auth.basicCredentials(request).filter(_.password == serverPassword).flatMap(creds => {
       val user = creds.username

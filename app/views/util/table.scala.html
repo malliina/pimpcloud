@@ -1,0 +1,13 @@
+@(bodyID: String, headers: String*)
+
+<table class="table table-striped table-hover">
+    <thead>
+        <tr>
+            @headers.map { header =>
+                <th>@header</th>
+            }
+        </tr>
+    </thead>
+    <tbody id="@bodyID">
+    </tbody>
+</table>

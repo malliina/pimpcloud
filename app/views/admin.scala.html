@@ -1,5 +1,20 @@
-@()
+@()(implicit request: RequestHeader)
 
 @baseIndex("home") {
     @bs.headerRow("Admin")
+    @bs.rowColumn("col-md-12") {
+        <p id="status" class="lead">Initializing...</p>
+    }
+    @tableContainer("Requests", "requestsTable", "Cloud ID", "Request ID")
+    @tableContainer("Phones", "phonesTable", "Cloud ID", "Phone Address")
+    @tableContainer("Servers", "serversTable", "Cloud ID", "Server Address")
 }
+<script src="@routes.Assets.at("js/admin.js")"></script>
+@wsopen(UsageStreaming.wsUrl)
+
+    @tableContainer(header: String, bodyID: String, headers: String*) = {
+        <h2>@header</h2>
+    @bs.rowColumn("col-md-12") {
+        @util.table(bodyID, headers: _*)
+    }
+    }

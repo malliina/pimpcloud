@@ -9,6 +9,7 @@ import com.mle.play.ws.SocketClient
 import com.mle.ws.JsonFutureSocket
 import play.api.libs.iteratee.Concurrent.Channel
 import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.mvc.RequestHeader
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -16,7 +17,7 @@ import scala.concurrent.Future
 /**
  * @author Michael
  */
-class PimpSocket(channel: Channel[JsValue], id: String)
+class PimpSocket(channel: Channel[JsValue], id: String, val headers: RequestHeader)
   extends JsonFutureSocket(channel, id)
   with SocketClient[JsValue] {
 

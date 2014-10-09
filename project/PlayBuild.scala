@@ -8,7 +8,7 @@ object PlayBuild extends Build {
   lazy val p = PlayProjects.plainPlayProject("pimpcloud").settings(commonSettings: _*)
   val mleGroup = "com.github.malliina"
   val commonSettings = SbtNativePackager.packagerSettings ++ LinuxPlugin.debianSettings ++ Seq(
-    version := "0.0.10",
+    version := "0.1.0",
     scalaVersion := "2.11.2",
     retrieveManaged := false,
     fork in Test := true,

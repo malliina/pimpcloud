@@ -139,7 +139,7 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
         // resolves track metadata from the server so we can set Content-Length
         socket.meta(id).map(track => {
           // proxies request
-          val enumeratorOpt = fileUploads.send(message, socket.channel)
+          val enumeratorOpt = fileUploads.send(message, socket.channel, socket.id)
           enumeratorOpt.fold[Result](BadRequest)(enumerator => {
             val result = (Ok feed enumerator).withHeaders(
               CONTENT_LENGTH -> track.size.toBytes.toString,
@@ -157,13 +157,14 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
 
   def receiveUpload = ServerAction(server => {
     val requestID = server.request
-    fileUploads.remove(requestID).fold[EssentialAction](Action(NotFound))(iteratee => {
+    (fileUploads get requestID).fold[EssentialAction](Action(NotFound))(iteratee => {
       log info s"Streaming file. Request: $requestID."
       Action(StreamParsers.multiPartBodyParser(iteratee))(httpRequest => {
         val files = httpRequest.body.files
         files.foreach(file => {
           log info s"File streaming complete. Request: $requestID."
         })
+        fileUploads remove requestID
         Ok
       })
     })

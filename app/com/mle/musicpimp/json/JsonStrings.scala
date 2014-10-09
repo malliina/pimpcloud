@@ -31,4 +31,8 @@ object JsonStrings {
   val STATUS = "status"
   val META = "meta"
   val SUCCESS = "success"
+  val PHONES = "phones"
+  val SERVERS = "servers"
+  val REQUESTS = "requests"
+  val ADDRESS = "address"
 }

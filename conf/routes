@@ -26,4 +26,5 @@ GET         /oauth                    controllers.Admin.initiate
 GET         /oauthcb                  controllers.Admin.redirResponse
 GET         /admin/eject              controllers.Admin.eject
 GET         /admin/ws                 controllers.Admin.openSocket
+GET         /admin/usage              controllers.UsageStreaming.openSocket
 GET         /admin/logout             controllers.Admin.logout

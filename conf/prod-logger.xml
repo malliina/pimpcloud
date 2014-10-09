@@ -1,5 +1,9 @@
 <configuration>
     <conversionRule conversionWord="coloredLevel" converterClass="play.api.Logger$ColoredLevel"/>
+    <appender name="RX" class="com.mle.logbackrx.BasicBoundedReplayRxAppender">
+        <bufferSize>100</bufferSize>
+        <timeFormat>yyyy-MM-dd HH:mm:ss</timeFormat>
+    </appender>
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
         <file>${pimpcloud.home}/logs/pimpcloud.log</file>
         <encoder>

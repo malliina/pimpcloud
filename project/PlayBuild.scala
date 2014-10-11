@@ -12,7 +12,8 @@ object PlayBuild extends Build {
     scalaVersion := "2.11.2",
     retrieveManaged := false,
     fork in Test := true,
-    resolvers ++= Seq(
+    parallelExecution in Test := false,
+      resolvers ++= Seq(
       "Sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/",
       "Sonatype releases" at "https://oss.sonatype.org/content/repositories/releases/"),
     libraryDependencies ++= Seq(

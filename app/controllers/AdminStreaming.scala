@@ -9,7 +9,6 @@ import play.api.mvc.{Call, EssentialAction, RequestHeader}
  */
 trait AdminStreaming extends Streaming with OAuthSecured with SyncAuth {
   // OAuth
-
   override val sessionUserKey: String = "email"
 
   override def isAuthorized(email: String): Boolean = email == "malliina123@gmail.com"

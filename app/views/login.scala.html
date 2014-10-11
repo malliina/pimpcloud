@@ -1,7 +1,8 @@
 @(loginForm: Form[com.mle.pimpcloud.CloudCredentials], motd: Option[String] = None)(implicit flash: Flash)
 
-    @basePage(title = "Welcome") {
-        @util.css2("login.css")
+@basePage(title = "Welcome") {
+    @util.css2("login.css")
+    @util.div("container") {
         @bs.rowColumn("col-md-4") {
             @flash.get(Web.FEEDBACK).map { message =>
                 <p class="lead">@message</p>
@@ -16,18 +17,18 @@
                 <button type="submit" id="loginbutton" class="btn btn-lg btn-primary btn-block">Sign in</button>
             </form>
         }
-        @bs.rowColumn("col-md-4") {
-            @*.orElse(loginForm.errors.headOption)*@
+        @bs.rowColumn("col-md-3") {
             @loginForm.globalError.map { error =>
-                <p class="error lead">@error.message</p>
+                <div class="alert alert-warning form-signin" role="alert">@error.message</div>
             }
         }
-        @bs.rowColumn("col-md-4") {
+        @bs.rowColumn("col-md-3 form-signin") {
             @motd.map { message =>
                 <p>@message</p>
             }
         }
-        <script type="text/javascript" charset="utf-8">
-        $( function () { document.loginForm.username.focus(); }) ;
-        </script>
     }
+    <script type="text/javascript" charset="utf-8">
+    $ ( function () { document.loginForm.username.focus(); } ) ;
+    </script>
+}

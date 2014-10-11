@@ -1,9 +1,10 @@
 @()(implicit request: RequestHeader)
 
 @baseIndex("home") {
-    @bs.headerRow("Admin")
     @bs.rowColumn("col-md-12") {
-        <p id="status" class="lead">Initializing...</p>
+        @util.div("page-header") {
+            <h1>Admin <small class="pull-right" id="status">Initializing...</small></h1>
+        }
     }
     @tableContainer("Requests", "requestsTable", "Cloud ID", "Request ID")
     @tableContainer("Phones", "phonesTable", "Cloud ID", "Phone Address")

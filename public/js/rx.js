@@ -28,7 +28,7 @@ var prepend = function (e) {
     if (level == "ERROR") {
         trc = "danger";
     } else if (level == "WARN") {
-        trc = "";
+        trc = "warning";
     } else {
         trc = "";
     }

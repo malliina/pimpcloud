@@ -4,12 +4,12 @@
     @util.css2("custom.css")
     @util.div("container"){
         @bs.rowColumn("col-md-6 top-padding") {
-            @flash.get(Admin.messageKey).map { message =>
+            @flash.get(Logs.messageKey).map { message =>
                 <div class="lead alert alert-success" role="alert">@message</div>
             }
         }
         @bs.rowColumn("col-md-6"){
-            <p class="lead">Try to <a href="@routes.Admin.index()">sign in</a> again.</p>
+            <p class="lead">Try to <a href="@routes.UsageStreaming.index()">sign in</a> again.</p>
         }
     }
 }

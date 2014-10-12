@@ -8,20 +8,14 @@ import play.api.mvc.{Action, Call}
 /**
  * @author Michael
  */
-object Admin extends AdminStreaming with LogStreaming {
-
-  // Sockets
-
+object Logs extends AdminStreaming with LogStreaming {
   override def appender: EventMapping = LogbackUtils.getAppender[BasicBoundedReplayRxAppender]("RX")
 
-  override def openSocketCall: Call = routes.Admin.openSocket()
+  override def openSocketCall: Call = routes.Logs.openSocket()
 
   override def clients: Seq[Client] = subscriptions.keys.toSeq
 
   // Pages
-
-  def index = navigate(implicit req => views.html.admin())
-
   def logs = navigate(implicit req => views.html.logs())
 
   def eject = Logged(Action(implicit req => Ok(views.html.eject())))

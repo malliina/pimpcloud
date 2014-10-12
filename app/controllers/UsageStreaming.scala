@@ -12,4 +12,6 @@ object UsageStreaming extends AdminStreaming {
   override def jsonEvents: Observable[JsValue] = Servers.usersJson merge PhoneSockets.usersJson merge Phones.fileUploads.uuidsJson
 
   override def openSocketCall: Call = routes.UsageStreaming.openSocket()
+
+  def index = navigate(implicit req => views.html.admin())
 }

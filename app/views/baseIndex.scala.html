@@ -9,15 +9,15 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand" href="@routes.Admin.index()">MusicPimp</a>
+                <a class="navbar-brand" href="@routes.UsageStreaming.index()">MusicPimp</a>
             }
             @div("navbar-collapse collapse") {
                 <ul class="nav navbar-nav">
-                    @bs.navItem("Home", "home", tabName, routes.Admin.index(), "home")
-                    @bs.navItem("Logs", "logs", tabName, routes.Admin.logs(), "list")
+                    @bs.navItem("Home", "home", tabName, routes.UsageStreaming.index(), "home")
+                    @bs.navItem("Logs", "logs", tabName, routes.Logs.logs(), "list")
                 </ul>
                 <ul class="nav navbar-nav navbar-right">
-                    <li><a href="@routes.Admin.logout()">Logout</a></li>
+                    <li><a href="@routes.Logs.logout()">Logout</a></li>
                 </ul>
             }
         }

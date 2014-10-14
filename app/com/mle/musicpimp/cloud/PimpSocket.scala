@@ -5,6 +5,7 @@ import com.mle.musicpimp.audio.{Directory, Track}
 import com.mle.musicpimp.cloud.PimpMessages.Version
 import com.mle.musicpimp.cloud.PimpSocket.{json, jsonID}
 import com.mle.musicpimp.json.JsonStrings._
+import com.mle.pimpcloud.ws.{NoCacheCloudStreams, StreamBase, CachedByteStreams, CloudStreams}
 import com.mle.play.ws.SocketClient
 import com.mle.ws.JsonFutureSocket
 import play.api.libs.iteratee.Concurrent.Channel
@@ -20,6 +21,11 @@ import scala.concurrent.Future
 class PimpSocket(channel: Channel[JsValue], id: String, val headers: RequestHeader)
   extends JsonFutureSocket(channel, id)
   with SocketClient[JsValue] {
+
+  val fileTransfers: StreamBase[Array[Byte]] = new CachedByteStreams(id, channel)
+//  val fileTransfers: StreamBase[Array[Byte]] = new NoCacheCloudStreams(id,channel)
+
+  def stream(track: Track) = fileTransfers stream track
 
   def ping = simpleProxy(PING)
 

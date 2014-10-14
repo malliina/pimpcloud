@@ -18,9 +18,6 @@ import scala.util.{Failure, Success, Try}
 class IterateeStore[T] extends Log {
   private val ongoingRequests = TrieMap.empty[UUID, IterateeInfo]
   val uuids = BehaviorSubject[Map[UUID, IterateeInfo]](Map.empty)
-  val uuidsJson = uuids.map(kvs => Json.obj(
-    EVENT -> REQUESTS,
-    BODY -> kvs.map(kv => Json.obj(REQUEST_ID -> kv._1, ID -> kv._2.owner))))
 
   def send(message: JsValue, channel: Channel[JsValue], owner: String): Option[Enumerator[T]] = {
     val (iteratee, enumerator) = Concurrent.joined[T]
@@ -37,11 +34,12 @@ class IterateeStore[T] extends Log {
         log.warn(s"Unable to send payload: $payload", t)
         remove(uuid)
         // close something?
+        // iteratee.feed(Input.EOF)
         None
     }
   }
 
-  def remove(uuid: UUID) = {
+  def remove(uuid: UUID): Option[IterateeInfo] = {
     val ret = ongoingRequests remove uuid
     updateObservable()
     ret
@@ -49,7 +47,7 @@ class IterateeStore[T] extends Log {
 
   def exists(uuid: UUID) = ongoingRequests contains uuid
 
-  def get(uuid: UUID) = (ongoingRequests get uuid) map (_.iteratee)
+  def get(uuid: UUID): Option[Iteratee[T, Unit]] = (ongoingRequests get uuid) map (_.iteratee)
 
   private def updateObservable(): Unit = uuids onNext ongoingRequests.toMap
 

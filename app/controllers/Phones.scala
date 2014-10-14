@@ -8,16 +8,19 @@ import com.mle.concurrent.FutureImplicits.RichFuture
 import com.mle.musicpimp.audio.Directory
 import com.mle.musicpimp.cloud.PimpSocket
 import com.mle.musicpimp.cloud.PimpSocket.{json, jsonID}
-import com.mle.musicpimp.json.JsonStrings.{ALARMS, ALARMS_ADD, ALARMS_EDIT, FOLDER, LIMIT, PING, REQUEST_ID, ROOT_FOLDER, SEARCH, SERVER_KEY, STATUS, TERM, TRACK}
+import com.mle.musicpimp.json.JsonStrings._
+import com.mle.pimpcloud.ws.StreamData
 import com.mle.pimpcloud.{CloudCredentials, PimpAuth}
 import com.mle.play.auth.Auth
 import com.mle.play.concurrent.ExecutionContexts.synchronousIO
 import com.mle.play.controllers.{BaseController, BaseSecurity}
 import com.mle.play.http.HttpConstants.{AUDIO_MPEG, NO_CACHE}
 import com.mle.play.streams.StreamParsers
-import com.mle.ws.{IterateeStore, JsonFutureSocket}
-import play.api.libs.json.{JsObject, Json}
+import com.mle.ws.JsonFutureSocket
+import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc._
+import rx.lang.scala.Observable
+import rx.lang.scala.subjects.BehaviorSubject
 
 import scala.concurrent.Future
 import scala.util.Try
@@ -28,17 +31,21 @@ import scala.util.Try
  */
 object Phones extends Controller with Secured with BaseSecurity with BaseController {
   val DEFAULT_LIMIT = 100
-  /**
-   * For each incoming request:
-   *
-   * 1) Assign an ID to the request
-   * 2) Open a channel (or create a promise) onto which we push the eventual response
-   * 3) Forward the request along with its ID to the destination server
-   * 4) The destination server tags its response with the request ID
-   * 5) Read the request ID from the response and push the response to the channel (or complete the promise)
-   * 6) EOF and close the channel; this completes the request-response cycle
-   */
-  val fileUploads = new IterateeStore[Array[Byte]]()
+  val BYTES = "bytes"
+  val NONE = "none"
+  val subject = BehaviorSubject[Seq[StreamData]](Nil)
+  val uuidsJson: Observable[JsValue] = subject.map(streams => Json.obj(
+    EVENT -> REQUESTS,
+    BODY -> Json.toJson(streams)))
+
+  def updateRequestList() = subject onNext ongoingTransfers
+
+  def ongoingTransfers = Servers.clients.flatMap(_.fileTransfers.snapshot)
+
+  def combineAll[T](obs: List[Observable[T]], f: (T, T) => T): Observable[T] = obs match {
+    case Nil => Observable.never
+    case h :: t => h.combineLatest(combineAll(t, f), f)
+  }
 
   def ping = ProxiedGetAction(PING)
 
@@ -67,6 +74,71 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
   def editAlarm = BodyProxied(ALARMS_EDIT)
 
   def newAlarm = BodyProxied(ALARMS_ADD)
+
+  /**
+   * Relays track `id` to the client from the target.
+   *
+   * Sends a message over WebSocket to the target that it should send `id` to this server. This server then forwards the
+   * response of the target to the client.
+   *
+   * @param id id of the requested track
+   */
+  def track(id: String) = sendFile(id)
+
+  /**
+   * If `BYTES` and no Content-Length is set -> WP8 downloader fails.
+   * If (`NONE` or `BYTES`) and Content-Length is set, WP8 at least downloads up to 10MB files and goes to a
+   * "waiting for wifi" mode for very large files.
+   *
+   * Previous versions of WP8 seemed to require `BYTES` for files >5MB in size.
+   *
+   * @param id track ID
+   */
+  def download(id: String) = sendFile(id, _.withHeaders(ACCEPT_RANGES -> BYTES))
+
+  /**
+   * Sends a request to a connected server on behalf of a connected phone. Initiated when a phone makes a request to
+   * this server. The response of the remote server is relayed back to the phone.
+   */
+  def sendFile(id: String, f: Result => Result = r => r): EssentialAction = {
+    val name = (Paths get decode(id)).getFileName.toString
+    PhoneAction(socket => {
+      Action.async(req => {
+        // resolves track metadata from the server so we can set Content-Length
+        socket.meta(id).map(track => {
+          // proxies request
+          val enumeratorOpt = socket stream track
+          enumeratorOpt.fold[Result](BadRequest)(enumerator => {
+            val result = (Ok feed enumerator).withHeaders(
+              CONTENT_LENGTH -> track.size.toBytes.toString,
+              CACHE_CONTROL -> NO_CACHE,
+              CONTENT_TYPE -> AUDIO_MPEG,
+              CONTENT_DISPOSITION -> s"""attachment; filename="$name"""")
+            f(result)
+          })
+        }).recoverAll(_ => NotFound) // track ID not found
+      })
+    })
+  }
+
+  def receiveUpload = ServerAction(server => {
+    val requestID = server.request
+    val transfers = server.socket.fileTransfers
+    val parser = transfers parser requestID
+    parser.fold[EssentialAction](Action(NotFound))(parser => {
+      log info s"Streaming file. Request: $requestID."
+      Action(parser)(httpRequest => {
+        val files = httpRequest.body.files
+        files.foreach(file => {
+          log info s"File streaming complete. Request: $requestID."
+        })
+        transfers remove requestID
+        Ok
+      })
+    })
+  })
+
+  def decode(id: String) = URLDecoder.decode(id, "UTF-8")
 
   def BodyProxied(cmd: String) =
     ProxiedJsonAction(parse.json)(req => Some(PimpSocket.bodiedJson(cmd, req.body.as[JsObject])))
@@ -102,73 +174,6 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
     })
 
   def proxiedJson(socket: PimpSocket, json: JsObject) = (socket defaultProxy json) map (js => Ok(js))
-
-  /**
-   * Relays track `id` to the client from the target.
-   *
-   * Sends a message over WebSocket to the target that it should send `id` to this server. This server then forwards the
-   * response of the target to the client.
-   *
-   * @param id id of the requested track
-   */
-  def track(id: String) = sendFile(id)
-
-  val BYTES = "bytes"
-  val NONE = "none"
-
-  /**
-   * If `BYTES` and no Content-Length is set -> WP8 downloader fails.
-   * If (`NONE` or `BYTES`) and Content-Length is set, WP8 at least downloads up to 10MB files and goes to a
-   * "waiting for wifi" mode for larger files.
-   *
-   * Previous versions of WP8 seemed to require `BYTES` for files >5MB in size.
-   *
-   * @param id track ID
-   */
-  def download(id: String) = sendFile(id, _.withHeaders(ACCEPT_RANGES -> BYTES))
-
-  /**
-   * Sends a request to a connected server on behalf of a connected phone. Initiated when a phone makes a request to
-   * this server. The response of the remote server is relayed back to the phone.
-   */
-  def sendFile(id: String, f: Result => Result = r => r): EssentialAction = {
-    val name = (Paths get decode(id)).getFileName.toString
-    val message = jsonID(TRACK, id)
-    PhoneAction(socket => {
-      Action.async(req => {
-        // resolves track metadata from the server so we can set Content-Length
-        socket.meta(id).map(track => {
-          // proxies request
-          val enumeratorOpt = fileUploads.send(message, socket.channel, socket.id)
-          enumeratorOpt.fold[Result](BadRequest)(enumerator => {
-            val result = (Ok feed enumerator).withHeaders(
-              CONTENT_LENGTH -> track.size.toBytes.toString,
-              CACHE_CONTROL -> NO_CACHE,
-              CONTENT_TYPE -> AUDIO_MPEG,
-              CONTENT_DISPOSITION -> s"""attachment; filename="$name"""")
-            f(result)
-          })
-        }).recoverAll(_ => NotFound) // track ID not found
-      })
-    })
-  }
-
-  def decode(id: String) = URLDecoder.decode(id, "UTF-8")
-
-  def receiveUpload = ServerAction(server => {
-    val requestID = server.request
-    (fileUploads get requestID).fold[EssentialAction](Action(NotFound))(iteratee => {
-      log info s"Streaming file. Request: $requestID."
-      Action(StreamParsers.multiPartBodyParser(iteratee))(httpRequest => {
-        val files = httpRequest.body.files
-        files.foreach(file => {
-          log info s"File streaming complete. Request: $requestID."
-        })
-        fileUploads remove requestID
-        Ok
-      })
-    })
-  })
 
   def PhoneAction(f: PimpSocket => EssentialAction) = LoggedSecureActionAsync(authPhone)(f)
 
@@ -219,11 +224,12 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
   def authServer(req: RequestHeader): Option[Server] = {
     for {
       requestID <- req.headers get REQUEST_ID
-      uuid <- JsonFutureSocket.tryParseUUID(requestID) if fileUploads.exists(uuid)
-    } yield Server(uuid)
+      uuid <- JsonFutureSocket.tryParseUUID(requestID) //if fileStreams.exists(uuid)
+      server <- Servers.clients.find(_.fileTransfers.exists(uuid))
+    } yield Server(uuid, server)
   }
 
-  case class Server(request: UUID)
+  case class Server(request: UUID, socket: PimpSocket)
 
   def fut[T](body: => T) = Future successful body
 

@@ -8,7 +8,7 @@ object PlayBuild extends Build {
   lazy val p = PlayProjects.plainPlayProject("pimpcloud").settings(commonSettings: _*)
   val mleGroup = "com.github.malliina"
   val commonSettings = SbtNativePackager.packagerSettings ++ LinuxPlugin.debianSettings ++ Seq(
-    version := "0.1.4",
+    version := "0.1.5",
     scalaVersion := "2.11.2",
     retrieveManaged := false,
     fork in Test := true,
@@ -20,7 +20,7 @@ object PlayBuild extends Build {
       mleGroup %% "util-play" % "1.6.7",
       mleGroup %% "play-base" % "0.1.0",
       "org.java-websocket" % "Java-WebSocket" % "1.3.0",
-      "com.h2database" % "h2" % "1.4.181",
+      "com.h2database" % "h2" % "1.3.176",
       "com.typesafe.slick" %% "slick" % "2.1.0",
       play.PlayImport.filters,
       play.PlayImport.cache

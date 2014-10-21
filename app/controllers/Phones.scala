@@ -75,6 +75,8 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
 
   def newAlarm = BodyProxied(ALARMS_ADD)
 
+  def beam = BodyProxied(BEAM)
+
   /**
    * Relays track `id` to the client from the target.
    *

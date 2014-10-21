@@ -5,6 +5,7 @@ POST        /authenticate             controllers.Web.formAuthenticate
 GET         /ping                     controllers.Phones.ping
 GET         /pingauth                 controllers.Phones.pingAuth
 GET         /playback                 controllers.Phones.status
+POST        /playback/stream          controllers.Phones.beam
 GET         /folders                  controllers.Phones.rootFolder
 GET         /folders/*folder          controllers.Phones.folder(folder)
 GET         /tracks/*id               controllers.Phones.track(id)
@@ -14,6 +15,7 @@ GET         /alarms                   controllers.Phones.alarms
 POST        /alarms                   controllers.Phones.editAlarm
 POST        /alarms/editor/add        controllers.Phones.newAlarm
 GET         /mobile/ws                com.mle.pimpcloud.ws.PhoneSockets.openSocket
+GET         /ws/playback              com.mle.pimpcloud.ws.PhoneSockets.openSocket
 # Servers
 POST        /track                    controllers.Phones.receiveUpload
 GET         /servers/ws               controllers.Servers.openSocket

@@ -56,7 +56,7 @@ class CachedByteStreams(id: String, channel: Channel[JsValue])
       val subject = ReplaySubject[Array[Byte]]()
       cachedStreams += (uuid -> StreamInfo(track, subject))
       streamChanged()
-      val payload = Json.obj(REQUEST_ID -> uuid, BODY -> message)
+      val payload = Json.obj(REQUEST_ID -> uuid) ++ message
       val ret = Try(channel push payload)
       ret match {
         case Success(()) =>

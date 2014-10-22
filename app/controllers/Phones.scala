@@ -103,10 +103,12 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
    * this server. The response of the remote server is relayed back to the phone.
    */
   def sendFile(id: String, f: Result => Result = r => r): EssentialAction = {
+    log info s"Got request of: $id"
     val name = (Paths get decode(id)).getFileName.toString
     PhoneAction(socket => {
       Action.async(req => {
         // resolves track metadata from the server so we can set Content-Length
+        log info s"Looking up meta..."
         socket.meta(id).map(track => {
           // proxies request
           val enumeratorOpt = socket stream track

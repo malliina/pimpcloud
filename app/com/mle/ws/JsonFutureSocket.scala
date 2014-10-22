@@ -26,7 +26,7 @@ class JsonFutureSocket(val channel: Channel[JsValue], val id: String) extends Uu
   // testing some syntax
   //  private def trieMap[T[_], U] = TrieMap.empty[UUID, T[U]]
 
-  override def build(pair: BodyAndId) = Json.obj(REQUEST_ID -> pair.uuid.toString, BODY -> pair.body)
+  override def build(pair: BodyAndId) = Json.obj(REQUEST_ID -> pair.uuid.toString) ++ pair.body.as[JsObject]
 
   override def extract(response: JsValue): Option[BodyAndId] = {
     val uuidResult = (response \ REQUEST_ID).asOpt[UUID]

@@ -3,6 +3,7 @@ package com.mle.pimpcloud.ws
 import com.mle.concurrent.FutureImplicits.RichFuture
 import com.mle.musicpimp.cloud.PimpSocket
 import com.mle.musicpimp.json.JsonStrings.{ADDRESS, BODY, CMD, EVENT, PHONES, PLAYER, SERVER_KEY, STATUS}
+import com.mle.play.concurrent.ExecutionContexts.synchronousIO
 import com.mle.play.ws.{JsonWebSockets, SocketClient}
 import com.mle.ws.TrieClientStorage
 import controllers.{Phones, UsersEvents}

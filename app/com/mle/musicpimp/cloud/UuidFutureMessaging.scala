@@ -28,7 +28,7 @@ trait UuidFutureMessaging[T] extends FutureMessaging[T] with Log {
     ongoing += (uuid -> responsePromise)
     // sends the payload, including a request ID
     val payload = build(BodyAndId(message, uuid))
-    //    log info s"Sending request: $uuid to MusicPimp server: $id with body: $message"
+//    log info s"Sending: $payload"
     send(payload).recover {
       case t: Throwable =>
         log.warn(s"Unable to send payload: $payload", t)

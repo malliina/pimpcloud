@@ -1,7 +1,8 @@
 package com.mle.pimpcloud.ws
 
+import com.mle.concurrent.FutureImplicits.RichFuture
 import com.mle.musicpimp.cloud.PimpSocket
-import com.mle.musicpimp.json.JsonStrings.{ADDRESS, BODY, EVENT, PHONES, SERVER_KEY}
+import com.mle.musicpimp.json.JsonStrings.{ADDRESS, BODY, CMD, EVENT, PHONES, PLAYER, SERVER_KEY, STATUS}
 import com.mle.play.ws.{JsonWebSockets, SocketClient}
 import com.mle.ws.TrieClientStorage
 import controllers.{Phones, UsersEvents}
@@ -34,7 +35,14 @@ object PhoneSockets extends JsonWebSockets with TrieClientStorage with UsersEven
     PhoneClient(authResult, channel, request)
 
   override def onMessage(msg: Message, client: Client): Unit = {
-    client.connectedServer send msg
+    val isStatus = (msg \ CMD).validate[String].filter(_ == STATUS).isSuccess
+    if (isStatus) {
+      client.connectedServer.status
+        .map(resp => client.channel push resp)
+        .recoverAll(t => log.warn(s"Status request failed.", t))
+    } else {
+      client.connectedServer send Json.obj(CMD -> PLAYER, BODY -> msg)
+    }
   }
 
   override def welcomeMessage(client: Client): Option[Message] = Some(com.mle.play.json.JsonMessages.welcome)

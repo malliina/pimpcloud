@@ -68,6 +68,12 @@ class JsonFutureSocket(val channel: Channel[JsValue], val id: String) extends Uu
 
   def proxyD2[T](body: JsValue)(implicit reader: Reads[T]): Future[JsResult[T]] = defaultProxy(body).map(_.validate[T])
 
+  /**
+   * Sends `body` to the server and returns a [[Future]] of the `BODY` value of the response.
+   *
+   * @param body
+   * @return
+   */
   def defaultProxy(body: JsValue) = request(body, timeout)
 
   //  def proxyDinTermsOfValidate[T](body: JsValue)(implicit reader: Reads[T]): Future[JsResult[T]] =

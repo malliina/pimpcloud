@@ -65,8 +65,9 @@ object Servers extends Controller with ServerSocket with SyncAuth with UsersEven
     })
   }
 
-  override def welcomeMessage(client: Client): Option[Message] =
-    Some(Json.toJson(Map(EVENT -> REGISTERED, ID -> client.id)))
+  override def welcomeMessage(client: Client): Option[Message] = {
+    Some(PimpSocket.jsonID(REGISTERED, client.id))
+  }
 
   def isConnected(serverID: String) = servers contains serverID
 

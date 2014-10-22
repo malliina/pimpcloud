@@ -36,4 +36,5 @@ object JsonStrings {
   val SERVERS = "servers"
   val REQUESTS = "requests"
   val ADDRESS = "address"
+  val PLAYER = "player"
 }

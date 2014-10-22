@@ -63,5 +63,5 @@ object PimpSocket {
 
   def json(cmd: String, more: (String, Json.JsValueWrapper)*): JsObject = bodiedJson(cmd, Json.obj(more: _*))
 
-  def bodiedJson(cmd: String, more: JsObject): JsObject = Json.obj(CMD -> cmd) ++ more
+  def bodiedJson(cmd: String, body: JsObject): JsObject = Json.obj(CMD -> cmd, BODY -> body)
 }

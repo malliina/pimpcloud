@@ -16,7 +16,7 @@ object JsonStrings {
   val SEARCH = "search"
   val TERM = "term"
   val LIMIT = "limit"
-  val BEAM = "BEAM"
+  val BEAM = "beam"
   val ID = "id"
   val TRACK = "track"
   val REQUEST_ID = "request"

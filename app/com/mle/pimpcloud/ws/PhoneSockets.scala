@@ -35,7 +35,6 @@ object PhoneSockets extends JsonWebSockets with TrieClientStorage with UsersEven
   override def newClient(authResult: AuthSuccess, channel: Channel[Message])(implicit request: RequestHeader): Client =
     PhoneClient(authResult, channel, request)
 
-
   override def onMessage(msg: Message, client: PhoneClient): Boolean = {
     val isStatus = (msg \ CMD).validate[String].filter(_ == STATUS).isSuccess
     if (isStatus) {

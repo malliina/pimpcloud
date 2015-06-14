@@ -16,7 +16,6 @@ import com.mle.play.auth.Auth
 import com.mle.play.concurrent.ExecutionContexts.synchronousIO
 import com.mle.play.controllers.{BaseController, BaseSecurity}
 import com.mle.play.http.HttpConstants.{AUDIO_MPEG, NO_CACHE}
-import com.mle.play.streams.StreamParsers
 import com.mle.ws.JsonFutureSocket
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc._
@@ -97,7 +96,8 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
    *
    * @param id track ID
    */
-  def download(id: String) = sendFile(id, _.withHeaders(ACCEPT_RANGES -> BYTES))
+  def download(id: String) = track(id)
+//  def download(id: String) = sendFile(id, _.withHeaders(ACCEPT_RANGES -> BYTES))
 
   /**
    * Sends a request to a connected server on behalf of a connected phone. Initiated when a phone makes a request to
@@ -116,6 +116,7 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
           val enumeratorOpt = socket.stream(track, range)
           enumeratorOpt.fold[Result](BadRequest)(enumerator => {
             val result = (Ok feed enumerator).withHeaders(
+              ACCEPT_RANGES -> BYTES,
               CONTENT_RANGE -> range.contentRange,
               CONTENT_LENGTH -> range.contentLength.toString,
               CACHE_CONTROL -> NO_CACHE,

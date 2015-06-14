@@ -52,7 +52,7 @@ class CachedByteStreams(id: String, channel: Channel[JsValue])
     if (track.size > cacheThreshold) {
       notCached.stream(track, range)
     } else {
-      val message = PimpSocket.jsonID(TRACK, track.id)
+      val message = PimpSocket.trackJson(track, range)
       val uuid = UUID.randomUUID()
       val subject = ReplaySubject[Array[Byte]]()
       cachedStreams += (uuid -> StreamInfo(track, range, subject))

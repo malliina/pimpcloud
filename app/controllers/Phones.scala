@@ -17,6 +17,9 @@ import com.mle.play.concurrent.ExecutionContexts.synchronousIO
 import com.mle.play.controllers.{BaseController, BaseSecurity}
 import com.mle.play.http.HttpConstants.{AUDIO_MPEG, NO_CACHE}
 import com.mle.ws.JsonFutureSocket
+import play.api.http.ContentTypes
+import play.api.http.HeaderNames._
+import play.api.libs.MimeTypes
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc._
 import rx.lang.scala.Observable
@@ -103,7 +106,7 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
    * Sends a request to a connected server on behalf of a connected phone. Initiated when a phone makes a request to
    * this server. The response of the remote server is relayed back to the phone.
    */
-  def sendFile(id: String, f: Result => Result = r => r): EssentialAction = {
+  def sendFile(id: String): EssentialAction = {
     log info s"Got request of: $id"
     val name = (Paths get decode(id)).getFileName.toString
     PhoneAction(socket => {
@@ -112,18 +115,25 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
         log info s"Looking up meta..."
         socket.meta(id).map(track => {
           // proxies request
-          val range = ContentRange.fromHeaderOrAll(req, track.size)
-          val enumeratorOpt = socket.stream(track, range)
-          enumeratorOpt.fold[Result](BadRequest)(enumerator => {
-            val result = (Ok feed enumerator).withHeaders(
-              ACCEPT_RANGES -> BYTES,
-              CONTENT_RANGE -> range.contentRange,
-              CONTENT_LENGTH -> range.contentLength.toString,
-              CACHE_CONTROL -> NO_CACHE,
-              CONTENT_TYPE -> AUDIO_MPEG,
-              CONTENT_DISPOSITION -> s"""attachment; filename="$name"""")
-            f(result)
-          })
+          val trackSize = track.size
+          val rangeTry = ContentRange.fromHeader(req, trackSize)
+          val enumeratorOpt = socket.stream(track, rangeTry getOrElse ContentRange.all(trackSize))
+          enumeratorOpt.map(enumerator => {
+            rangeTry.map(range => {
+              (PartialContent feed enumerator).withHeaders(
+                CONTENT_RANGE -> range.contentRange,
+                CONTENT_LENGTH -> s"${range.contentLength}",
+                CONTENT_TYPE -> MimeTypes.forFileName(name).getOrElse(ContentTypes.BINARY)
+              )
+            }).getOrElse {
+              (Ok feed enumerator).withHeaders(
+                ACCEPT_RANGES -> BYTES,
+                CONTENT_LENGTH -> trackSize.toBytes.toString,
+                CACHE_CONTROL -> NO_CACHE,
+                CONTENT_TYPE -> AUDIO_MPEG,
+                CONTENT_DISPOSITION -> s"""attachment; filename="$name"""")
+            }
+          }).getOrElse(BadRequest)
         }).recoverAll(_ => NotFound) // track ID not found
       })
     })

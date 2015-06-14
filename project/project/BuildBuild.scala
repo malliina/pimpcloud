@@ -18,7 +18,7 @@ object BuildBuild extends Build {
   ) ++ sbtPlugins
 
   def sbtPlugins = Seq(
-    "com.typesafe.play" % "sbt-plugin" % "2.3.5",
+    "com.typesafe.play" % "sbt-plugin" % "2.3.9",
     "com.github.malliina" %% "sbt-play" % "0.1.1",
     "com.github.malliina" %% "sbt-packager" % "1.2.2"
   ) map addSbtPlugin

@@ -1,13 +1,13 @@
 package com.mle.ws
 
-import com.mle.play.ws.WebSocketBase
+//import com.mle.pimpcloud.ws.PhoneSockets.Client
 
 import scala.collection.concurrent.TrieMap
 
 /**
  * @author Michael
  */
-trait TrieClientStorage extends WebSocketBase {
+trait TrieClientStorage extends com.mle.play.ws.WebSocketBase {
   protected val clientsMap = TrieMap.empty[Client, Unit]
 
   override def clients = clientsMap.keys.toSeq
@@ -20,7 +20,7 @@ trait TrieClientStorage extends WebSocketBase {
   }
 
   override def onConnect(client: Client): Unit = {
-    clientsMap += client ->()
+    clientsMap += (client -> (()))
 //    if (clients.size == 1) {
 //      onFirstClient()
 //    }

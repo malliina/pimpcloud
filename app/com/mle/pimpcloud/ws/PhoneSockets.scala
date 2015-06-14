@@ -1,6 +1,6 @@
 package com.mle.pimpcloud.ws
 
-import com.mle.concurrent.FutureImplicits.RichFuture
+import com.mle.concurrent.FutureOps
 import com.mle.musicpimp.cloud.PimpSocket
 import com.mle.musicpimp.json.JsonStrings.{ADDRESS, BODY, CMD, EVENT, PHONES, PLAYER, SERVER_KEY, STATUS}
 import com.mle.play.concurrent.ExecutionContexts.synchronousIO
@@ -35,7 +35,8 @@ object PhoneSockets extends JsonWebSockets with TrieClientStorage with UsersEven
   override def newClient(authResult: AuthSuccess, channel: Channel[Message])(implicit request: RequestHeader): Client =
     PhoneClient(authResult, channel, request)
 
-  override def onMessage(msg: Message, client: Client): Unit = {
+
+  override def onMessage(msg: Message, client: PhoneClient): Boolean = {
     val isStatus = (msg \ CMD).validate[String].filter(_ == STATUS).isSuccess
     if (isStatus) {
       client.connectedServer.status
@@ -44,6 +45,7 @@ object PhoneSockets extends JsonWebSockets with TrieClientStorage with UsersEven
     } else {
       client.connectedServer send Json.obj(CMD -> PLAYER, BODY -> msg)
     }
+    true
   }
 
   override def welcomeMessage(client: Client): Option[Message] = Some(com.mle.play.json.JsonMessages.welcome)

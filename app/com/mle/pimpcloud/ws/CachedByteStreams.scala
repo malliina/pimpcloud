@@ -5,10 +5,10 @@ import java.util.UUID
 import com.mle.musicpimp.audio.Track
 import com.mle.musicpimp.cloud.PimpSocket
 import com.mle.musicpimp.json.JsonStrings._
-import com.mle.play.Enumerators
+import com.mle.play.{ContentRange, Enumerators}
 import com.mle.play.concurrent.ExecutionContexts.synchronousIO
 import com.mle.play.streams.StreamParsers
-import com.mle.storage.StorageLong
+import com.mle.storage.StorageInt
 import com.mle.util.Log
 import play.api.libs.iteratee.Concurrent.Channel
 import play.api.libs.iteratee.Enumerator
@@ -36,25 +36,26 @@ class CachedByteStreams(id: String, channel: Channel[JsValue])
   private val cachedStreams = TrieMap.empty[UUID, StreamInfo]
   private val notCached = new NoCacheCloudStreams(id, channel)
 
-  override def snapshot = cachedStreams.map(kv => StreamData(kv._1, id, kv._2.track)).toSeq ++ notCached.snapshot
+  override def snapshot = cachedStreams.map(kv => StreamData(kv._1, id, kv._2.track, kv._2.range)).toSeq ++ notCached.snapshot
 
-  override def stream(track: Track): Option[Enumerator[Array[Byte]]] = attachToOngoing(track) orElse send(track)
+  override def stream(track: Track, range: ContentRange): Option[Enumerator[Array[Byte]]] =
+    attachToOngoing(track, range) orElse send(track, range)
 
-  private def attachToOngoing(track: Track): Option[Enumerator[Array[Byte]]] = {
-    cachedStreams.values.find(_.track == track).map(info => {
+  private def attachToOngoing(track: Track, range: ContentRange): Option[Enumerator[Array[Byte]]] = {
+    cachedStreams.values.find(s => s.track == track && s.range == range).map(info => {
       log info s"Attaching to ongoing stream of: $track"
       enumerator(info.stream)
     })
   }
 
-  private def send(track: Track): Option[Enumerator[Array[Byte]]] = {
+  private def send(track: Track, range: ContentRange): Option[Enumerator[Array[Byte]]] = {
     if (track.size > cacheThreshold) {
-      notCached stream track
+      notCached.stream(track, range)
     } else {
       val message = PimpSocket.jsonID(TRACK, track.id)
       val uuid = UUID.randomUUID()
       val subject = ReplaySubject[Array[Byte]]()
-      cachedStreams += (uuid -> StreamInfo(track, subject))
+      cachedStreams += (uuid -> StreamInfo(track, range, subject))
       streamChanged()
       val payload = Json.obj(REQUEST_ID -> uuid) ++ message
       val ret = Try(channel push payload)

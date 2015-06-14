@@ -5,6 +5,7 @@ import java.util.UUID
 import com.mle.musicpimp.audio.Track
 import com.mle.musicpimp.cloud.PimpSocket
 import com.mle.musicpimp.json.JsonStrings.{BODY, REQUEST_ID, TRACK}
+import com.mle.play.ContentRange
 import com.mle.util.Log
 import play.api.libs.iteratee.Concurrent.Channel
 import play.api.libs.iteratee.{Concurrent, Enumerator, Iteratee}
@@ -26,13 +27,13 @@ import scala.util.{Failure, Success, Try}
 abstract class CloudStreams[T](id: String, channel: Channel[JsValue]) extends StreamBase[T] with Log {
   private val iteratees = TrieMap.empty[UUID, IterateeInfo[T]]
 
-  def snapshot: Seq[StreamData] = iteratees.map(kv => StreamData(kv._1, id, kv._2.track)).toSeq
+  def snapshot: Seq[StreamData] = iteratees.map(kv => StreamData(kv._1, id, kv._2.track, kv._2.range)).toSeq
 
-  def stream(track: Track): Option[Enumerator[T]] = {
-    val message = PimpSocket.jsonID(TRACK, track.id)
+  def stream(track: Track, range: ContentRange): Option[Enumerator[T]] = {
+    val message = PimpSocket.trackJson(track, range)
     val (iteratee, enumerator) = Concurrent.joined[T]
     val uuid = UUID.randomUUID()
-    iteratees += (uuid -> IterateeInfo(iteratee, id, track))
+    iteratees += (uuid -> IterateeInfo(iteratee, id, track, range))
     streamChanged()
     val payload = Json.obj(REQUEST_ID -> uuid.toString, BODY -> message)
     val ret = Try(channel push payload)
@@ -56,4 +57,4 @@ abstract class CloudStreams[T](id: String, channel: Channel[JsValue]) extends St
   def get(uuid: UUID): Option[Iteratee[T, Unit]] = iteratees get uuid map (_.iteratee)
 }
 
-case class IterateeInfo[T](iteratee: Iteratee[T, Unit], serverID: String, track: Track)
+case class IterateeInfo[T](iteratee: Iteratee[T, Unit], serverID: String, track: Track, range: ContentRange)

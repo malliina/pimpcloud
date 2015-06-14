@@ -3,6 +3,7 @@ package com.mle.pimpcloud.ws
 import java.util.UUID
 
 import com.mle.musicpimp.audio.Track
+import com.mle.play.ContentRange
 import controllers.Phones
 import play.api.libs.iteratee.Enumerator
 import play.api.mvc.{BodyParser, MultipartFormData}
@@ -13,7 +14,7 @@ import play.api.mvc.{BodyParser, MultipartFormData}
 trait StreamBase[T] {
   def snapshot: Seq[StreamData]
 
-  def stream(track: Track): Option[Enumerator[T]]
+  def stream(track: Track, range: ContentRange): Option[Enumerator[T]]
 
   def parser(uuid: UUID): Option[BodyParser[MultipartFormData[_]]]
 

@@ -17,7 +17,7 @@ import scala.util.{Failure, Success, Try}
  */
 class IterateeStore[T] extends Log {
   private val ongoingRequests = TrieMap.empty[UUID, IterateeInfo]
-  val uuids = BehaviorSubject[Map[UUID, IterateeInfo]](Map.empty)
+  val uuids = BehaviorSubject(Map.empty[UUID, IterateeInfo])
 
   def send(message: JsValue, channel: Channel[JsValue], owner: String): Option[Enumerator[T]] = {
     val (iteratee, enumerator) = Concurrent.joined[T]

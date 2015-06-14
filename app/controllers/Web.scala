@@ -1,6 +1,6 @@
 package controllers
 
-import com.mle.concurrent.FutureImplicits.RichFuture
+import com.mle.concurrent.FutureOps
 import com.mle.pimpcloud.CloudCredentials
 import com.mle.play.controllers.{BaseSecurity, BaseController}
 import play.api.data.Form

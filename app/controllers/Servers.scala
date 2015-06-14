@@ -71,12 +71,13 @@ object Servers extends Controller with ServerSocket with SyncAuth with UsersEven
 
   def isConnected(serverID: String) = servers contains serverID
 
-  override def onMessage(msg: Message, client: Client): Unit = {
+  override def onMessage(msg: Message, client: Client): Boolean = {
     log debug s"Got message: $msg from client: $client"
 
     val isUnregister = false // (msg \ CMD).validate[String].filter(_ == UNREGISTER).isSuccess
     if (isUnregister) {
       //      identities remove client.id
+      false
     } else {
       val clientHandledMessage = client complete msg
       // forwards non-requested events to any connected phones
@@ -88,6 +89,7 @@ object Servers extends Controller with ServerSocket with SyncAuth with UsersEven
       if (!clientHandledMessage) {
         PhoneSockets.clients.filter(_.connectedServer == client).foreach(_.channel push msg)
       }
+      clientHandledMessage
     }
   }
 }

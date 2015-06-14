@@ -4,13 +4,14 @@ import java.net.URLDecoder
 import java.nio.file.Paths
 import java.util.UUID
 
-import com.mle.concurrent.FutureImplicits.RichFuture
+import com.mle.concurrent.FutureOps
 import com.mle.musicpimp.audio.Directory
 import com.mle.musicpimp.cloud.PimpSocket
 import com.mle.musicpimp.cloud.PimpSocket.{json, jsonID}
 import com.mle.musicpimp.json.JsonStrings._
 import com.mle.pimpcloud.ws.StreamData
 import com.mle.pimpcloud.{CloudCredentials, PimpAuth}
+import com.mle.play.ContentRange
 import com.mle.play.auth.Auth
 import com.mle.play.concurrent.ExecutionContexts.synchronousIO
 import com.mle.play.controllers.{BaseController, BaseSecurity}
@@ -44,7 +45,7 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
 
   def combineAll[T](obs: List[Observable[T]], f: (T, T) => T): Observable[T] = obs match {
     case Nil => Observable.never
-    case h :: t => h.combineLatest(combineAll(t, f), f)
+    case h :: t => h.combineLatestWith(combineAll(t, f))(f)
   }
 
   def ping = ProxiedGetAction(PING)
@@ -111,10 +112,12 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
         log info s"Looking up meta..."
         socket.meta(id).map(track => {
           // proxies request
-          val enumeratorOpt = socket stream track
+          val range = ContentRange.fromHeaderOrAll(req, track.size)
+          val enumeratorOpt = socket.stream(track, range)
           enumeratorOpt.fold[Result](BadRequest)(enumerator => {
             val result = (Ok feed enumerator).withHeaders(
-              CONTENT_LENGTH -> track.size.toBytes.toString,
+              CONTENT_RANGE -> range.contentRange,
+              CONTENT_LENGTH -> range.contentLength.toString,
               CACHE_CONTROL -> NO_CACHE,
               CONTENT_TYPE -> AUDIO_MPEG,
               CONTENT_DISPOSITION -> s"""attachment; filename="$name"""")

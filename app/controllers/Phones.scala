@@ -18,7 +18,6 @@ import com.mle.play.controllers.{BaseController, BaseSecurity}
 import com.mle.play.http.HttpConstants.{AUDIO_MPEG, NO_CACHE}
 import com.mle.ws.JsonFutureSocket
 import play.api.http.ContentTypes
-import play.api.http.HeaderNames._
 import play.api.libs.MimeTypes
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc._
@@ -107,12 +106,12 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
    * this server. The response of the remote server is relayed back to the phone.
    */
   def sendFile(id: String): EssentialAction = {
-    log info s"Got request of: $id"
+    log debug s"Got request of: $id"
     val name = (Paths get decode(id)).getFileName.toString
     PhoneAction(socket => {
       Action.async(req => {
         // resolves track metadata from the server so we can set Content-Length
-        log info s"Looking up meta..."
+        log debug s"Looking up meta..."
         socket.meta(id).map(track => {
           // proxies request
           val trackSize = track.size
@@ -144,11 +143,11 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
     val transfers = server.socket.fileTransfers
     val parser = transfers parser requestID
     parser.fold[EssentialAction](Action(NotFound))(parser => {
-      log info s"Streaming file. Request: $requestID."
+      log debug s"Streaming bytes. Request: $requestID."
       Action(parser)(httpRequest => {
         val files = httpRequest.body.files
         files.foreach(file => {
-          log info s"File streaming complete. Request: $requestID."
+          log info s"Byte streaming complete. Request: $requestID."
         })
         transfers remove requestID
         Ok

@@ -3,22 +3,19 @@ package com.mle.pimpcloud.ws
 import java.util.UUID
 
 import com.mle.musicpimp.audio.Track
-import com.mle.musicpimp.cloud.PimpSocket
-import com.mle.musicpimp.json.JsonStrings._
-import com.mle.play.{ContentRange, Enumerators}
 import com.mle.play.concurrent.ExecutionContexts.synchronousIO
 import com.mle.play.streams.StreamParsers
+import com.mle.play.{ContentRange, Enumerators}
 import com.mle.storage.StorageInt
 import com.mle.util.Log
 import play.api.libs.iteratee.Concurrent.Channel
 import play.api.libs.iteratee.Enumerator
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.JsValue
 import play.api.mvc.{BodyParser, MultipartFormData}
 import rx.lang.scala.Observable
 import rx.lang.scala.subjects.ReplaySubject
 
 import scala.collection.concurrent.TrieMap
-import scala.util.{Failure, Success, Try}
 
 /**
  * We might receive multiple requests of the same resource (song) within a short period of time. We do not want to
@@ -65,11 +62,11 @@ class CachedByteStreams(id: String, val channel: Channel[JsValue])
 
   override def parser(uuid: UUID): Option[BodyParser[MultipartFormData[_]]] =
     cachedStreams.get(uuid)
-      .map(info => StreamParsers.multiPartByteStreaming(bytes => info.stream onNext bytes))
+      .map(info => StreamParsers.multiPartByteStreaming(bytes => info.stream.onNext(bytes)))
       .orElse(notCached parser uuid)
 
   def removeUUID(uuid: UUID): Unit = {
-    (cachedStreams remove uuid).foreach(_.stream.onCompleted())
+    (cachedStreams remove uuid).foreach(si => si.stream.onCompleted())
     notCached remove uuid
   }
 }

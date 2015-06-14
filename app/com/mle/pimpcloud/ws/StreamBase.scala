@@ -33,8 +33,7 @@ trait StreamBase[T] extends Log {
     streamChanged()
     val message = PimpSocket.trackJson(track, range)
     val payload = Json.obj(REQUEST_ID -> uuid) ++ message
-    val ret = Try(channel push payload)
-    ret match {
+    Try(channel push payload) match {
       case Success(()) =>
         log debug s"Sent request: $uuid with body: $message"
         Some(onSuccess)

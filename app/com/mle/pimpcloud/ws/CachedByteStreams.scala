@@ -30,7 +30,7 @@ import scala.util.{Failure, Success, Try}
  *
  * @author Michael
  */
-class CachedByteStreams(id: String, channel: Channel[JsValue])
+class CachedByteStreams(id: String, val channel: Channel[JsValue])
   extends StreamBase[Array[Byte]] with Log {
   val cacheThreshold = 19.megs
   private val cachedStreams = TrieMap.empty[UUID, StreamInfo]
@@ -52,22 +52,10 @@ class CachedByteStreams(id: String, channel: Channel[JsValue])
     if (track.size > cacheThreshold) {
       notCached.stream(track, range)
     } else {
-      val message = PimpSocket.trackJson(track, range)
-      val uuid = UUID.randomUUID()
       val subject = ReplaySubject[Array[Byte]]()
+      val uuid = UUID.randomUUID()
       cachedStreams += (uuid -> StreamInfo(track, range, subject))
-      streamChanged()
-      val payload = Json.obj(REQUEST_ID -> uuid) ++ message
-      val ret = Try(channel push payload)
-      ret match {
-        case Success(()) =>
-          log debug s"Sent request: $uuid with body: $message"
-          Some(enumerator(subject))
-        case Failure(t) =>
-          log.warn(s"Unable to send payload: $payload", t)
-          remove(uuid)
-          None
-      }
+      withMessage(uuid, track, range, enumerator(subject))
     }
   }
 

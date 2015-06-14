@@ -24,28 +24,16 @@ import scala.util.{Failure, Success, Try}
  * 5) Read the request ID from the response and push the response to the channel (or complete the promise)
  * 6) EOF and close the channel; this completes the request-response cycle
  */
-abstract class CloudStreams[T](id: String, channel: Channel[JsValue]) extends StreamBase[T] with Log {
+abstract class CloudStreams[T](id: String, val channel: Channel[JsValue]) extends StreamBase[T] with Log {
   private val iteratees = TrieMap.empty[UUID, IterateeInfo[T]]
 
   def snapshot: Seq[StreamData] = iteratees.map(kv => StreamData(kv._1, id, kv._2.track, kv._2.range)).toSeq
 
   def stream(track: Track, range: ContentRange): Option[Enumerator[T]] = {
-    val message = PimpSocket.trackJson(track, range)
     val (iteratee, enumerator) = Concurrent.joined[T]
     val uuid = UUID.randomUUID()
     iteratees += (uuid -> IterateeInfo(iteratee, id, track, range))
-    streamChanged()
-    val payload = Json.obj(REQUEST_ID -> uuid.toString, BODY -> message)
-    val ret = Try(channel push payload)
-    ret match {
-      case Success(()) =>
-        log debug s"Sent request: $uuid with body: $message"
-        Some(enumerator)
-      case Failure(t) =>
-        log.warn(s"Unable to send payload: $payload", t)
-        remove(uuid)
-        None
-    }
+    withMessage(uuid, track, range, enumerator)
   }
 
   def removeUUID(uuid: UUID) = {

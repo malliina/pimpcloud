@@ -38,7 +38,8 @@ object PlayBuild extends Build {
       Seq(
         "-Dhttp.port=8456",
         s"-Dpidfile.path=/var/run/$linuxName/$linuxName.pid",
-        s"-D$linuxName.home=/var/run/$linuxName"
+        s"-D$linuxName.home=/var/run/$linuxName",
+        s"-Dgoogle.oauth=/etc/$linuxName/google-oauth.key"
       )
     },
     PackagerKeys.packageSummary in Linux := "pimpcloud summary here.",

@@ -12,7 +12,8 @@ object BuildBuild extends Build {
     resolvers ++= Seq(
       "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/",
       "Typesafe ivy releases" at "http://repo.typesafe.com/typesafe/ivy-releases/",
-      "Sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/"
+      "Sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/",
+      Resolver.url("malliina bintray sbt", url("https://dl.bintray.com/malliina/sbt-plugins"))(Resolver.ivyStylePatterns)
     ),
     scalacOptions ++= Seq("-unchecked", "-deprecation")
   ) ++ sbtPlugins

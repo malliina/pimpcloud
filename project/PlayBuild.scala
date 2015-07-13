@@ -1,19 +1,10 @@
-import com.mle.sbt.unix.LinuxPlugin
-import com.mle.sbtplay.PlayProjects
-import com.typesafe.sbt.SbtNativePackager
-import com.typesafe.sbt.packager.Keys
-import sbt.Keys._
-import sbt._
 import com.mle.sbt.GenericKeys._
 import com.mle.sbt.GenericPlugin
-import com.mle.sbt.azure.{AzureKeys, AzurePlugin}
-import com.mle.sbt.unix.LinuxPlugin
-import com.mle.sbt.win.{WinKeys, WinPlugin}
 import com.mle.sbtplay.PlayProjects
-import com.typesafe.sbt.SbtNativePackager
 import com.typesafe.sbt.SbtNativePackager._
-import com.typesafe.sbt.packager.{linux, rpm}
 import com.typesafe.sbt.packager.{Keys => PackagerKeys}
+import sbt.Keys._
+import sbt._
 
 object PlayBuild extends Build {
   lazy val p = PlayProjects.plainPlayProject("pimpcloud").settings(commonSettings: _*)
@@ -21,6 +12,7 @@ object PlayBuild extends Build {
   val commonSettings = linuxSettings ++ Seq(
     version := "0.2.2",
     scalaVersion := "2.11.7",
+    exportJars := true,
     retrieveManaged := false,
     fork in Test := true,
     parallelExecution in Test := false,

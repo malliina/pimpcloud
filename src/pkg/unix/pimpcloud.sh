@@ -12,7 +12,7 @@
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: Start the app at boot time
-# Description:       Manages the services needed to run musicmeta
+# Description:       Manages the services needed to run pimpcloud
 ### END INIT INFO
 #
 # Startup script for the app under *nix systems (it works under NT/cygwin too).
@@ -58,7 +58,7 @@ case "$1" in
             # LSB says: return 0 when starting an already started service
             exit 0
         fi
-        COMMAND="exec ${JAVA_CMD} ${JAVA_OPTS} -cp ${APP_HOME}/lib/*:${APP_HOME}/${APP_NAME}.jar ${MAIN_CLASS} >> ${APP_HOME}/logs/console.out 2>&1"
+        COMMAND="exec ${JAVA_CMD} ${JAVA_OPTS} -cp ${APP_HOME}/lib/*: ${MAIN_CLASS} >> ${APP_HOME}/logs/console.out 2>&1"
         if [ -z "${APP_USER}" ]; then
             nohup sh -c "${COMMAND}" >/dev/null 2>&1 &
         else

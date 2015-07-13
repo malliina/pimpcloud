@@ -3,12 +3,16 @@ package controllers
 import com.mle.logbackrx.RxLogback.EventMapping
 import com.mle.logbackrx.{BasicBoundedReplayRxAppender, LogbackUtils}
 import com.mle.play.controllers.LogStreaming
-import play.api.mvc.{Action, Call}
+import com.ning.http.client.AsyncHttpClientConfig
+import play.api.libs.ws.ning.NingWSClient
+import play.api.mvc.Call
 
 /**
  * @author Michael
  */
 object Logs extends AdminStreaming with LogStreaming {
+  implicit val client = new NingWSClient(new AsyncHttpClientConfig.Builder().build())
+
   override def appender: EventMapping = LogbackUtils.getAppender[BasicBoundedReplayRxAppender]("RX")
 
   override def openSocketCall: Call = routes.Logs.openSocket()
@@ -18,5 +22,4 @@ object Logs extends AdminStreaming with LogStreaming {
   // Pages
   def logs = navigate(implicit req => views.html.logs())
 
-  def eject = Logged(Action(implicit req => Ok(views.html.eject())))
 }

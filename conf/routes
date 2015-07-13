@@ -26,10 +26,10 @@ GET         /assets/*file             controllers.Assets.at(path = "/public", fi
 # Admin
 GET         /admin                    controllers.UsageStreaming.index
 GET         /admin/logs               controllers.Logs.logs
-GET         /oauth                    controllers.Logs.initiate
+GET         /oauth                    controllers.AdminAuth.initiate
 # Must match a callback defined in the Google OAuth developer console
-GET         /oauthcb                  controllers.Logs.redirResponse
-GET         /admin/eject              controllers.Logs.eject
+GET         /oauthcb                  controllers.AdminAuth.redirResponse
+GET         /admin/eject              controllers.AdminAuth.eject
 GET         /admin/ws                 controllers.Logs.openSocket
 GET         /admin/usage              controllers.UsageStreaming.openSocket
-GET         /admin/logout             controllers.Logs.logout
+GET         /admin/logout             controllers.AdminAuth.logout

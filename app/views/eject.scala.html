@@ -4,7 +4,7 @@
     @util.css2("custom.css")
     @util.div("container"){
         @bs.rowColumn("col-md-6 top-padding") {
-            @flash.get(Logs.messageKey).map { message =>
+            @flash.get(AdminAuth.messageKey).map { message =>
                 <div class="lead alert alert-success" role="alert">@message</div>
             }
         }

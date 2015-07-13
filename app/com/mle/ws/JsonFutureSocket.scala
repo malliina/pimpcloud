@@ -10,7 +10,7 @@ import play.api.libs.json._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationLong
+import scala.concurrent.duration.DurationInt
 import scala.util.Try
 
 /**
@@ -29,8 +29,10 @@ class JsonFutureSocket(val channel: Channel[JsValue], val id: String) extends Uu
   override def build(pair: BodyAndId) = Json.obj(REQUEST_ID -> pair.uuid.toString) ++ pair.body.as[JsObject]
 
   override def extract(response: JsValue): Option[BodyAndId] = {
-    val uuidResult = (response \ REQUEST_ID).asOpt[UUID]
-    uuidResult.map(req => BodyAndId(response \ BODY, req))
+    for {
+      uuid <- (response \ REQUEST_ID).asOpt[UUID]
+      body <- (response \ BODY).toOption
+    } yield BodyAndId(body, uuid)
   }
 
   override def isSuccess(response: JsValue): Boolean = (response \ SUCCESS).validate[Boolean].filter(_ == false).isError
@@ -75,20 +77,6 @@ class JsonFutureSocket(val channel: Channel[JsValue], val id: String) extends Uu
    * @return
    */
   def defaultProxy(body: JsValue) = request(body, timeout)
-
-  //  def proxyDinTermsOfValidate[T](body: JsValue)(implicit reader: Reads[T]): Future[JsResult[T]] =
-  //    proxy(body).map(_.validate[T]).map(_.fold(???, identity))
-
-
-
-  //  def completeLogged(requestID: String, response: JsValue) = {
-  //    val ret = complete(requestID, response)
-  //    ret.fold(log.warn(s"Invalid request ID: $requestID"))(isSuccess => {
-  //      if (isSuccess) log info s"Completed request: $requestID with value: $response"
-  //      else log info s"Unable to find channel with request ID: $requestID, cannot complete value: $response"
-  //    })
-  //    ret
-  //  }
 }
 
 object JsonFutureSocket {

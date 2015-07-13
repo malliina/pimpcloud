@@ -10,7 +10,7 @@ object PlayBuild extends Build {
   lazy val p = PlayProjects.plainPlayProject("pimpcloud").settings(commonSettings: _*)
   val mleGroup = "com.github.malliina"
   val commonSettings = linuxSettings ++ Seq(
-    version := "0.2.2",
+    version := "0.2.3",
     scalaVersion := "2.11.7",
     exportJars := true,
     retrieveManaged := false,
@@ -34,7 +34,7 @@ object PlayBuild extends Build {
     manufacturer := "Skogberg Labs",
     mainClass := Some("com.mle.pimpcloud.Starter"),
     javaOptions in Universal ++= {
-      val linuxName = name in Linux
+      val linuxName = (name in Linux).value
       Seq(
         "-Dhttp.port=8456",
         s"-Dpidfile.path=/var/run/$linuxName/$linuxName.pid",

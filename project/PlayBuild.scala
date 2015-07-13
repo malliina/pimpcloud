@@ -19,7 +19,7 @@ object PlayBuild extends Build {
   lazy val p = PlayProjects.plainPlayProject("pimpcloud").settings(commonSettings: _*)
   val mleGroup = "com.github.malliina"
   val commonSettings = linuxSettings ++ Seq(
-    version := "0.2.0",
+    version := "0.2.2",
     scalaVersion := "2.11.7",
     retrieveManaged := false,
     fork in Test := true,
@@ -37,7 +37,10 @@ object PlayBuild extends Build {
     scalacOptions += "-target:jvm-1.8"
   )
 
-  def linuxSettings = Seq(
+  def linuxSettings = GenericPlugin.genericSettings ++ GenericPlugin.confSettings ++ Seq(
+    PackagerKeys.maintainer := "Michael Skogberg <malliina123@gmail.com>",
+    manufacturer := "Skogberg Labs",
+    mainClass := Some("com.mle.pimpcloud.Starter"),
     javaOptions in Universal ++= {
       val linuxName = name in Linux
       Seq(

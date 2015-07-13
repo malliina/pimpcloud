@@ -10,7 +10,7 @@ object PlayBuild extends Build {
   lazy val p = PlayProjects.plainPlayProject("pimpcloud").settings(commonSettings: _*)
   val mleGroup = "com.github.malliina"
   val commonSettings = linuxSettings ++ Seq(
-    version := "0.2.3",
+    version := "0.2.4",
     scalaVersion := "2.11.7",
     exportJars := true,
     retrieveManaged := false,

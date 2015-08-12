@@ -3,8 +3,8 @@ package com.mle.play
 import com.mle.json.JsonFormats
 import com.mle.storage.StorageSize
 import com.mle.util.Log
-import play.api.http.HeaderNames._
-import play.api.libs.json.Json
+import play.api.http.HeaderNames.RANGE
+import play.api.libs.json.{Format, Writes, Json}
 import play.api.mvc.RequestHeader
 
 import scala.util.{Failure, Try}
@@ -14,6 +14,7 @@ import scala.util.{Failure, Try}
  */
 case class ContentRange(start: Int, endInclusive: Int, size: StorageSize) {
   val totalSizeBytes = size.toBytes
+
   def endExclusive = endInclusive + 1
 
   def contentLength = endExclusive - start
@@ -21,20 +22,30 @@ case class ContentRange(start: Int, endInclusive: Int, size: StorageSize) {
   def contentRange = s"${ContentRange.BYTES} $start-$endInclusive/$totalSizeBytes"
 
   def isAll = start == 0 && endInclusive == totalSizeBytes.toInt - 1
+
+  def description = {
+    val total = s"${size.toBytes} bytes"
+    if (isAll) total
+    else s"($start-$endInclusive)/$total"
+  }
 }
 
 object ContentRange extends Log {
 
   implicit val ssf = JsonFormats.storageSizeFormat
-  implicit val json = Json.format[ContentRange]
+  //  implicit val json = Json.format[ContentRange]
+  val writer = Writes[ContentRange](range => Json.obj(
+    "start" -> range.start,
+    "endInclusive" -> range.endInclusive,
+    "size" -> range.size,
+    "isAll" -> range.isAll,
+    "description" -> range.description
+  ))
+  implicit val format = Format(Json.reads[ContentRange], writer)
 
   val BYTES = "bytes"
 
-  def all(size: StorageSize) = {
-    val ret = ContentRange(0, size.toBytes.toInt - 1, size)
-    log.info(s"Created all range $ret with $size")
-    ret
-  }
+  def all(size: StorageSize) = ContentRange(0, size.toBytes.toInt - 1, size)
 
   def fromHeaderOrAll(request: RequestHeader, size: StorageSize): ContentRange =
     fromHeader(request, size) getOrElse all(size)

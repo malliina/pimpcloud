@@ -38,7 +38,8 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
   val subject = BehaviorSubject[Seq[StreamData]](Nil)
   val uuidsJson: Observable[JsValue] = subject.map(streams => Json.obj(
     EVENT -> REQUESTS,
-    BODY -> Json.toJson(streams)))
+    BODY -> streams
+  ))
 
   def updateRequestList() = subject onNext ongoingTransfers
 

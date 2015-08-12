@@ -13,7 +13,7 @@ object PlayBuild extends Build {
   val commonSettings = linuxSettings ++ Seq(
     version := "0.2.5",
     scalaVersion := "2.11.7",
-    exportJars := true,
+//    exportJars := true,
     retrieveManaged := false,
     fork in Test := true,
     parallelExecution in Test := false,

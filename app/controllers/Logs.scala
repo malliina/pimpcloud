@@ -3,15 +3,17 @@ package controllers
 import com.mle.logbackrx.RxLogback.EventMapping
 import com.mle.logbackrx.{BasicBoundedReplayRxAppender, LogbackUtils}
 import com.mle.play.controllers.LogStreaming
-import com.ning.http.client.AsyncHttpClientConfig
-import play.api.libs.ws.ning.NingWSClient
+import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.Call
+import rx.lang.scala.Observable
+
+import scala.concurrent.duration.DurationInt
 
 /**
  * @author Michael
  */
 object Logs extends AdminStreaming with LogStreaming {
-  implicit val client = new NingWSClient(new AsyncHttpClientConfig.Builder().build())
+  override lazy val jsonEvents: Observable[JsValue] = logEvents.tumblingBuffer(100.millis).filter(_.nonEmpty).map(Json.toJson(_))
 
   override def appender: EventMapping = LogbackUtils.getAppender[BasicBoundedReplayRxAppender]("RX")
 
@@ -19,7 +21,5 @@ object Logs extends AdminStreaming with LogStreaming {
 
   override def clients: Seq[Client] = subscriptions.keys.toSeq
 
-  // Pages
   def logs = navigate(implicit req => views.html.logs())
-
 }

@@ -23,6 +23,8 @@ trait StreamBase[T] extends Log {
 
   def snapshot: Seq[StreamData]
 
+//  def stream(track: Track): Option[Enumerator[T]] = stream(track, ContentRange.all(track.size))
+
   def stream(track: Track, range: ContentRange): Option[Enumerator[T]]
 
   def parser(uuid: UUID): Option[BodyParser[MultipartFormData[_]]]

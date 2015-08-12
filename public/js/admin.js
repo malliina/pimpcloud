@@ -37,7 +37,14 @@ var updateRequests = function (requests) {
     for (var i = 0; i < requests.length; i++) {
         var request = requests[i];
         var track = request.track;
-        requestsContent.append("<tr><td>" + request.serverID + "</td><td>" + request.uuid + "</td><td>" + track.title + "</td><td>" + track.artist + "</td><td>" + track.size + " bytes</td></tr>");
+        var range = request.range;
+        requestsContent.append("<tr>" +
+            "<td>" + request.serverID + "</td>" +
+            "<td>" + request.uuid + "</td>" +
+            "<td>" + track.title + "</td>" +
+            "<td>" + track.artist + "</td>" +
+            "<td>" + range.description + "</td>" +
+            "</tr>");
     }
 };
 var updatePhones = function (phones) {

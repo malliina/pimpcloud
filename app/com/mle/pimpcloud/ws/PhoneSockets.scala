@@ -20,13 +20,12 @@ object PhoneSockets extends JsonWebSockets with TrieClientStorage with UsersEven
   override type AuthSuccess = PimpSocket
   override type Client = PhoneClient
 
-  implicit val writer = new Writes[Client] {
-    override def writes(o: Client): JsValue = Json.obj(
-      SERVER_KEY -> o.connectedServer.id,
-      ADDRESS -> o.req.remoteAddress
-    )
-  }
-  val usersJson = users.map(phones => Json.obj(EVENT -> PHONES, BODY -> phones.map(Json.toJson(_)(writer))))
+  implicit val writer = Writes[Client](o => Json.obj(
+    SERVER_KEY -> o.connectedServer.id,
+    ADDRESS -> o.req.remoteAddress
+  ))
+
+  val usersJson = users.map(phones => Json.obj(EVENT -> PHONES, BODY -> phones))
 
   override def openSocketCall: Call = routes.PhoneSockets.openSocket()
 

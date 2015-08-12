@@ -25,7 +25,6 @@ class PimpSocket(channel: Channel[JsValue], id: String, val headers: RequestHead
   with SocketClient[JsValue] {
 
   val fileTransfers: StreamBase[Array[Byte]] = new CachedByteStreams(id, channel)
-  //val fileTransfers: StreamBase[Array[Byte]] = new NoCacheCloudStreams(id, channel)
 
   def stream(track: Track, contentRange: ContentRange) = fileTransfers.stream(track, contentRange)
 
@@ -61,8 +60,6 @@ class PimpSocket(channel: Channel[JsValue], id: String, val headers: RequestHead
 }
 
 object PimpSocket {
-
-
   def trackJson(track: Track, contentRange: ContentRange) = json(TRACK, ID -> track.id, RANGE -> contentRange)
 
   def jsonID(cmd: String, id: String): JsObject = json(cmd, ID -> id)

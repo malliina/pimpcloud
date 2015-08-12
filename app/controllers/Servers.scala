@@ -18,13 +18,11 @@ object Servers extends Controller with ServerSocket with SyncAuth with UsersEven
   // not a secret but avoids unintentional connections
   val serverPassword = "pimp"
 
-  val writer = new Writes[PimpSocket] {
-    override def writes(o: PimpSocket): JsValue = Json.obj(
-      ID -> o.id,
-      ADDRESS -> o.headers.remoteAddress
-    )
-  }
-  val usersJson = users.map(list => Json.obj(EVENT -> SERVERS, BODY -> list.map(Json.toJson(_)(writer))))
+  implicit val writer = Writes[PimpSocket](o => Json.obj(
+    ID -> o.id,
+    ADDRESS -> o.headers.remoteAddress
+  ))
+  val usersJson = users.map(list => Json.obj(EVENT -> SERVERS, BODY -> list))
 
   override def openSocketCall: Call = routes.Servers.openSocket()
 
@@ -38,10 +36,6 @@ object Servers extends Controller with ServerSocket with SyncAuth with UsersEven
    * @return a valid cloud ID, or None if the cloud ID generation failed
    */
   override def authenticate(implicit request: RequestHeader): Option[AuthSuccess] = {
-    //    Auth.basicCredentials(request).filter(_.password == serverPassword)
-    //      .map(_.username).map(user => if (user.nonEmpty) user else newID())
-    //      .filterNot(isConnected)
-
     Auth.basicCredentials(request).filter(_.password == serverPassword).flatMap(creds => {
       val user = creds.username
       val cloudID =

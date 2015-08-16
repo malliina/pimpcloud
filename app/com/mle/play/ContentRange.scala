@@ -28,6 +28,8 @@ case class ContentRange(start: Int, endInclusive: Int, size: StorageSize) {
     if (isAll) total
     else s"($start-$endInclusive)/$total"
   }
+
+  override def toString = description
 }
 
 object ContentRange extends Log {

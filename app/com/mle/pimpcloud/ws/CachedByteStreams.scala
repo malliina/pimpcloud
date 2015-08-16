@@ -39,16 +39,22 @@ class CachedByteStreams(id: String, val channel: Channel[JsValue])
     attachToOngoing(track, range) orElse send(track, range)
 
   private def attachToOngoing(track: Track, range: ContentRange): Option[Enumerator[Array[Byte]]] = {
+    val title = track.title
     cachedStreams.values.find(s => s.track == track && s.range == range).map(info => {
-      log info s"Attaching to ongoing stream of: $track, range: $range"
+      range.description
+      log info s"Attaching to ongoing stream of $title, range $range"
       enumerator(info.stream)
     })
   }
 
   private def send(track: Track, range: ContentRange): Option[Enumerator[Array[Byte]]] = {
-    if (track.size > cacheThreshold) {
+    val title = track.title
+    val trackSize = track.size
+    if (trackSize > cacheThreshold) {
+      log info s"Non-cached streaming of $title, as its size $trackSize exceeds the maximum of $cacheThreshold"
       notCached.stream(track, range)
     } else {
+      log info s"Cached streaming of $title, range $range"
       val subject = ReplaySubject[Array[Byte]]()
       val uuid = UUID.randomUUID()
       cachedStreams += (uuid -> StreamInfo(track, range, subject))

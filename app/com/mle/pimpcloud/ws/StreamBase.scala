@@ -6,6 +6,7 @@ import com.mle.musicpimp.audio.Track
 import com.mle.musicpimp.cloud.PimpSocket
 import com.mle.musicpimp.json.JsonStrings._
 import com.mle.play.ContentRange
+import com.mle.storage.StorageInt
 import com.mle.util.Log
 import controllers.Phones
 import play.api.libs.iteratee.Concurrent.Channel
@@ -19,6 +20,7 @@ import scala.util.{Failure, Success, Try}
  * @author Michael
  */
 trait StreamBase[T] extends Log {
+  val maxUploadSize = 10.gigs
   def channel: Channel[JsValue]
 
   def snapshot: Seq[StreamData]

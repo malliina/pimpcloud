@@ -11,7 +11,7 @@ object PlayBuild extends Build {
   lazy val p = PlayProjects.plainPlayProject("pimpcloud").settings(commonSettings: _*)
   val mleGroup = "com.github.malliina"
   val commonSettings = linuxSettings ++ Seq(
-    version := "0.2.7",
+    version := "0.3.0",
     scalaVersion := "2.11.7",
 //    exportJars := true,
     retrieveManaged := false,
@@ -21,7 +21,7 @@ object PlayBuild extends Build {
       Resolver.bintrayRepo("malliina", "maven")
     ),
     libraryDependencies ++= Seq(
-      mleGroup %% "play-base" % "0.5.2",
+      mleGroup %% "play-base" % "0.6.0",
       "org.java-websocket" % "Java-WebSocket" % "1.3.0",
       play.sbt.PlayImport.filters,
       play.sbt.PlayImport.cache

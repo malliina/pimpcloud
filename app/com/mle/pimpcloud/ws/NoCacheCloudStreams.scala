@@ -12,6 +12,6 @@ import play.api.mvc.{BodyParser, MultipartFormData}
  */
 class NoCacheCloudStreams(id: String, channel: Channel[JsValue]) extends CloudStreams[Array[Byte]](id, channel) {
   override def parser(uuid: UUID): Option[BodyParser[MultipartFormData[Unit]]] = {
-    get(uuid).map(StreamParsers.multiPartBodyParser)
+    get(uuid).map(iteratee => StreamParsers.multiPartBodyParser(iteratee, maxUploadSize))
   }
 }

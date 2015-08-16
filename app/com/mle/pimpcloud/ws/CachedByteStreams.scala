@@ -67,7 +67,7 @@ class CachedByteStreams(id: String, val channel: Channel[JsValue])
 
   override def parser(uuid: UUID): Option[BodyParser[MultipartFormData[_]]] =
     cachedStreams.get(uuid)
-      .map(info => StreamParsers.multiPartByteStreaming(bytes => info.stream.onNext(bytes)))
+      .map(info => StreamParsers.multiPartByteStreaming(bytes => info.stream.onNext(bytes), maxUploadSize))
       .orElse(notCached parser uuid)
 
   def removeUUID(uuid: UUID): Unit = {

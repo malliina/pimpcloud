@@ -50,7 +50,7 @@ class CachedByteStreams(id: String, val channel: Channel[JsValue])
     val title = track.title
     val trackSize = track.size
     if (trackSize > cacheThreshold) {
-      log info s"Non-cached streaming of $title, as its size $trackSize exceeds the maximum of $cacheThreshold"
+      log info s"Non-cached streaming of $title, as its size $trackSize exceeds the maximum of $cacheThreshold, range $range"
       notCached.stream(track, range)
     } else {
       log info s"Cached streaming of $title, range $range"

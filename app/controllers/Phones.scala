@@ -100,12 +100,7 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
    * @param id track ID
    */
   def download(id: String) = track(id)
-//  def download(id: String) = sendFile(id, _.withHeaders(ACCEPT_RANGES -> BYTES))
 
-  /**
-   * Sends a request to a connected server on behalf of a connected phone. Initiated when a phone makes a request to
-   * this server. The response of the remote server is relayed back to the phone.
-   */
   def sendFile(id: String): EssentialAction = {
     log debug s"Got request of: $id"
     val name = (Paths get decode(id)).getFileName.toString

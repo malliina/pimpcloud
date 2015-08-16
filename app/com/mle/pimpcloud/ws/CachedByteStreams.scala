@@ -41,7 +41,6 @@ class CachedByteStreams(id: String, val channel: Channel[JsValue])
   private def attachToOngoing(track: Track, range: ContentRange): Option[Enumerator[Array[Byte]]] = {
     val title = track.title
     cachedStreams.values.find(s => s.track == track && s.range == range).map(info => {
-      range.description
       log info s"Attaching to ongoing stream of $title, range $range"
       enumerator(info.stream)
     })

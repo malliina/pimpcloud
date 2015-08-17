@@ -29,7 +29,7 @@ import scala.collection.concurrent.TrieMap
  */
 class CachedByteStreams(id: String, val channel: Channel[JsValue])
   extends StreamBase[Array[Byte]] with Log {
-  val cacheThreshold = 100.megs
+  val cacheThreshold = 10.megs
   private val cachedStreams = TrieMap.empty[UUID, StreamInfo]
   private val notCached = new NoCacheCloudStreams(id, channel)
 

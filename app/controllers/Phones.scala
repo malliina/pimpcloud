@@ -81,6 +81,11 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
   def beam = BodyProxied(BEAM)
 
   /**
+   * @param id track ID
+   */
+  def download(id: String) = track(id)
+
+  /**
    * Relays track `id` to the client from the target.
    *
    * Sends a message over WebSocket to the target that it should send `id` to this server. This server then forwards the
@@ -89,17 +94,6 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
    * @param id id of the requested track
    */
   def track(id: String) = sendFile(id)
-
-  /**
-   * If `BYTES` and no Content-Length is set -> WP8 downloader fails.
-   * If (`NONE` or `BYTES`) and Content-Length is set, WP8 at least downloads up to 10MB files and goes to a
-   * "waiting for wifi" mode for very large files.
-   *
-   * Previous versions of WP8 seemed to require `BYTES` for files >5MB in size.
-   *
-   * @param id track ID
-   */
-  def download(id: String) = track(id)
 
   def sendFile(id: String): EssentialAction = {
     log debug s"Got request of: $id"

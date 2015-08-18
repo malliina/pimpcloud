@@ -1,9 +1,10 @@
 import com.mle.sbt.GenericKeys._
-import com.mle.sbt.unix.{LinuxKeys, LinuxPlugin}
 import com.mle.sbt.unix.LinuxKeys.{httpPort, httpsPort}
+import com.mle.sbt.unix.LinuxPlugin
 import com.mle.sbtplay.PlayProjects
 import com.typesafe.sbt.SbtNativePackager._
 import com.typesafe.sbt.packager.{Keys => PackagerKeys}
+import play.sbt.PlayImport
 import sbt.Keys._
 import sbt._
 
@@ -11,7 +12,7 @@ object PlayBuild extends Build {
   lazy val p = PlayProjects.plainPlayProject("pimpcloud").settings(commonSettings: _*)
   val mleGroup = "com.github.malliina"
   val commonSettings = linuxSettings ++ Seq(
-    version := "0.3.5",
+    version := "0.3.6",
     scalaVersion := "2.11.7",
 //    exportJars := true,
     retrieveManaged := false,
@@ -21,10 +22,10 @@ object PlayBuild extends Build {
       Resolver.bintrayRepo("malliina", "maven")
     ),
     libraryDependencies ++= Seq(
-      mleGroup %% "play-base" % "0.6.0",
+      mleGroup %% "play-base" % "0.6.1",
       "org.java-websocket" % "Java-WebSocket" % "1.3.0",
-      play.sbt.PlayImport.filters,
-      play.sbt.PlayImport.cache
+      PlayImport.filters,
+      PlayImport.cache
     ),
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint:-options"),
     scalacOptions += "-target:jvm-1.8"
@@ -40,7 +41,7 @@ object PlayBuild extends Build {
       val linuxName = (name in Linux).value
       s"-Dgoogle.oauth=/etc/$linuxName/google-oauth.key"
     },
-    PackagerKeys.packageSummary in Linux := "pimpcloud summary here.",
+    PackagerKeys.packageSummary in Linux := "This is the pimpcloud summary.",
     PackagerKeys.rpmVendor := "Skogberg Labs"
   )
 }

@@ -29,11 +29,19 @@ import scala.collection.concurrent.TrieMap
  */
 class CachedByteStreams(id: String, val channel: Channel[JsValue])
   extends StreamBase[Array[Byte]] with Log {
+
   val cacheThreshold = 10.megs
   private val cachedStreams = TrieMap.empty[UUID, StreamInfo]
   private val notCached = new NoCacheCloudStreams(id, channel)
 
   override def snapshot = cachedStreams.map(kv => StreamData(kv._1, id, kv._2.track, kv._2.range)).toSeq ++ notCached.snapshot
+
+  override def exists(uuid: UUID): Boolean = (cachedStreams contains uuid) || (notCached exists uuid)
+
+  override def parser(uuid: UUID): Option[BodyParser[MultipartFormData[_]]] =
+    cachedStreams.get(uuid)
+      .map(info => StreamParsers.multiPartByteStreaming(bytes => info.stream.onNext(bytes), maxUploadSize))
+      .orElse(notCached parser uuid)
 
   override def stream(track: Track, range: ContentRange): Option[Enumerator[Array[Byte]]] =
     attachToOngoing(track, range) orElse send(track, range)
@@ -62,13 +70,6 @@ class CachedByteStreams(id: String, val channel: Channel[JsValue])
   }
 
   def enumerator[T](obs: Observable[T]) = Enumerators.fromObservableOneShot(obs)
-
-  override def exists(uuid: UUID): Boolean = (cachedStreams contains uuid) || (notCached exists uuid)
-
-  override def parser(uuid: UUID): Option[BodyParser[MultipartFormData[_]]] =
-    cachedStreams.get(uuid)
-      .map(info => StreamParsers.multiPartByteStreaming(bytes => info.stream.onNext(bytes), maxUploadSize))
-      .orElse(notCached parser uuid)
 
   def removeUUID(uuid: UUID): Unit = {
     (cachedStreams remove uuid).foreach(si => si.stream.onCompleted())

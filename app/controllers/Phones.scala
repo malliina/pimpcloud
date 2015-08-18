@@ -16,9 +16,11 @@ import com.mle.play.auth.Auth
 import com.mle.play.concurrent.ExecutionContexts.synchronousIO
 import com.mle.play.controllers.{BaseController, BaseSecurity}
 import com.mle.play.http.HttpConstants.{AUDIO_MPEG, NO_CACHE}
+import com.mle.play.streams.StreamParsers
 import com.mle.ws.JsonFutureSocket
 import play.api.http.ContentTypes
 import play.api.libs.MimeTypes
+import play.api.libs.iteratee.{Concurrent, Iteratee}
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc._
 import rx.lang.scala.Observable
@@ -133,17 +135,47 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
     val transfers = server.socket.fileTransfers
     val parser = transfers parser requestID
     parser.fold[EssentialAction](Action(NotFound))(parser => {
-      log debug s"Streaming bytes. Request: $requestID."
-      Action(parser)(httpRequest => {
-        val files = httpRequest.body.files
-        files.foreach(file => {
-          log info s"Byte streaming complete. Request: $requestID."
-        })
+      val maxSize = transfers.maxUploadSize
+      log info s"Streaming at most $maxSize for request $requestID"
+      val composedParser = parse.maxLength(maxSize.toBytes, parser)
+      Action(composedParser)(httpRequest => {
         transfers remove requestID
-        Ok
+        httpRequest.body match {
+          case Left(tooMuch) =>
+            log error s"Entity of ${tooMuch.length} bytes exceeds the max size of ${maxSize.toBytes} bytes for request $requestID"
+            EntityTooLarge
+          case Right(data) =>
+            val fileCount = data.files.size
+            log info s"Streamed $fileCount file(s) for request $requestID"
+            Ok
+        }
       })
     })
   })
+
+  def testUpload: EssentialAction = Logged {
+    import com.mle.storage.StorageInt
+    val consumer = Iteratee.fold[Array[Byte], Long](0L)((acc, bytes) => acc + bytes.length)
+    val (iteratee, enumerator) = Concurrent.joined[Array[Byte]]
+    val f = enumerator.run(consumer).map(bytes => log info s"Consumed $bytes bytes")
+    val max = 100.megs
+    log info s"Using ${max.toBytes.toInt} maxlength"
+    val parser = StreamParsers.multiPartBodyParser(iteratee, max)
+    val composedParser = parse.maxLength(max.toBytes, parser)
+    Action(composedParser)(httpRequest => {
+      httpRequest.body match {
+        case Left(maxExceeded) =>
+          log info s"Exceeded"
+          BadRequest("too much")
+        case Right(data) =>
+          val files = data.files
+          files.foreach(file => {
+            log info s"Byte streaming complete"
+          })
+          Ok
+      }
+    })
+  }
 
   def decode(id: String) = URLDecoder.decode(id, "UTF-8")
 

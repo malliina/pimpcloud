@@ -142,7 +142,7 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
         transfers remove requestID
         httpRequest.body match {
           case Left(tooMuch) =>
-            log error s"Entity of ${tooMuch.length} bytes exceeds the max size of ${maxSize.toBytes} bytes for request $requestID"
+            log error s"Max size of ${tooMuch.length} exceeded for request $requestID"
             EntityTooLarge
           case Right(data) =>
             val fileCount = data.files.size

@@ -20,7 +20,7 @@ import scala.util.{Failure, Success, Try}
  * @author Michael
  */
 trait StreamBase[T] extends Log {
-  val maxUploadSize = 10.gigs
+  val maxUploadSize = 1024.megs
   def channel: Channel[JsValue]
 
   def snapshot: Seq[StreamData]

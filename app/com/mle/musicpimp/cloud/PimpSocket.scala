@@ -1,19 +1,17 @@
 package com.mle.musicpimp.cloud
 
 import com.mle.concurrent.FutureOps
-import com.mle.json.JsonFormats
 import com.mle.musicpimp.audio.{Directory, Track}
 import com.mle.musicpimp.cloud.PimpMessages.Version
 import com.mle.musicpimp.cloud.PimpSocket.{json, jsonID}
 import com.mle.musicpimp.json.JsonStrings._
-import com.mle.pimpcloud.ws.{NoCacheCloudStreams, StreamBase, CachedByteStreams, CloudStreams}
+import com.mle.pimpcloud.ws.{CachedByteStreams, StreamBase}
 import com.mle.play.ContentRange
 import com.mle.play.ws.SocketClient
 import com.mle.ws.JsonFutureSocket
 import play.api.libs.iteratee.Concurrent.Channel
-import play.api.libs.iteratee.Enumerator
-import play.api.libs.json.{Writes, JsObject, JsValue, Json}
-import play.api.mvc.RequestHeader
+import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.mvc.{RequestHeader, Result}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -27,7 +25,7 @@ class PimpSocket(channel: Channel[JsValue], id: String, val headers: RequestHead
 
   val fileTransfers: StreamBase[Array[Byte]] = new CachedByteStreams(id, channel)
 
-  def stream(track: Track, contentRange: ContentRange): Option[Enumerator[Array[Byte]]] = fileTransfers.stream(track, contentRange)
+  def streamRange(track: Track, contentRange: ContentRange): Option[Result] = fileTransfers.streamRange(track, contentRange)
 
   def ping = simpleProxy(PING)
 

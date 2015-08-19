@@ -12,7 +12,7 @@ import controllers.Phones
 import play.api.libs.iteratee.Concurrent.Channel
 import play.api.libs.iteratee.Enumerator
 import play.api.libs.json.{JsValue, Json}
-import play.api.mvc.{BodyParser, MultipartFormData}
+import play.api.mvc.{BodyParser, MultipartFormData, Result}
 
 import scala.util.{Failure, Success, Try}
 
@@ -26,34 +26,45 @@ trait StreamBase[T] extends Log {
 
   def snapshot: Seq[StreamData]
 
-  //  def stream(track: Track): Option[Enumerator[T]] = stream(track, ContentRange.all(track.size))
-
-  def stream(track: Track, range: ContentRange): Option[Enumerator[T]]
+  def streamRange(track: Track, range: ContentRange): Option[Result]
 
   def parser(uuid: UUID): Option[BodyParser[MultipartFormData[_]]]
 
   def exists(uuid: UUID): Boolean
 
-  def withMessage(uuid: UUID, track: Track, range: ContentRange, onSuccess: => Enumerator[T]): Option[Enumerator[T]] = {
+  def remove(uuid: UUID) = {
+    removeUUID(uuid)
+    streamChanged()
+  }
+
+  protected def connectEnumerator(uuid: UUID, enumerator: Enumerator[T], track: Track, range: ContentRange): Option[Result] = {
+    val result = resultify(enumerator, range)
+    val connectSuccess = connect(uuid, track, range)
+    if (connectSuccess) Option(result)
+    else None
+  }
+
+  protected def resultify(enumerator: Enumerator[T], range: ContentRange): Result
+
+  private def connect(uuid: UUID, track: Track, range: ContentRange) = {
+    tryConnect(uuid, track, range) match {
+      case Success(()) =>
+        log info s"Connected $uuid for ${track.title} with range $range"
+        true
+      case Failure(t) =>
+        log.warn(s"Unable to connect $uuid for ${track.title} with range $range", t)
+        remove(uuid)
+        false
+    }
+  }
+
+  private def tryConnect(uuid: UUID, track: Track, range: ContentRange): Try[Unit] = {
     streamChanged()
     val message =
       if (range.isAll) PimpSocket.fullTrackJson(track)
       else PimpSocket.rangedTrackJson(track, range)
     val payload = Json.obj(REQUEST_ID -> uuid) ++ message
-    Try(channel push payload) match {
-      case Success(()) =>
-        log info s"Sent request: $uuid with body: $message"
-        Some(onSuccess)
-      case Failure(t) =>
-        log.warn(s"Unable to send payload: $payload", t)
-        remove(uuid)
-        None
-    }
-  }
-
-  def remove(uuid: UUID) = {
-    removeUUID(uuid)
-    streamChanged()
+    Try(channel push payload)
   }
 
   protected def removeUUID(uuid: UUID): Unit

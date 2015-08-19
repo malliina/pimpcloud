@@ -108,16 +108,17 @@ object Phones extends Controller with Secured with BaseSecurity with BaseControl
           // proxies request
           val trackSize = track.size
           val rangeTry = ContentRange.fromHeader(req, trackSize)
-          val enumeratorOpt = socket.stream(track, rangeTry getOrElse ContentRange.all(trackSize))
-          enumeratorOpt.map(enumerator => {
+          val rangeOrAll = rangeTry getOrElse ContentRange.all(trackSize)
+          val resultOpt = socket.streamRange(track, rangeOrAll)
+          resultOpt.map(result => {
             rangeTry.map(range => {
-              (PartialContent feed enumerator).withHeaders(
+              result.withHeaders(
                 CONTENT_RANGE -> range.contentRange,
                 CONTENT_LENGTH -> s"${range.contentLength}",
                 CONTENT_TYPE -> MimeTypes.forFileName(name).getOrElse(ContentTypes.BINARY)
               )
             }).getOrElse {
-              (Ok feed enumerator).withHeaders(
+              result.withHeaders(
                 ACCEPT_RANGES -> BYTES,
                 CONTENT_LENGTH -> trackSize.toBytes.toString,
                 CACHE_CONTROL -> NO_CACHE,

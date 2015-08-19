@@ -3,16 +3,14 @@ package com.mle.pimpcloud.ws
 import java.util.UUID
 
 import com.mle.musicpimp.audio.Track
-import com.mle.musicpimp.cloud.PimpSocket
-import com.mle.musicpimp.json.JsonStrings.{BODY, REQUEST_ID, TRACK}
 import com.mle.play.ContentRange
 import com.mle.util.Log
+import play.api.libs.iteratee.Concurrent
 import play.api.libs.iteratee.Concurrent.Channel
-import play.api.libs.iteratee.{Concurrent, Enumerator, Iteratee}
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.JsValue
+import play.api.mvc.Result
 
 import scala.collection.concurrent.TrieMap
-import scala.util.{Failure, Success, Try}
 
 /**
  * For each incoming request:
@@ -29,20 +27,28 @@ abstract class CloudStreams[T](id: String, val channel: Channel[JsValue]) extend
 
   def snapshot: Seq[StreamData] = iteratees.map(kv => StreamData(kv._1, id, kv._2.track, kv._2.range)).toSeq
 
-  def stream(track: Track, range: ContentRange): Option[Enumerator[T]] = {
-    val (iteratee, enumerator) = Concurrent.joined[T]
+  def streamRange(track: Track, range: ContentRange): Option[Result] = {
+    val (enumerator, channel) = Concurrent.broadcast[T]
     val uuid = UUID.randomUUID()
-    iteratees += (uuid -> IterateeInfo(iteratee, id, track, range))
-    withMessage(uuid, track, range, enumerator)
+    iteratees += (uuid -> IterateeInfo(channel, id, track, range))
+    connectEnumerator(uuid, enumerator, track, range)
   }
 
+  /**
+   * Transfer complete.
+   *
+   * @param uuid
+   */
   def removeUUID(uuid: UUID) = {
-    iteratees remove uuid
+    (iteratees remove uuid).foreach(ii => ii.channel.eofAndEnd())
   }
 
   def exists(uuid: UUID) = iteratees contains uuid
 
-  def get(uuid: UUID): Option[Iteratee[T, Unit]] = iteratees get uuid map (_.iteratee)
+  def get(uuid: UUID) = iteratees get uuid
 }
 
-case class IterateeInfo[T](iteratee: Iteratee[T, Unit], serverID: String, track: Track, range: ContentRange)
+case class IterateeInfo[T](channel: Concurrent.Channel[T],
+                           serverID: String,
+                           track: Track,
+                           range: ContentRange)

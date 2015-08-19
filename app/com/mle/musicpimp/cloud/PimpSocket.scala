@@ -11,6 +11,7 @@ import com.mle.play.ContentRange
 import com.mle.play.ws.SocketClient
 import com.mle.ws.JsonFutureSocket
 import play.api.libs.iteratee.Concurrent.Channel
+import play.api.libs.iteratee.Enumerator
 import play.api.libs.json.{Writes, JsObject, JsValue, Json}
 import play.api.mvc.RequestHeader
 
@@ -26,7 +27,7 @@ class PimpSocket(channel: Channel[JsValue], id: String, val headers: RequestHead
 
   val fileTransfers: StreamBase[Array[Byte]] = new CachedByteStreams(id, channel)
 
-  def stream(track: Track, contentRange: ContentRange) = fileTransfers.stream(track, contentRange)
+  def stream(track: Track, contentRange: ContentRange): Option[Enumerator[Array[Byte]]] = fileTransfers.stream(track, contentRange)
 
   def ping = simpleProxy(PING)
 
@@ -60,7 +61,9 @@ class PimpSocket(channel: Channel[JsValue], id: String, val headers: RequestHead
 }
 
 object PimpSocket {
-  def trackJson(track: Track, contentRange: ContentRange) = json(TRACK, ID -> track.id, RANGE -> contentRange)
+  def rangedTrackJson(track: Track, contentRange: ContentRange) = json(TRACK, ID -> track.id, RANGE -> contentRange)
+
+  def fullTrackJson(track: Track) = json(TRACK, ID -> track.id)
 
   def jsonID(cmd: String, id: String): JsObject = json(cmd, ID -> id)
 

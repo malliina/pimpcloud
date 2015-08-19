@@ -21,11 +21,12 @@ import scala.util.{Failure, Success, Try}
  */
 trait StreamBase[T] extends Log {
   val maxUploadSize = 1024.megs
+
   def channel: Channel[JsValue]
 
   def snapshot: Seq[StreamData]
 
-//  def stream(track: Track): Option[Enumerator[T]] = stream(track, ContentRange.all(track.size))
+  //  def stream(track: Track): Option[Enumerator[T]] = stream(track, ContentRange.all(track.size))
 
   def stream(track: Track, range: ContentRange): Option[Enumerator[T]]
 
@@ -35,11 +36,13 @@ trait StreamBase[T] extends Log {
 
   def withMessage(uuid: UUID, track: Track, range: ContentRange, onSuccess: => Enumerator[T]): Option[Enumerator[T]] = {
     streamChanged()
-    val message = PimpSocket.trackJson(track, range)
+    val message =
+      if (range.isAll) PimpSocket.fullTrackJson(track)
+      else PimpSocket.rangedTrackJson(track, range)
     val payload = Json.obj(REQUEST_ID -> uuid) ++ message
     Try(channel push payload) match {
       case Success(()) =>
-        log debug s"Sent request: $uuid with body: $message"
+        log info s"Sent request: $uuid with body: $message"
         Some(onSuccess)
       case Failure(t) =>
         log.warn(s"Unable to send payload: $payload", t)

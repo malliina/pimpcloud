@@ -30,7 +30,7 @@ import scala.collection.concurrent.TrieMap
 class CachedByteStreams(id: String, val channel: Channel[JsValue])
   extends StreamBase[Array[Byte]] with Log {
 
-  val cacheThreshold = 200.megs
+  val cacheThreshold = 10.megs
   private val cachedStreams = TrieMap.empty[UUID, StreamInfo]
   private val notCached = new NoCacheCloudStreams(id, channel)
 
@@ -44,8 +44,8 @@ class CachedByteStreams(id: String, val channel: Channel[JsValue])
       .orElse(notCached parser uuid)
 
   override def stream(track: Track, range: ContentRange): Option[Enumerator[Array[Byte]]] = {
-    send(track, range)
-//    attachToOngoing(track, range) orElse send(track, range)
+//    send(track, range)
+    attachToOngoing(track, range) orElse send(track, range)
   }
 
   private def attachToOngoing(track: Track, range: ContentRange): Option[Enumerator[Array[Byte]]] = {

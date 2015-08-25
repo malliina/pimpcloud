@@ -19,11 +19,11 @@ import scala.concurrent.Future
 /**
  * @author Michael
  */
-class PimpSocket(channel: Channel[JsValue], id: String, val headers: RequestHeader)
+class PimpSocket(channel: Channel[JsValue], id: String, val headers: RequestHeader, onUpdate: () => Unit)
   extends JsonFutureSocket(channel, id)
   with SocketClient[JsValue] {
 
-  val fileTransfers: StreamBase[Array[Byte]] = new CachedByteStreams(id, channel)
+  val fileTransfers: StreamBase[Array[Byte]] = new CachedByteStreams(id, channel, onUpdate)
 
   def streamRange(track: Track, contentRange: ContentRange): Option[Result] = fileTransfers.streamRange(track, contentRange)
 

@@ -8,10 +8,10 @@ import rx.lang.scala.Observable
 /**
  * @author Michael
  */
-object UsageStreaming extends AdminStreaming {
-  override def jsonEvents: Observable[JsValue] = Servers.usersJson merge PhoneSockets.usersJson merge Phones.uuidsJson
+class UsageStreaming(servers: Servers, phones: Phones, phoneSockets: PhoneSockets, serversController: ServersController, adminAuth: AdminAuth) extends AdminStreaming(adminAuth) {
+  override def jsonEvents: Observable[JsValue] = servers.usersJson merge phoneSockets.usersJson merge servers.uuidsJson
 
   override def openSocketCall: Call = routes.UsageStreaming.openSocket()
 
-  def index = navigate(implicit req => views.html.admin())
+  def index = navigate(implicit req => views.html.admin(wsUrl(req)))
 }

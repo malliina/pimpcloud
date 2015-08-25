@@ -4,17 +4,21 @@ import com.mle.sbt.unix.LinuxPlugin
 import com.mle.sbtplay.PlayProjects
 import com.typesafe.sbt.SbtNativePackager._
 import com.typesafe.sbt.packager.{Keys => PackagerKeys}
+import play.routes.compiler.InjectedRoutesGenerator
 import play.sbt.PlayImport
+import play.sbt.routes.RoutesKeys
 import sbt.Keys._
 import sbt._
 
 object PlayBuild extends Build {
+
   lazy val p = PlayProjects.plainPlayProject("pimpcloud").settings(commonSettings: _*)
+
   val mleGroup = "com.github.malliina"
+
   val commonSettings = linuxSettings ++ Seq(
     version := "0.4.0",
     scalaVersion := "2.11.7",
-//    exportJars := true,
     retrieveManaged := false,
     fork in Test := true,
     parallelExecution in Test := false,
@@ -28,7 +32,8 @@ object PlayBuild extends Build {
       PlayImport.cache
     ),
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint:-options"),
-    scalacOptions += "-target:jvm-1.8"
+    scalacOptions += "-target:jvm-1.8",
+    RoutesKeys.routesGenerator := InjectedRoutesGenerator
   )
 
   def linuxSettings = LinuxPlugin.playSettings ++ Seq(

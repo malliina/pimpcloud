@@ -2,8 +2,8 @@ package com.mle.pimpcloud.ws
 
 import java.util.UUID
 
+import com.mle.concurrent.ExecutionContexts.cached
 import com.mle.musicpimp.audio.Track
-import com.mle.play.concurrent.ExecutionContexts.synchronousIO
 import com.mle.play.streams.StreamParsers
 import com.mle.play.{ContentRange, Enumerators}
 import com.mle.storage.StorageInt
@@ -26,12 +26,12 @@ import scala.collection.concurrent.TrieMap
  *
  * @author Michael
  */
-class CachedByteStreams(id: String, val channel: Channel[JsValue])
+class CachedByteStreams(id: String, val channel: Channel[JsValue], val onUpdate: () => Unit)
   extends StreamBase[Array[Byte]] with ByteStreamBase with Log {
 
   val cacheThreshold = 256.megs
   private val cachedStreams = TrieMap.empty[UUID, StreamInfo]
-  private val notCached = new NoCacheCloudStreams(id, channel)
+  private val notCached = new NoCacheCloudStreams(id, channel, onUpdate)
 
   override def snapshot = cachedStreams.map(kv => StreamData(kv._1, id, kv._2.track, kv._2.range)).toSeq ++ notCached.snapshot
 

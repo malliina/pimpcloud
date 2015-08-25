@@ -8,7 +8,6 @@ import com.mle.musicpimp.json.JsonStrings._
 import com.mle.play.ContentRange
 import com.mle.storage.StorageInt
 import com.mle.util.Log
-import controllers.Phones
 import play.api.libs.iteratee.Concurrent.Channel
 import play.api.libs.iteratee.Enumerator
 import play.api.libs.json.{JsValue, Json}
@@ -21,6 +20,8 @@ import scala.util.{Failure, Success, Try}
  */
 trait StreamBase[T] extends Log {
   val maxUploadSize = 1024.megs
+
+  def onUpdate: () => Unit
 
   def channel: Channel[JsValue]
 
@@ -70,6 +71,6 @@ trait StreamBase[T] extends Log {
   protected def removeUUID(uuid: UUID): Unit
 
   protected def streamChanged(): Unit = {
-    Phones.updateRequestList()
+    onUpdate()
   }
 }

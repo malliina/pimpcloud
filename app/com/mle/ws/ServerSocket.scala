@@ -25,7 +25,9 @@ trait ServerSocket extends JsonWebSockets with Log {
   def openSocketCall: Call
 
   override def newClient(user: AuthSuccess, channel: Channel[Message])(implicit request: RequestHeader): Client =
-    new PimpSocket(channel, user.user, request)
+    new PimpSocket(channel, user.user, request, updateRequestList)
+
+  def updateRequestList(): Unit
 
   override def onConnect(client: Client): Unit = {
     val clientID = client.id

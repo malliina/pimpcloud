@@ -12,7 +12,7 @@ import scala.concurrent.duration.DurationInt
 /**
  * @author Michael
  */
-object Logs extends AdminStreaming with LogStreaming {
+class Logs(adminAuth: AdminAuth) extends AdminStreaming(adminAuth) with LogStreaming {
   override lazy val jsonEvents: Observable[JsValue] = logEvents.tumblingBuffer(100.millis).filter(_.nonEmpty).map(Json.toJson(_))
 
   override def appender: EventMapping = LogbackUtils.getAppender[BasicBoundedReplayRxAppender]("RX")
@@ -21,5 +21,5 @@ object Logs extends AdminStreaming with LogStreaming {
 
   override def clients: Seq[Client] = subscriptions.keys.toSeq
 
-  def logs = navigate(implicit req => views.html.logs())
+  def logs = navigate(implicit req => views.html.logs(wsUrl(req)))
 }

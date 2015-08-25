@@ -1,5 +1,4 @@
-@(dir: com.mle.musicpimp.audio.Directory, feedback: Option[String] = None)(implicit request: RequestHeader)
-@import com.mle.pimpcloud.ws.PhoneSockets
+@(dir: com.mle.musicpimp.audio.Directory, phoneSocketsWsUrl: String, feedback: Option[String] = None)(implicit request: RequestHeader)
 
 @basePage("Home") {
     @util.div("container"){
@@ -26,6 +25,6 @@
             </ul>
         }
         @util.script2("json.js", "playerws.js")
-        @wsopen(PhoneSockets.wsUrl(request))
+        @wsopen(phoneSocketsWsUrl)
     }
 }

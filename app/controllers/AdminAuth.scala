@@ -6,7 +6,7 @@ import play.api.mvc.{Action, Call}
 /**
  * @author Michael
  */
-object AdminAuth extends OAuthSecured {
+class AdminAuth extends OAuthSecured {
   // OAuth
   override val sessionUserKey: String = "email"
 
@@ -23,5 +23,5 @@ object AdminAuth extends OAuthSecured {
   // HTML
   def logout = AuthAction(implicit req => ejectWith(logoutMessage).withNewSession)
 
-  def eject = Logged(Action(implicit req => Ok(views.html.eject())))
+  def eject = Logged(Action(implicit req => Ok(views.html.eject(messageKey))))
 }

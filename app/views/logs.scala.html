@@ -1,4 +1,4 @@
-@(feedback: Option[String] = None)(implicit request: RequestHeader)
+@(wsUrl: String, feedback: Option[String] = None)(implicit request: RequestHeader)
 
 @baseIndex("logs") {
     @bs.rowColumn("col-md-12") {
@@ -17,4 +17,4 @@
     }
 }
 <script src="@routes.Assets.at("js/rx.js")"></script>
-@wsopen(Logs.wsUrl)
+@wsopen(wsUrl)

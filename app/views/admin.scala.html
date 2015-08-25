@@ -1,4 +1,4 @@
-@()(implicit request: RequestHeader)
+@(adminWsUrl: String)(implicit request: RequestHeader)
 
 @baseIndex("home") {
     @bs.rowColumn("col-md-12") {
@@ -11,7 +11,7 @@
     @tableContainer("Servers", "serversTable", "Cloud ID", "Server Address")
 }
 <script src="@routes.Assets.at("js/admin.js")"></script>
-@wsopen(UsageStreaming.wsUrl)
+@wsopen(adminWsUrl)
 
     @tableContainer(header: String, bodyID: String, headers: String*) = {
         <h2>@header</h2>

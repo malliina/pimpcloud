@@ -14,7 +14,7 @@ import scala.concurrent.Future
 /**
  * @author Michael
  */
-object Web extends Secured with BaseSecurity with BaseController {
+class Web(servers: Servers) extends Secured with BaseSecurity with BaseController {
   val serverFormKey = "server"
 
   def ping = Action(NoCache(Ok))
@@ -25,7 +25,7 @@ object Web extends Secured with BaseSecurity with BaseController {
     passFormKey -> nonEmptyText
   )(CloudCredentials.apply)(CloudCredentials.unapply))
 
-  def login = Action(implicit req => Ok(views.html.login(cloudForm)))
+  def login = Action(implicit req => Ok(views.html.login(cloudForm, this)))
 
   def formAuthenticate = Action.async(implicit request => {
     val remoteAddress = request.remoteAddress
@@ -33,17 +33,17 @@ object Web extends Secured with BaseSecurity with BaseController {
       formWithErrors => {
         val user = formWithErrors.data.getOrElse(userFormKey, "")
         log warn s"Authentication failed for user: $user from: $remoteAddress"
-        fut(BadRequest(html.login(formWithErrors)))
+        fut(BadRequest(html.login(formWithErrors, this)))
       },
       creds => {
-        Phones.validate(creds).map(_ => {
+        servers.validate(creds).map(_ => {
           val server = creds.cloudID
           val user = creds.username
           val who = s"$user@$server"
           log info s"Authentication succeeded to: $who from: $remoteAddress"
           val intendedUrl = request.session.get(INTENDED_URI) getOrElse defaultLoginSuccessPage.url
           Redirect(intendedUrl).withSession(Security.username -> server)
-        }).recoverAll(t => BadRequest(html.login(cloudForm.withGlobalError("Invalid credentials."))))
+        }).recoverAll(t => BadRequest(html.login(cloudForm.withGlobalError("Invalid credentials."), this)))
       }
     )
   })

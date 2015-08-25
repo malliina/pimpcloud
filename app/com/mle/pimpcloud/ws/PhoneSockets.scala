@@ -1,12 +1,12 @@
 package com.mle.pimpcloud.ws
 
+import com.mle.concurrent.ExecutionContexts.cached
 import com.mle.concurrent.FutureOps
 import com.mle.musicpimp.cloud.PimpSocket
 import com.mle.musicpimp.json.JsonStrings.{ADDRESS, BODY, CMD, EVENT, PHONES, PLAYER, SERVER_KEY, STATUS}
-import com.mle.play.concurrent.ExecutionContexts.synchronousIO
 import com.mle.play.ws.{JsonWebSockets, SocketClient}
 import com.mle.ws.TrieClientStorage
-import controllers.{Phones, UsersEvents}
+import controllers.{Servers, UsersEvents}
 import play.api.libs.iteratee.Concurrent.Channel
 import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.mvc.{Call, RequestHeader}
@@ -16,7 +16,7 @@ import scala.concurrent.Future
 /**
  * @author Michael
  */
-object PhoneSockets extends JsonWebSockets with TrieClientStorage with UsersEvents {
+class PhoneSockets(servers: Servers) extends JsonWebSockets with TrieClientStorage with UsersEvents {
   override type AuthSuccess = PimpSocket
   override type Client = PhoneClient
 
@@ -25,11 +25,11 @@ object PhoneSockets extends JsonWebSockets with TrieClientStorage with UsersEven
     ADDRESS -> o.req.remoteAddress
   ))
 
-  val usersJson = users.map(phones => Json.obj(EVENT -> PHONES, BODY -> phones))
+  val usersJson = users.map(phoneClients => Json.obj(EVENT -> PHONES, BODY -> phoneClients))
 
   override def openSocketCall: Call = routes.PhoneSockets.openSocket()
 
-  override def authenticateAsync(req: RequestHeader): Future[AuthSuccess] = Phones.authPhone(req)
+  override def authenticateAsync(req: RequestHeader): Future[AuthSuccess] = servers.authPhone(req)
 
   override def newClient(authResult: AuthSuccess, channel: Channel[Message])(implicit request: RequestHeader): Client =
     PhoneClient(authResult, channel, request)

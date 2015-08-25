@@ -62,8 +62,6 @@ trait PimpContentController extends Controller with Log {
     pimpResult(html = Accepted, json = Accepted)
 }
 
-object PimpContentController extends PimpContentController
-
 object PimpRequest extends Log {
 
   import com.mle.musicpimp.json.JsonFormatVersions._

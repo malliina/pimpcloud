@@ -17,7 +17,7 @@ object PlayBuild extends Build {
   val mleGroup = "com.github.malliina"
 
   val commonSettings = linuxSettings ++ Seq(
-    version := "0.4.1",
+    version := "0.4.2",
     scalaVersion := "2.11.7",
     retrieveManaged := false,
     fork in Test := true,

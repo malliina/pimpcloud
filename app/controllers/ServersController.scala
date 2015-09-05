@@ -1,13 +1,14 @@
 package controllers
 
+import java.util.UUID
+
+import com.mle.musicpimp.cloud.PimpSocket
 import com.mle.musicpimp.json.JsonStrings
-import com.mle.musicpimp.json.JsonStrings._
-import com.mle.pimpcloud.ws.StreamData
 import com.mle.ws.JsonFutureSocket
-import play.api.libs.json.{Json, JsValue}
+import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.mvc.{Action, EssentialAction, RequestHeader}
-import rx.lang.scala.Observable
-import rx.lang.scala.subjects.BehaviorSubject
+
+import scala.concurrent.Future
 
 /**
  * @author mle
@@ -37,13 +38,22 @@ class ServersController(servers: Servers) extends Secured {
     })
   })
 
-  def serverAction(f: Server => EssentialAction) = LoggedSecureAction(authServer)(f)
+  def serverAction(f: Server => EssentialAction) = LoggedSecureActionAsync(authServer)(f)
 
-  def authServer(req: RequestHeader): Option[Server] = {
-    for {
+  def authServer(req: RequestHeader): Future[Server] = {
+    val uuidOpt = for {
       requestID <- req.headers get JsonStrings.REQUEST_ID
       uuid <- JsonFutureSocket.tryParseUUID(requestID)
-      server <- servers.clients.find(_.fileTransfers.exists(uuid))
-    } yield Server(uuid, server)
+    } yield uuid
+    for {
+      uuid <- toFuture(uuidOpt)
+      ss <- servers.connectedServers
+      server <- toFuture(findServer(ss, uuid))
+    } yield server
   }
+
+  def findServer(ss: Set[PimpSocket], uuid: UUID): Option[Server] =
+    ss.find(_.fileTransfers.exists(uuid)).map(s => Server(uuid, s))
+
+  def toFuture[T](opt: Option[T]): Future[T] = opt.map(Future.successful).getOrElse(Future.failed(new NoSuchElementException))
 }

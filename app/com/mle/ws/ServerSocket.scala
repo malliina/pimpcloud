@@ -1,56 +1,42 @@
 package com.mle.ws
 
 import com.mle.musicpimp.cloud.PimpSocket
+import com.mle.pimpcloud.actors.{ActorStorage, ServersActor}
 import com.mle.play.controllers.AuthResult
-import com.mle.play.ws.JsonWebSockets
-import com.mle.util.Log
-import controllers.UsersEvents
 import play.api.libs.iteratee.Concurrent.Channel
+import play.api.libs.json.JsValue
 import play.api.mvc._
 import rx.lang.scala.subjects.BehaviorSubject
-
-import scala.collection.concurrent.TrieMap
 
 /**
  * @author Michael
  */
-trait ServerSocket extends JsonWebSockets with Log {
+abstract class ServerSocket(storage: ActorStorage[ServersActor, JsValue, PimpSocket]) extends ServerActorSockets(storage) {
   override type AuthSuccess = AuthResult
-  override type Client = PimpSocket
   val subject = BehaviorSubject[SocketEvent](Users(Nil))
-  val servers = TrieMap.empty[String, Client]
-
-  override def clients: Seq[Client] = servers.values.toSeq
 
   def openSocketCall: Call
 
-  override def newClient(user: AuthSuccess, channel: Channel[Message])(implicit request: RequestHeader): Client =
+  override def newClient(user: AuthSuccess, channel: Channel[JsValue])(implicit request: RequestHeader): PimpSocket =
     new PimpSocket(channel, user.user, request, updateRequestList)
 
   def updateRequestList(): Unit
 
-  override def onConnect(client: Client): Unit = {
-    val clientID = client.id
-    servers += clientID -> client
-    logEvent(clientID, "connected")
+  override def onConnect(client: PimpSocket): Unit = {
+    super.onConnect(client)
     subject onNext Connected(client)
   }
 
-  override def onDisconnect(client: Client): Unit = {
-    val clientID = client.id
-    servers -= clientID
-    logEvent(clientID, "disconnected")
+  override def onDisconnect(client: PimpSocket): Unit = {
+    super.onDisconnect(client)
     subject onNext Disconnected(client)
   }
 
-  def logEvent(id: String, action: String) =
-    log info s"MusicPimp client $action: $id. Clients connected: ${servers.size}"
-
   trait SocketEvent
 
-  case class Users(users: Seq[Client]) extends SocketEvent
+  case class Users(users: Seq[PimpSocket]) extends SocketEvent
 
-  case class Connected(client: Client) extends SocketEvent
+  case class Connected(client: PimpSocket) extends SocketEvent
 
-  case class Disconnected(client: Client) extends SocketEvent
+  case class Disconnected(client: PimpSocket) extends SocketEvent
 }

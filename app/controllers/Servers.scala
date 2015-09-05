@@ -2,15 +2,17 @@ package controllers
 
 import java.util.UUID
 
+import akka.actor.ActorSystem
 import com.mle.concurrent.ExecutionContexts.cached
 import com.mle.concurrent.FutureOps
 import com.mle.musicpimp.cloud.PimpSocket
 import com.mle.musicpimp.json.JsonStrings
 import com.mle.musicpimp.json.JsonStrings.{ADDRESS, BODY, EVENT, ID, REGISTERED, SERVERS}
-import com.mle.pimpcloud.ws.{PhoneSockets, StreamData}
+import com.mle.pimpcloud.actors.ActorStorage
+import com.mle.pimpcloud.ws.StreamData
 import com.mle.pimpcloud.{CloudCredentials, PimpAuth}
 import com.mle.play.auth.Auth
-import com.mle.play.ws.SyncAuth
+import com.mle.play.controllers.AuthResult
 import com.mle.ws.ServerSocket
 import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.mvc._
@@ -26,7 +28,7 @@ import scala.concurrent.Future
  *
  * @author Michael
  */
-trait Servers extends Controller with ServerSocket with SyncAuth with UsersEvents {
+abstract class Servers(actorSystem: ActorSystem) extends ServerSocket(ActorStorage.servers(actorSystem)) {
   // not a secret but avoids unintentional connections
   val serverPassword = "pimp"
 
@@ -34,7 +36,7 @@ trait Servers extends Controller with ServerSocket with SyncAuth with UsersEvent
     ID -> o.id,
     ADDRESS -> o.headers.remoteAddress
   ))
-  val usersJson = users.map(list => Json.obj(EVENT -> SERVERS, BODY -> list))
+  val usersJson = storage.users.map(list => Json.obj(EVENT -> SERVERS, BODY -> list))
 
   val streamSubject = BehaviorSubject[Seq[StreamData]](Nil)
   val uuidsJson: Observable[JsValue] = streamSubject.map(streams => Json.obj(
@@ -42,9 +44,9 @@ trait Servers extends Controller with ServerSocket with SyncAuth with UsersEvent
     BODY -> streams
   ))
 
-  def updateRequestList() = streamSubject onNext ongoingTransfers
+  def updateRequestList() = ongoingTransfers.foreach(ts => streamSubject.onNext(ts.toSeq))
 
-  private def ongoingTransfers = clients.flatMap(_.fileTransfers.snapshot)
+  private def ongoingTransfers = connectedServers.map(_.flatMap(_.fileTransfers.snapshot))
 
   override def openSocketCall: Call = routes.Servers.openSocket()
 
@@ -57,37 +59,48 @@ trait Servers extends Controller with ServerSocket with SyncAuth with UsersEvent
    * @param request
    * @return a valid cloud ID, or None if the cloud ID generation failed
    */
-  override def authenticate(implicit request: RequestHeader): Option[AuthSuccess] = {
-    Auth.basicCredentials(request).filter(_.password == serverPassword).flatMap(creds => {
+  override def authenticateAsync(request: RequestHeader): Future[AuthResult] = {
+    Auth.basicCredentials(request).filter(_.password == serverPassword).map(creds => {
       val user = creds.username
-      val cloudID =
+      val cloudID: Future[String] =
         if (user.nonEmpty) {
-          if (isConnected(user)) {
-            log warn s"Unable to register client: $user. Another client with that ID is already connected."
-            None
-          } else {
-            Some(user)
-          }
+          isConnected(user).flatMap(connected => {
+            if (connected) {
+              val msg = s"Unable to register client: $user. Another client with that ID is already connected."
+              log warn msg
+              Future.failed(new NoSuchElementException(msg))
+            } else {
+              Future.successful(user)
+            }
+          })
         } else {
           val id = newID()
-          if (isConnected(id)) {
-            log error s"A collision occurred while generating a random client ID: $id. Unable to register client."
-            None
-          } else {
-            Some(id)
-          }
+          isConnected(id).flatMap(connected => {
+            if (connected) {
+              val msg = s"A collision occurred while generating a random client ID: $id. Unable to register client."
+              log error msg
+              Future.failed(new NoSuchElementException(msg))
+            } else {
+              Future.successful(id)
+            }
+          })
         }
       cloudID map (id => com.mle.play.controllers.AuthResult(id))
-    })
+    }).getOrElse(Future.failed(new NoSuchElementException))
   }
 
-  override def welcomeMessage(client: Client): Option[Message] = {
+
+  override def welcomeMessage(client: PimpSocket): Option[JsValue] = {
     Some(PimpSocket.jsonID(REGISTERED, client.id))
   }
 
-  def isConnected(serverID: String) = servers contains serverID
+  def isConnected(serverID: String): Future[Boolean] = {
+    connectedServers.exists(cs => cs.exists(_.id == serverID))
+  }
 
-  override def onMessage(msg: Message, client: Client): Boolean = {
+  def connectedServers: Future[Set[PimpSocket]] = storage.clients
+
+  override def onMessage(msg: JsValue, client: PimpSocket): Boolean = {
     log debug s"Got message: $msg from client: $client"
 
     val isUnregister = false // (msg \ CMD).validate[String].filter(_ == UNREGISTER).isSuccess
@@ -109,9 +122,10 @@ trait Servers extends Controller with ServerSocket with SyncAuth with UsersEvent
     }
   }
 
-  def sendToPhone(msg: Message, client: Client): Unit // = ()
+  def sendToPhone(msg: JsValue, client: PimpSocket): Unit
 
-  def authPhone(req: RequestHeader): Future[PimpSocket] = authPhone(req, servers.toMap)
+  def authPhone(req: RequestHeader): Future[PimpSocket] =
+    connectedServers.flatMap(servers => authPhone(req, servers))
 
   /**
    * Fails with a [[NoSuchElementException]] if authentication fails.
@@ -119,37 +133,38 @@ trait Servers extends Controller with ServerSocket with SyncAuth with UsersEvent
    * @param req request
    * @return the socket, if auth succeeds
    */
-  def authPhone(req: RequestHeader, connectedServers: Map[String, Client]): Future[PimpSocket] = {
+  def authPhone(req: RequestHeader, servers: Set[PimpSocket]): Future[PimpSocket] = {
     // header -> query -> session
-    headerAuthAsync(req, connectedServers)
-      .recoverWithAll(_ => queryAuth(req, connectedServers))
-      .recoverAll(_ => sessionAuth(req, connectedServers).get)
+    headerAuthAsync(req, servers)
+      .recoverWithAll(_ => queryAuth(req, servers))
+      .recoverAll(_ => sessionAuth(req, servers).get)
   }
 
-  def headerAuthAsync(req: RequestHeader, connectedServers: Map[String, Client]): Future[PimpSocket] = flattenInvalid {
-    PimpAuth.cloudCredentials(req).map(validate(_, connectedServers))
+  def headerAuthAsync(req: RequestHeader, servers: Set[PimpSocket]): Future[PimpSocket] = flattenInvalid {
+    PimpAuth.cloudCredentials(req).map(validate(_, servers))
   }
 
-  def queryAuth(req: RequestHeader, connectedServers: Map[String, Client]): Future[PimpSocket] = flattenInvalid {
+  def queryAuth(req: RequestHeader, servers: Set[PimpSocket]): Future[PimpSocket] = flattenInvalid {
     for {
       s <- req.queryString get JsonStrings.SERVER_KEY
       server <- s.headOption
       creds <- Auth.credentialsFromQuery(req)
-    } yield validate(CloudCredentials(server, creds.username, creds.password), connectedServers)
+    } yield validate(CloudCredentials(server, creds.username, creds.password), servers)
   }
 
-  def sessionAuth(req: RequestHeader, connectedServers: Map[String, Client]): Option[PimpSocket] = {
-    req.session.get(Security.username) flatMap servers.get
+  def sessionAuth(req: RequestHeader, servers: Set[PimpSocket]): Option[PimpSocket] = {
+    req.session.get(Security.username) flatMap (user => servers.find(_.id == user))
   }
 
-  def validate(creds: CloudCredentials): Future[PimpSocket] = validate(creds, servers.toMap)
+  def validate(creds: CloudCredentials): Future[PimpSocket] =
+    connectedServers.flatMap(servers => validate(creds, servers))
 
   /**
    * @param creds
    * @return a socket or a [[Future]] failed with [[NoSuchElementException]] if validation fails
    */
-  def validate(creds: CloudCredentials, connectedServers: Map[String, Client]): Future[Client] = flattenInvalid {
-    connectedServers.get(creds.cloudID)
+  def validate(creds: CloudCredentials, servers: Set[PimpSocket]): Future[PimpSocket] = flattenInvalid {
+    servers.find(_.id == creds.cloudID)
       .map(server => server.authenticate(creds.username, creds.password).filter(_ == true).map(_ => server))
   }
 

@@ -1,6 +1,8 @@
 package com.mle.pimpcloud
 
+import akka.actor.ActorSystem
 import com.mle.musicpimp.cloud.PimpSocket
+import com.mle.pimpcloud.actors.PhonesActor
 import com.mle.pimpcloud.ws.PhoneSockets
 import controllers.Servers
 import play.api.libs.json.JsValue
@@ -11,19 +13,19 @@ import scala.concurrent.Future
 /**
  * @author mle
  */
-class JoinedSockets {
-  val servers = new Servers {
+class JoinedSockets(actorSystem: ActorSystem) {
+  val servers = new Servers(actorSystem) {
     override def sendToPhone(msg: JsValue, client: PimpSocket): Unit =
       onServerMessage(msg, client)
   }
 
-  val phones = new PhoneSockets {
+  val phones = new PhoneSockets(actorSystem) {
     override def authenticatePhone(req: RequestHeader): Future[PimpSocket] =
       authPhone(req)
   }
 
-  def onServerMessage(msg: JsValue, client: PimpSocket) = {
-    phones.clients.filter(_.connectedServer == client).foreach(_.channel push msg)
+  def onServerMessage(msg: JsValue, server: PimpSocket) = {
+    phones.storage.actor ! PhonesActor.MessageFromServer(msg, server)
   }
 
   def authPhone(req: RequestHeader): Future[PimpSocket] = {
@@ -32,8 +34,8 @@ class JoinedSockets {
 }
 
 object JoinedSockets {
-  def joined: (Servers, PhoneSockets) = {
-    val joined = new JoinedSockets
+  def joined(actorSystem: ActorSystem): (Servers, PhoneSockets) = {
+    val joined = new JoinedSockets(actorSystem)
     (joined.servers, joined.phones)
   }
 }

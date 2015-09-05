@@ -20,9 +20,7 @@ class CloudLoader extends ApplicationLoader {
 class CloudComponents(context: Context) extends BuiltInComponentsFromContext(context) {
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(new GzipFilter())
 
-  lazy val joined = new JoinedSockets
-  lazy val s = joined.servers
-  lazy val ps = joined.phones
+  lazy val (s, ps) = JoinedSockets.joined
   lazy val p = new Phones(s, ps)
   lazy val sc = new ServersController(s)
   lazy val aa = new AdminAuth

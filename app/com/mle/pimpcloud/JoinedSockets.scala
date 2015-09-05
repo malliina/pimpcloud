@@ -30,3 +30,10 @@ class JoinedSockets {
     servers.authPhone(req)
   }
 }
+
+object JoinedSockets {
+  def joined: (Servers, PhoneSockets) = {
+    val joined = new JoinedSockets
+    (joined.servers, joined.phones)
+  }
+}

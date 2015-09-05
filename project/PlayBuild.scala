@@ -17,7 +17,7 @@ object PlayBuild extends Build {
   val mleGroup = "com.github.malliina"
 
   val commonSettings = linuxSettings ++ Seq(
-    version := "0.4.0",
+    version := "0.4.1",
     scalaVersion := "2.11.7",
     retrieveManaged := false,
     fork in Test := true,
@@ -31,7 +31,11 @@ object PlayBuild extends Build {
       PlayImport.filters,
       PlayImport.cache
     ),
-    javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint:-options"),
+    javacOptions ++= Seq(
+      "-source", "1.8",
+      "-target", "1.8",
+      "-Xlint:-options"
+    ),
     scalacOptions += "-target:jvm-1.8",
     RoutesKeys.routesGenerator := InjectedRoutesGenerator
   )

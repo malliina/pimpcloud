@@ -26,7 +26,7 @@ import scala.concurrent.Future
  *
  * @author Michael
  */
-class Servers extends Controller with ServerSocket with SyncAuth with UsersEvents {
+trait Servers extends Controller with ServerSocket with SyncAuth with UsersEvents {
   // not a secret but avoids unintentional connections
   val serverPassword = "pimp"
 
@@ -45,13 +45,6 @@ class Servers extends Controller with ServerSocket with SyncAuth with UsersEvent
   def updateRequestList() = streamSubject onNext ongoingTransfers
 
   private def ongoingTransfers = clients.flatMap(_.fileTransfers.snapshot)
-
-  // SIN
-  private var phoneSockets: Option[PhoneSockets] = None
-
-  def register(ps: PhoneSockets) = {
-    phoneSockets = Option(ps)
-  }
 
   override def openSocketCall: Call = routes.Servers.openSocket()
 
@@ -111,13 +104,12 @@ class Servers extends Controller with ServerSocket with SyncAuth with UsersEvent
       // so we accept this failure.
       if (!clientHandledMessage) {
         sendToPhone(msg, client)
-        phoneSockets.foreach(ps => ps.clients.filter(_.connectedServer == client).foreach(_.channel push msg))
       }
       clientHandledMessage
     }
   }
 
-  def sendToPhone(msg: Message, client: Client): Unit = ()
+  def sendToPhone(msg: Message, client: Client): Unit // = ()
 
   def authPhone(req: RequestHeader): Future[PimpSocket] = authPhone(req, servers.toMap)
 

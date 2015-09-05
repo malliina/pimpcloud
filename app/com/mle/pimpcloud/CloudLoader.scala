@@ -1,6 +1,5 @@
 package com.mle.pimpcloud
 
-import com.mle.pimpcloud.ws.PhoneSockets
 import controllers._
 import play.api.ApplicationLoader.Context
 import play.api.mvc.EssentialFilter
@@ -21,10 +20,10 @@ class CloudLoader extends ApplicationLoader {
 class CloudComponents(context: Context) extends BuiltInComponentsFromContext(context) {
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(new GzipFilter())
 
-  lazy val s = new Servers
-  lazy val ps = new PhoneSockets(s)
+  lazy val joined = new JoinedSockets
+  lazy val s = joined.servers
+  lazy val ps = joined.phones
   lazy val p = new Phones(s, ps)
-  s.register(ps)
   lazy val sc = new ServersController(s)
   lazy val aa = new AdminAuth
   lazy val l = new Logs(aa)

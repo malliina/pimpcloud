@@ -52,10 +52,10 @@ trait UuidFutureMessaging[T] extends FutureMessaging[T] with Log {
   }
 
   def complete(response: T): Boolean = {
-    extract(response).map(pair => {
+    extract(response).exists(pair => {
       if (isSuccess(response)) succeed(pair.uuid, pair.body)
       else fail(pair.uuid, pair.body)
-    }).contains(true)
+    })
   }
 
   /**

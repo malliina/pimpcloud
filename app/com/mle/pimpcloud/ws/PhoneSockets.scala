@@ -31,6 +31,8 @@ class PhoneSockets(servers: Servers) extends JsonWebSockets with TrieClientStora
 
   override def authenticateAsync(req: RequestHeader): Future[AuthSuccess] = servers.authPhone(req)
 
+  def authenticatePhone(req: RequestHeader): Future[AuthSuccess] = authenticateAsync(req)
+
   override def newClient(authResult: AuthSuccess, channel: Channel[Message])(implicit request: RequestHeader): Client =
     PhoneClient(authResult, channel, request)
 

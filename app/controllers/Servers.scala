@@ -20,6 +20,10 @@ import rx.lang.scala.subjects.BehaviorSubject
 import scala.concurrent.Future
 
 /**
+ * WebSocket for connected MusicPimp servers.
+ *
+ * Pushes player events sent by servers to any connected phones, and responds to requests.
+ *
  * @author Michael
  */
 class Servers extends Controller with ServerSocket with SyncAuth with UsersEvents {
@@ -106,11 +110,14 @@ class Servers extends Controller with ServerSocket with SyncAuth with UsersEvent
       // consequence is that clients may receive unsolicited messages occasionally. But they should ignore those anyway,
       // so we accept this failure.
       if (!clientHandledMessage) {
+        sendToPhone(msg, client)
         phoneSockets.foreach(ps => ps.clients.filter(_.connectedServer == client).foreach(_.channel push msg))
       }
       clientHandledMessage
     }
   }
+
+  def sendToPhone(msg: Message, client: Client): Unit = ()
 
   def authPhone(req: RequestHeader): Future[PimpSocket] = authPhone(req, servers.toMap)
 

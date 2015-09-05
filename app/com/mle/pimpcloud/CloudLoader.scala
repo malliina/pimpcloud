@@ -13,14 +13,12 @@ import router.Routes
  */
 class CloudLoader extends ApplicationLoader {
   def load(context: Context) = {
+    Logger.configure(context.environment)
     new CloudComponents(context).application
   }
 }
 
 class CloudComponents(context: Context) extends BuiltInComponentsFromContext(context) {
-
-  Logger.configure(environment)
-
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(new GzipFilter())
 
   lazy val s = new Servers

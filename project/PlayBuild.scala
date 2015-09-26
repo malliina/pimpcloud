@@ -17,7 +17,7 @@ object PlayBuild extends Build {
   val mleGroup = "com.github.malliina"
 
   val commonSettings = linuxSettings ++ Seq(
-    version := "0.4.2",
+    version := "0.4.3",
     scalaVersion := "2.11.7",
     retrieveManaged := false,
     fork in Test := true,
@@ -46,9 +46,12 @@ object PlayBuild extends Build {
     PackagerKeys.maintainer := "Michael Skogberg <malliina123@gmail.com>",
     manufacturer := "Skogberg Labs",
     mainClass := Some("com.mle.pimpcloud.Starter"),
-    javaOptions in Universal += {
+    javaOptions in Universal ++= {
       val linuxName = (name in Linux).value
-      s"-Dgoogle.oauth=/etc/$linuxName/google-oauth.key"
+      Seq(
+        s"-Dgoogle.oauth=/etc/$linuxName/google-oauth.key",
+        s"-Dlog.dir=/var/run/$linuxName/logs"
+      )
     },
     PackagerKeys.packageSummary in Linux := "This is the pimpcloud summary.",
     PackagerKeys.rpmVendor := "Skogberg Labs"

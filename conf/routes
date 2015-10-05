@@ -9,7 +9,7 @@ POST        /playback/stream          controllers.Phones.beam
 GET         /folders                  controllers.Phones.rootFolder
 GET         /folders/*folder          controllers.Phones.folder(folder)
 GET         /tracks/*id               controllers.Phones.track(id)
-GET         /downloads/*id            controllers.Phones.download(id)
+GET         /downloads/*id            controllers.Phones.track(id)
 GET         /search                   controllers.Phones.search
 GET         /alarms                   controllers.Phones.alarms
 POST        /alarms                   controllers.Phones.editAlarm

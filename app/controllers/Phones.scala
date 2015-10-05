@@ -1,6 +1,6 @@
 package controllers
 
-import java.net.URLDecoder
+import java.net.{URLEncoder, URLDecoder}
 import java.nio.file.Paths
 
 import com.mle.concurrent.ExecutionContexts.cached
@@ -9,6 +9,7 @@ import com.mle.musicpimp.audio.Directory
 import com.mle.musicpimp.cloud.PimpSocket
 import com.mle.musicpimp.cloud.PimpSocket.{json, jsonID}
 import com.mle.musicpimp.json.JsonStrings._
+import com.mle.pimpcloud.{ErrorMessage, ErrorResponse}
 import com.mle.pimpcloud.ws.PhoneSockets
 import com.mle.play.ContentRange
 import com.mle.play.controllers.{BaseController, BaseSecurity}
@@ -67,11 +68,6 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets) extends Contr
   def beam = BodyProxied(BEAM)
 
   /**
-   * @param id track ID
-   */
-  def download(id: String) = track(id)
-
-  /**
    * Relays track `id` to the client from the target.
    *
    * Sends a message over WebSocket to the target that it should send `id` to this server. This server then forwards the
@@ -79,42 +75,47 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets) extends Contr
    *
    * @param id id of the requested track
    */
-  def track(id: String) = sendFile(id)
-
-  def sendFile(id: String): EssentialAction = {
+  def track(id: String): EssentialAction = {
     log debug s"Got request of: $id"
-    val name = (Paths get Phones.decode(id)).getFileName.toString
     phoneAction(socket => {
       Action.async(req => {
-        // resolves track metadata from the server so we can set Content-Length
-        log debug s"Looking up meta..."
-        socket.meta(id).map(track => {
-          // proxies request
-          val trackSize = track.size
-          val rangeTry = ContentRange.fromHeader(req, trackSize)
-          val rangeOrAll = rangeTry getOrElse ContentRange.all(trackSize)
-          val resultOpt = socket.streamRange(track, rangeOrAll)
-          resultOpt.map(result => {
-            rangeTry.map(range => {
-              result.withHeaders(
-                CONTENT_RANGE -> range.contentRange,
-                CONTENT_LENGTH -> s"${range.contentLength}",
-                CONTENT_TYPE -> MimeTypes.forFileName(name).getOrElse(ContentTypes.BINARY)
-              )
-            }).getOrElse {
-              result.withHeaders(
-                ACCEPT_RANGES -> BYTES,
-                CONTENT_LENGTH -> trackSize.toBytes.toString,
-                CACHE_CONTROL -> NO_CACHE,
-                CONTENT_TYPE -> AUDIO_MPEG,
-                CONTENT_DISPOSITION -> s"""attachment; filename="$name"""")
-            }
-          }).getOrElse(BadRequest)
-        }).recoverAll(_ => NotFound) // track ID not found
+        Phones.path(id).map(path => {
+          val name = path.getFileName.toString
+          // resolves track metadata from the server so we can set Content-Length
+          log debug s"Looking up meta..."
+          socket.meta(id).map(track => {
+            // proxies request
+            val trackSize = track.size
+            val rangeTry = ContentRange.fromHeader(req, trackSize)
+            val rangeOrAll = rangeTry getOrElse ContentRange.all(trackSize)
+            val resultOpt = socket.streamRange(track, rangeOrAll)
+            resultOpt.map(result => {
+              rangeTry.map(range => {
+                result.withHeaders(
+                  CONTENT_RANGE -> range.contentRange,
+                  CONTENT_LENGTH -> s"${range.contentLength}",
+                  CONTENT_TYPE -> MimeTypes.forFileName(name).getOrElse(ContentTypes.BINARY)
+                )
+              }).getOrElse {
+                result.withHeaders(
+                  ACCEPT_RANGES -> BYTES,
+                  CONTENT_LENGTH -> trackSize.toBytes.toString,
+                  CACHE_CONTROL -> NO_CACHE,
+                  CONTENT_TYPE -> AUDIO_MPEG,
+                  CONTENT_DISPOSITION -> s"""attachment; filename="$name"""")
+              }
+            }).getOrElse(BadRequest)
+          }).recoverAll(_ => notFound(s"ID not found $id"))
+        }).getOrElse(Future.successful(badRequest(s"Illegal track ID $id")))
       })
     })
   }
 
+  def notFound(message: String) = NotFound(simpleError(message))
+
+  def badRequest(message: String) = BadRequest(simpleError(message))
+
+  def simpleError(message: String) = ErrorResponse(Seq(ErrorMessage(message)))
 
   def BodyProxied(cmd: String) =
     ProxiedJsonAction(parse.json)(req => Some(PimpSocket.bodiedJson(cmd, req.body.as[JsObject])))
@@ -157,7 +158,12 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets) extends Contr
 }
 
 object Phones {
-  def decode(id: String) = URLDecoder.decode(id, "UTF-8")
-
   val invalidCredentials = new NoSuchElementException("Invalid credentials")
+  val EncodingUTF8 = "UTF-8"
+
+  def path(id: String) = Try(Paths get decode(id))
+
+  def decode(id: String) = URLDecoder.decode(id, EncodingUTF8)
+
+  def encode(id: String) = URLEncoder.encode(id, EncodingUTF8)
 }

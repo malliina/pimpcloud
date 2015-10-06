@@ -76,9 +76,9 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets) extends Contr
    * @param id id of the requested track
    */
   def track(id: String): EssentialAction = {
-    log debug s"Got request of: $id"
     phoneAction(socket => {
       Action.async(req => {
+        log info s"Serving $id"
         Phones.path(id).map(path => {
           val name = path.getFileName.toString
           // resolves track metadata from the server so we can set Content-Length

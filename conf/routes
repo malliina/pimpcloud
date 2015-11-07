@@ -1,35 +1,40 @@
-GET         /                         controllers.Phones.rootFolder
-GET         /login                    controllers.Web.login
-POST        /authenticate             controllers.Web.formAuthenticate
+GET         /                                  controllers.Phones.rootFolder
+GET         /login                             controllers.Web.login
+POST        /authenticate                      controllers.Web.formAuthenticate
 # Proxy
-GET         /ping                     controllers.Phones.ping
-GET         /pingauth                 controllers.Phones.pingAuth
-GET         /playback                 controllers.Phones.status
-POST        /playback/stream          controllers.Phones.beam
-GET         /folders                  controllers.Phones.rootFolder
-GET         /folders/*folder          controllers.Phones.folder(folder)
-GET         /tracks/*id               controllers.Phones.track(id)
-GET         /downloads/*id            controllers.Phones.track(id)
-GET         /search                   controllers.Phones.search
-GET         /alarms                   controllers.Phones.alarms
-POST        /alarms                   controllers.Phones.editAlarm
-POST        /alarms/editor/add        controllers.Phones.newAlarm
-GET         /mobile/ws                com.mle.pimpcloud.ws.PhoneSockets.openSocket
-GET         /mobile/ws2               com.mle.pimpcloud.ws.PhoneSockets.openSocket2
-GET         /ws/playback              com.mle.pimpcloud.ws.PhoneSockets.openSocket
-GET         /ws/playback2             com.mle.pimpcloud.ws.PhoneSockets.openSocket2
+GET         /ping                              controllers.Phones.ping
+GET         /pingauth                          controllers.Phones.pingAuth
+GET         /playback                          controllers.Phones.status
+POST        /playback/stream                   controllers.Phones.beam
+GET         /folders                           controllers.Phones.rootFolder
+GET         /folders/*folder                   controllers.Phones.folder(folder)
+GET         /tracks/*id                        controllers.Phones.track(id)
+GET         /downloads/*id                     controllers.Phones.track(id)
+GET         /search                            controllers.Phones.search
+GET         /alarms                            controllers.Phones.alarms
+POST        /alarms                            controllers.Phones.editAlarm
+POST        /alarms/editor/add                 controllers.Phones.newAlarm
+GET         /playlists                         controllers.Phones.playlists
+POST        /playlists                         controllers.Phones.savePlaylist
+GET         /playlists/*playlist               controllers.Phones.playlist(playlist: com.mle.musicpimp.models.PlaylistID)
+POST        /playlists/delete/*playlist        controllers.Phones.deletePlaylist(playlist: com.mle.musicpimp.models.PlaylistID)
+POST        /proxied/*cmd                      controllers.Phones.bodyProxied(cmd: String)
+GET         /mobile/ws                         com.mle.pimpcloud.ws.PhoneSockets.openSocket
+GET         /mobile/ws2                        com.mle.pimpcloud.ws.PhoneSockets.openSocket2
+GET         /ws/playback                       com.mle.pimpcloud.ws.PhoneSockets.openSocket
+GET         /ws/playback2                      com.mle.pimpcloud.ws.PhoneSockets.openSocket2
 # Servers
-POST        /track                    controllers.ServersController.receiveUpload
-GET         /servers/ws               controllers.Servers.openSocket
-GET         /servers/ws2              controllers.Servers.openSocket2
-GET         /assets/*file             controllers.Assets.at(path = "/public", file)
+POST        /track                             controllers.ServersController.receiveUpload
+GET         /servers/ws                        controllers.Servers.openSocket
+GET         /servers/ws2                       controllers.Servers.openSocket2
+GET         /assets/*file                      controllers.Assets.at(path = "/public", file)
 # Admin
-GET         /admin                    controllers.UsageStreaming.index
-GET         /admin/logs               controllers.Logs.logs
-GET         /oauth                    controllers.AdminAuth.initiate
+GET         /admin                             controllers.UsageStreaming.index
+GET         /admin/logs                        controllers.Logs.logs
+GET         /oauth                             controllers.AdminAuth.initiate
 # Must match a callback defined in the Google OAuth developer console
-GET         /oauthcb                  controllers.AdminAuth.redirResponse
-GET         /admin/eject              controllers.AdminAuth.eject
-GET         /admin/ws                 controllers.Logs.openSocket
-GET         /admin/usage              controllers.UsageStreaming.openSocket
-GET         /admin/logout             controllers.AdminAuth.logout
+GET         /oauthcb                           controllers.AdminAuth.redirResponse
+GET         /admin/eject                       controllers.AdminAuth.eject
+GET         /admin/ws                          controllers.Logs.openSocket
+GET         /admin/usage                       controllers.UsageStreaming.openSocket
+GET         /admin/logout                      controllers.AdminAuth.logout

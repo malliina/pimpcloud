@@ -40,4 +40,11 @@ object JsonStrings {
   val START = "start"
   val END_EXCLUSIVE = "end_exclusive"
   val RANGE = "range"
+
+  val PlaylistsGet = "playlists"
+  val PlaylistGet = "playlist"
+  val PlaylistSave = "playlist_save"
+  val PlaylistDelete = "playlist_delete"
+  val PlaylistKey = "playlist"
+  val PlaylistsKey = "playlists"
 }

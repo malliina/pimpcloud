@@ -3,12 +3,12 @@ package com.mle.pimpcloud.ws
 import akka.actor.ActorSystem
 import com.mle.concurrent.ExecutionContexts.cached
 import com.mle.concurrent.FutureOps
-import com.mle.musicpimp.cloud.PimpSocket
 import com.mle.musicpimp.json.JsonStrings
 import com.mle.musicpimp.json.JsonStrings.{ADDRESS, BODY, CMD, EVENT, PHONES, SERVER_KEY, STATUS}
-import com.mle.pimpcloud.actors.{ActorStorage, PhonesActor}
+import com.mle.pimpcloud.actors.ActorStorage
 import com.mle.play.ws.SocketClient
 import com.mle.ws.PhoneActorSockets
+import controllers.PhoneConnection
 import play.api.libs.iteratee.Concurrent.Channel
 import play.api.libs.json.{JsObject, JsValue, Json, Writes}
 import play.api.mvc.{Call, RequestHeader}
@@ -20,7 +20,7 @@ import scala.concurrent.Future
  * @author Michael
  */
 abstract class PhoneSockets(actorSystem: ActorSystem) extends PhoneActorSockets(ActorStorage.phones(actorSystem)) {
-  override type AuthSuccess = PimpSocket
+  override type AuthSuccess = PhoneConnection
 
   implicit val writer = Writes[PhoneClient](o => Json.obj(
     SERVER_KEY -> o.connectedServer.id,
@@ -53,5 +53,8 @@ abstract class PhoneSockets(actorSystem: ActorSystem) extends PhoneActorSockets(
   override def welcomeMessage(client: PhoneClient): Option[JsValue] = Some(com.mle.play.json.JsonMessages.welcome)
 }
 
-case class PhoneClient(connectedServer: PimpSocket, channel: Channel[JsValue], req: RequestHeader)
-  extends SocketClient[JsValue]
+case class PhoneClient(connection: PhoneConnection, channel: Channel[JsValue], req: RequestHeader)
+  extends SocketClient[JsValue] {
+  val phoneUser = connection.user
+  val connectedServer = connection.server
+}

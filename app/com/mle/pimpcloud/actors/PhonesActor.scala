@@ -1,6 +1,6 @@
 package com.mle.pimpcloud.actors
 
-import com.mle.musicpimp.cloud.PimpSocket
+import com.mle.musicpimp.cloud.PimpServerSocket
 import com.mle.pimpcloud.ws.PhoneClient
 import play.api.libs.json.JsValue
 
@@ -30,6 +30,6 @@ class PhonesActor extends ItemsActor[PhoneClient] {
 
 object PhonesActor extends MessagesBase[JsValue, PhoneClient] {
 
-  case class MessageFromServer(message: JsValue, server: PimpSocket)
+  case class MessageFromServer(message: JsValue, server: PimpServerSocket)
 
 }

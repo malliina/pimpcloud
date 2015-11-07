@@ -1,6 +1,7 @@
 package controllers
 
 import com.mle.concurrent.FutureOps
+import com.mle.musicpimp.models.User
 import com.mle.pimpcloud.CloudCredentials
 import com.mle.play.controllers.{BaseSecurity, BaseController}
 import play.api.data.Form
@@ -21,7 +22,7 @@ class Web(servers: Servers) extends Secured with BaseSecurity with BaseControlle
 
   val cloudForm = Form[CloudCredentials](mapping(
     serverFormKey -> nonEmptyText,
-    userFormKey -> nonEmptyText,
+    userFormKey -> nonEmptyText.transform[User](User.apply, _.name),
     passFormKey -> nonEmptyText
   )(CloudCredentials.apply)(CloudCredentials.unapply))
 

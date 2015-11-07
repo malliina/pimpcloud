@@ -1,82 +1,78 @@
 package controllers
 
-import java.net.{URLEncoder, URLDecoder}
+import java.net.{URLDecoder, URLEncoder}
 import java.nio.file.Paths
 
 import com.mle.concurrent.ExecutionContexts.cached
 import com.mle.concurrent.FutureOps
 import com.mle.musicpimp.audio.Directory
-import com.mle.musicpimp.cloud.PimpSocket
-import com.mle.musicpimp.cloud.PimpSocket.{json, jsonID}
+import com.mle.musicpimp.cloud.PimpServerSocket
 import com.mle.musicpimp.json.JsonStrings._
-import com.mle.pimpcloud.{ErrorMessage, ErrorResponse}
+import com.mle.musicpimp.models.PlaylistID
 import com.mle.pimpcloud.ws.PhoneSockets
+import com.mle.pimpcloud.{ErrorMessage, ErrorResponse}
 import com.mle.play.ContentRange
 import com.mle.play.controllers.{BaseController, BaseSecurity}
 import com.mle.play.http.HttpConstants.{AUDIO_MPEG, NO_CACHE}
 import play.api.http.ContentTypes
 import play.api.libs.MimeTypes
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc._
-import rx.lang.scala.Observable
 
 import scala.concurrent.Future
 import scala.util.Try
 
 /**
- *
- * @author mle
- */
-class Phones(val servers: Servers, val phoneSockets: PhoneSockets) extends Controller with Secured with BaseSecurity with BaseController {
-  val DEFAULT_LIMIT = 100
+  *
+  * @author mle
+  */
+class Phones(val servers: Servers, val phoneSockets: PhoneSockets)
+  extends Controller with Secured with BaseSecurity with BaseController {
+  val DefaultSearchLimit = 100
   val BYTES = "bytes"
   val NONE = "none"
 
-  def combineAll[T](obs: List[Observable[T]], f: (T, T) => T): Observable[T] = obs match {
-    case Nil => Observable.never
-    case h :: t => h.combineLatestWith(combineAll(t, f))(f)
-  }
+  def ping = proxiedGetAction(PING)
 
-  def ping = ProxiedGetAction(PING)
+  def pingAuth = proxiedAction((req, socket) => socket.server.pingAuth.map(v => NoCache(Ok(Json toJson v))))
 
-  def pingAuth = ProxiedAction((req, socket) => socket.pingAuth.map(v => NoCache(Ok(Json toJson v))))
+  def rootFolder = folderAction(_.rootFolder, _ => (ROOT_FOLDER, Json.obj()))
 
-  def rootFolder = FolderAction(_.rootFolder, _ => json(ROOT_FOLDER))
+  def folder(id: String) = folderAction(_.folder(id), req => (FOLDER, PimpServerSocket.idBody(id)))
 
-  def folder(id: String) = FolderAction(_.folder(id), req => jsonID(FOLDER, id))
+  def status = proxiedGetAction(STATUS)
 
-  def status = ProxiedGetAction(STATUS)
-
-  def search = ProxiedAction((req, socket) => {
+  def search = proxiedAction((req, socket) => {
     def query(key: String) = (req getQueryString key) map (_.trim) filter (_.nonEmpty)
     val termFromQuery = query(TERM)
-    val limit = query(LIMIT).filter(i => Try(i.toInt).isSuccess).map(_.toInt) getOrElse DEFAULT_LIMIT
+    val limit = query(LIMIT).filter(i => Try(i.toInt).isSuccess).map(_.toInt) getOrElse DefaultSearchLimit
     termFromQuery.fold[Future[Result]](Future.successful(BadRequest))(term => {
-      FolderResult(socket,
+      folderResult(socket,
         _.search(term, limit).map(tracks => Directory(Nil, tracks)),
-        json(SEARCH, TERM -> term, LIMIT -> limit)
+        (SEARCH, PimpServerSocket.body(TERM -> term, LIMIT -> limit))
       )(req)
     })
   })
 
-  def alarms = ProxiedGetAction(ALARMS)
+  def alarms = proxiedGetAction(ALARMS)
 
-  def editAlarm = BodyProxied(ALARMS_EDIT)
+  def editAlarm = bodyProxied(ALARMS_EDIT)
 
-  def newAlarm = BodyProxied(ALARMS_ADD)
+  def newAlarm = bodyProxied(ALARMS_ADD)
 
-  def beam = BodyProxied(BEAM)
+  def beam = bodyProxied(BEAM)
 
   /**
-   * Relays track `id` to the client from the target.
-   *
-   * Sends a message over WebSocket to the target that it should send `id` to this server. This server then forwards the
-   * response of the target to the client.
-   *
-   * @param id id of the requested track
-   */
+    * Relays track `id` to the client from the target.
+    *
+    * Sends a message over WebSocket to the target that it should send `id` to this server. This server then forwards the
+    * response of the target to the client.
+    *
+    * @param id id of the requested track
+    */
   def track(id: String): EssentialAction = {
-    phoneAction(socket => {
+    phoneAction(conn => {
+      val socket = conn.server
       Action.async(req => {
         log info s"Serving $id"
         Phones.path(id).map(path => {
@@ -111,50 +107,87 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets) extends Contr
     })
   }
 
+  def playlists = proxiedGetAction(PlaylistsGet)
+
+  def playlist(id: PlaylistID) = playlistAction(PlaylistGet, id)
+
+  def savePlaylist = bodyProxied(PlaylistSave)
+
+  def deletePlaylist(id: PlaylistID) = playlistAction(PlaylistDelete, id)
+
+  private def playlistAction(cmd: String, id: PlaylistID) = {
+    proxiedJsonAction(cmd, _ => playlistIdJson(id))
+  }
+
+  private def playlistIdJson(id: PlaylistID) = Option(Json.obj(ID -> id.id))
+
+  /**
+    * Sends the request body as JSON to the server this phone is connected to, and responds with the JSON the server
+    * returned.
+    *
+    * The payload to the connected server will look like: { "cmd": "cmd_here", "body": "request_json_body_here" }
+    *
+    * @param cmd command to server
+    * @return an action that responds as JSON with whatever the connected server returned in its `body` field
+    */
+  def bodyProxied(cmd: String) = {
+    customProxied(cmd, req => req.body.asOpt[JsObject])
+  }
+
+  protected def customProxied(cmd: String, body: Request[JsValue] => Option[JsObject]) = {
+    proxiedParsedJsonAction(parse.json)(cmd, body)
+  }
+
+  private def folderAction(html: PimpServerSocket => Future[Directory],
+                           json: RequestHeader => (String, JsObject)) =
+    proxiedAction((req, socket) => folderResult(socket, html, json(req))(req))
+
+  private def folderResult(socket: PhoneConnection,
+                           html: PimpServerSocket => Future[Directory],
+                           json: => (String, JsObject))(implicit req: RequestHeader) =
+    pimpResult(
+      html(socket.server).map(dir => Ok(views.html.index(dir, phoneSockets.wsUrl))),
+      proxiedJson(json._1, json._2, socket)
+    ).recoverAll(_ => BadGateway)
+
+  private def proxiedAction(f: (Request[AnyContent], PhoneConnection) => Future[Result]): EssentialAction =
+    proxiedParsedAction(parse.anyContent)(f)
+
+  private def proxiedParsedAction[A](parser: BodyParser[A])(f: (Request[A], PhoneConnection) => Future[Result]): EssentialAction =
+    phoneAction(socket => Action.async(parser)(implicit req => f(req, socket)))
+
+  private def proxiedGetAction(cmd: String) = proxiedJsonMessageAction(cmd)
+
+  private def proxiedJsonMessageAction(cmd: String): EssentialAction = {
+    proxiedJsonAction(cmd, _ => Some(Json.obj()))
+  }
+
+  private def proxiedJsonAction(cmd: String, f: RequestHeader => Option[JsObject]): EssentialAction =
+    proxiedParsedJsonAction(parse.anyContent)(cmd, f)
+
+  private def proxiedParsedJsonAction[A](parser: BodyParser[A])(cmd: String, f: Request[A] => Option[JsObject]): EssentialAction = {
+    phoneAction(socket => {
+      Action.async(parser)(req => {
+        f(req)
+          .map(json => proxiedJson(cmd, json, socket).recoverAll(t => BadGateway))
+          .getOrElse(fut(BadRequest))
+      })
+    })
+  }
+
+  def proxiedJson(cmd: String, body: JsValue, conn: PhoneConnection) = {
+    conn.server.defaultProxy(conn.user, cmd, body) map (js => Ok(js))
+  }
+
+  def phoneAction(f: PhoneConnection => EssentialAction) = LoggedSecureActionAsync(servers.authPhone)(f)
+
+  def fut[T](body: => T) = Future successful body
+
   def notFound(message: String) = NotFound(simpleError(message))
 
   def badRequest(message: String) = BadRequest(simpleError(message))
 
   def simpleError(message: String) = ErrorResponse(Seq(ErrorMessage(message)))
-
-  def BodyProxied(cmd: String) =
-    ProxiedJsonAction(parse.json)(req => Some(PimpSocket.bodiedJson(cmd, req.body.as[JsObject])))
-
-  private def FolderAction(html: PimpSocket => Future[Directory], json: RequestHeader => JsObject) =
-    ProxiedAction((req, socket) => FolderResult(socket, html, json(req))(req))
-
-  private def FolderResult(socket: PimpSocket, html: PimpSocket => Future[Directory], json: => JsObject)(implicit req: RequestHeader) =
-    pimpResult(
-      html(socket).map(dir => Ok(views.html.index(dir, phoneSockets.wsUrl))),
-      proxiedJson(socket, json)
-    ).recoverAll(_ => BadGateway)
-
-  private def ProxiedAction[A](parser: BodyParser[A])(f: (Request[A], PimpSocket) => Future[Result]): EssentialAction =
-    phoneAction(socket => Action.async(parser)(implicit req => f(req, socket)))
-
-  private def ProxiedAction(f: (Request[AnyContent], PimpSocket) => Future[Result]): EssentialAction =
-    ProxiedAction(parse.anyContent)(f)
-
-  private def ProxiedGetAction(cmd: String) = ProxiedJsonAction(json(cmd))
-
-  private def ProxiedJsonAction(message: JsObject): EssentialAction = ProxiedJsonAction(_ => Some(message))
-
-  private def ProxiedJsonAction(f: RequestHeader => Option[JsObject]): EssentialAction =
-    ProxiedJsonAction(parse.anyContent)(f)
-
-  private def ProxiedJsonAction[A](parser: BodyParser[A])(f: Request[A] => Option[JsObject]): EssentialAction =
-    phoneAction(socket => {
-      Action.async(parser)(implicit req => f(req)
-        .fold[Future[Result]](Future.successful(BadRequest))(json => {
-        proxiedJson(socket, json).recoverAll(t => BadGateway)
-      }))
-    })
-
-  def proxiedJson(socket: PimpSocket, json: JsObject) = (socket defaultProxy json) map (js => Ok(js))
-
-  def phoneAction(f: PimpSocket => EssentialAction) = LoggedSecureActionAsync(servers.authPhone)(f)
-
-  def fut[T](body: => T) = Future successful body
 }
 
 object Phones {

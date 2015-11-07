@@ -1,6 +1,6 @@
 package com.mle.pimpcloud
 
-import com.mle.musicpimp.cloud.PimpSocket
+import com.mle.musicpimp.cloud.PimpServerSocket
 import com.mle.pimpcloud.ws.PhoneClient
 import play.api.libs.json.JsValue
 
@@ -10,7 +10,7 @@ import play.api.libs.json.JsValue
 trait MessageMediator {
   def routePhoneMessage(msg: JsValue, client: PhoneClient)
 
-  def routeServerMessage(msg: JsValue, client: PimpSocket)
+  def routeServerMessage(msg: JsValue, client: PimpServerSocket)
 }
 
 trait MultiSockets {

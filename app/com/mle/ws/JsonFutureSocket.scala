@@ -3,31 +3,37 @@ package com.mle.ws
 import java.util.UUID
 
 import com.mle.musicpimp.cloud.UuidFutureMessaging
-import com.mle.musicpimp.json.JsonStrings._
+import com.mle.musicpimp.json.JsonStrings.{BODY, REQUEST_ID, SUCCESS}
+import com.mle.musicpimp.models.User
 import com.mle.util.{Log, Utils}
+import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.iteratee.Concurrent.Channel
 import play.api.libs.json._
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.util.Try
 
 /**
- * Emulates an HTTP client using a WebSocket channel. Supports timeouts.
- *
- * Protocol: We assume that responses will be tagged with the same request ID we add to sent messages, so that we can
- * pair requests with responses.
- *
- * @author Michael
- */
-class JsonFutureSocket(val channel: Channel[JsValue], val id: String) extends UuidFutureMessaging[JsValue] with Log {
+  * Emulates an HTTP client using a WebSocket channel. Supports timeouts.
+  *
+  * Protocol: Responses must be tagged with the same request ID we add to sent messages, so that we can
+  * pair requests with responses.
+  *
+  * @author Michael
+  */
+class JsonFutureSocket(val channel: Channel[JsValue], val id: String)
+  extends UuidFutureMessaging with Log {
+
   val timeout = 20.seconds
-  // testing some syntax
-  //  private def trieMap[T[_], U] = TrieMap.empty[UUID, T[U]]
 
-  override def build(pair: BodyAndId) = Json.obj(REQUEST_ID -> pair.uuid.toString) ++ pair.body.as[JsObject]
-
+  /**
+    * We expect responses to contain `REQUEST_ID` and `BODY` keys, which we parse. The request is completed with the
+    * JSON object in `BODY`.
+    *
+    * @param response a JSON response from server
+    * @return a response, parsed
+    */
   override def extract(response: JsValue): Option[BodyAndId] = {
     for {
       uuid <- (response \ REQUEST_ID).asOpt[UUID]
@@ -35,50 +41,60 @@ class JsonFutureSocket(val channel: Channel[JsValue], val id: String) extends Uu
     } yield BodyAndId(body, uuid)
   }
 
-  override def isSuccess(response: JsValue): Boolean = (response \ SUCCESS).validate[Boolean].filter(_ == false).isError
+  override def isSuccess(response: JsValue): Boolean = {
+    (response \ SUCCESS).validate[Boolean].filter(_ == false).isError
+  }
 
   /**
-   * TODO Fix signature; what happens when the channel is closed and this method is called?
-   *
-   * @param json payload
-   */
+    * TODO Fix signature; what happens when the channel is closed and this method is called?
+    *
+    * @param json payload
+    */
   def send(json: JsValue) = Try(channel push json)
 
   /**
-   * Sends `body` as JSON and deserializes the response to `U`.
-   *
-   * @param body message payload
-   * @param writer json serializer
-   * @param reader json deserializer
-   * @tparam T type of request payload
-   * @tparam U type of response
-   * @return the response
-   */
-  def proxyT[T, U](body: T)(implicit writer: Writes[T], reader: Reads[U]): Future[U] = proxyD(writer writes body)
+    * Sends `body` as JSON and deserializes the response to `U`.
+    *
+    * @param body message payload
+    * @param writer json serializer
+    * @param reader json deserializer
+    * @tparam T type of request payload
+    * @tparam U type of response
+    * @return the response
+    */
+  def proxyT[T, U](cmd: String, body: T, user: User)(implicit writer: Writes[T], reader: Reads[U]): Future[U] = {
+    proxyD(user, cmd, writer writes body)
+  }
 
   /**
-   * Sends `body` and deserializes the response to type `T`.
-   *
-   * TODO check success status first, and any potential error
-   *
-   * @param body payload
-   * @param reader json deserializer
-   * @tparam T type of response
-   * @return a deserialized body, or a failed [[Future]] on failure
-   */
-  def proxyD[T](body: JsValue)(implicit reader: Reads[T]): Future[T] = defaultProxy(body).map(_.as[T])
+    * Sends `body` and deserializes the response to type `T`.
+    *
+    * TODO check success status first, and any potential error
+    *
+    * @param body payload
+    * @param reader json deserializer
+    * @tparam T type of response
+    * @return a deserialized body, or a failed [[Future]] on failure
+    */
+  def proxyD[T](user: User, cmd: String, body: JsValue)(implicit reader: Reads[T]): Future[T] = {
+    proxyD2[T](user, cmd, body).map(_.get)
+  }
 
-  def proxyD2[T](body: JsValue)(implicit reader: Reads[T]): Future[JsResult[T]] = defaultProxy(body).map(_.validate[T])
+  def proxyD2[T](user: User, cmd: String, body: JsValue)(implicit reader: Reads[T]): Future[JsResult[T]] = {
+    defaultProxy(user, cmd, body).map(_.validate[T])
+  }
 
   /**
-   * Sends `body` to the server and returns a [[Future]] of the `BODY` value of the response.
-   *
-   * @param body
-   * @return
-   */
-  def defaultProxy(body: JsValue) = request(body, timeout)
+    * @param body payload
+    * @return response
+    */
+  def defaultProxy(user: User, cmd: String, body: JsValue): Future[JsValue] = {
+    request(cmd, body, user, timeout)
+  }
 }
 
 object JsonFutureSocket {
-  def tryParseUUID(id: String): Option[UUID] = Utils.opt[UUID, IllegalArgumentException](UUID.fromString(id))
+  def tryParseUUID(id: String): Option[UUID] = {
+    Utils.opt[UUID, IllegalArgumentException](UUID.fromString(id))
+  }
 }

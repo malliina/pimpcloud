@@ -8,7 +8,11 @@ import rx.lang.scala.Observable
 /**
  * @author Michael
  */
-class UsageStreaming(servers: Servers, phones: Phones, phoneSockets: PhoneSockets, serversController: ServersController, adminAuth: AdminAuth) extends AdminStreaming(adminAuth) {
+class UsageStreaming(servers: Servers,
+                     phones: Phones,
+                     phoneSockets: PhoneSockets,
+                     serversController: ServersController,
+                     adminAuth: AdminAuth) extends AdminStreaming(adminAuth) {
   override def jsonEvents: Observable[JsValue] = servers.usersJson merge phoneSockets.usersJson merge servers.uuidsJson
 
   override def openSocketCall: Call = routes.UsageStreaming.openSocket()

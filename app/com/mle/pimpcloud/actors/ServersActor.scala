@@ -1,7 +1,7 @@
 package com.mle.pimpcloud.actors
 
 import akka.actor.ActorLogging
-import com.mle.musicpimp.cloud.PimpSocket
+import com.mle.musicpimp.cloud.PimpServerSocket
 import play.api.libs.json.JsValue
 
 /**
@@ -9,7 +9,7 @@ import play.api.libs.json.JsValue
  *
  * @author mle
  */
-class ServersActor extends ItemsActor[PimpSocket] with ActorLogging {
+class ServersActor extends ItemsActor[PimpServerSocket] with ActorLogging {
   override def receive: Receive = {
     case ServersActor.Connect(client) =>
       clients += client
@@ -31,4 +31,4 @@ class ServersActor extends ItemsActor[PimpSocket] with ActorLogging {
     log info s"MusicPimp client $action: $id. Clients connected: ${clients.size}"
 }
 
-object ServersActor extends MessagesBase[JsValue, PimpSocket]
+object ServersActor extends MessagesBase[JsValue, PimpServerSocket]

@@ -2,7 +2,7 @@ package controllers
 
 import java.util.UUID
 
-import com.mle.musicpimp.cloud.PimpSocket
+import com.mle.musicpimp.cloud.PimpServerSocket
 import com.mle.musicpimp.json.JsonStrings
 import com.mle.ws.JsonFutureSocket
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
@@ -52,8 +52,10 @@ class ServersController(servers: Servers) extends Secured {
     } yield server
   }
 
-  def findServer(ss: Set[PimpSocket], uuid: UUID): Option[Server] =
+  def findServer(ss: Set[PimpServerSocket], uuid: UUID): Option[Server] =
     ss.find(_.fileTransfers.exists(uuid)).map(s => Server(uuid, s))
 
-  def toFuture[T](opt: Option[T]): Future[T] = opt.map(Future.successful).getOrElse(Future.failed(new NoSuchElementException))
+  def toFuture[T](opt: Option[T]): Future[T] = {
+    opt.map(Future.successful).getOrElse(Future.failed(new NoSuchElementException))
+  }
 }

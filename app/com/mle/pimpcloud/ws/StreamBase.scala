@@ -3,7 +3,7 @@ package com.mle.pimpcloud.ws
 import java.util.UUID
 
 import com.mle.musicpimp.audio.Track
-import com.mle.musicpimp.cloud.PimpSocket
+import com.mle.musicpimp.cloud.{UserRequest, PimpServerSocket, PimpServerSocket$}
 import com.mle.musicpimp.json.JsonStrings._
 import com.mle.play.ContentRange
 import com.mle.storage.StorageInt
@@ -62,9 +62,9 @@ trait StreamBase[T] extends Log {
   private def tryConnect(uuid: UUID, track: Track, range: ContentRange): Try[Unit] = {
     streamChanged()
     val message =
-      if (range.isAll) PimpSocket.fullTrackJson(track)
-      else PimpSocket.rangedTrackJson(track, range)
-    val payload = Json.obj(REQUEST_ID -> uuid) ++ message
+      if (range.isAll) UserRequest(TRACK, PimpServerSocket.idBody(track.id), uuid, PimpServerSocket.nobody)
+      else UserRequest(TRACK, PimpServerSocket.body(ID -> track.id, RANGE -> range), uuid, PimpServerSocket.nobody)
+    val payload = Json.toJson(message)
     Try(channel push payload)
   }
 

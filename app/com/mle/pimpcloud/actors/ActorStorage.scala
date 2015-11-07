@@ -3,7 +3,7 @@ package com.mle.pimpcloud.actors
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.pattern.ask
 import akka.util.Timeout
-import com.mle.musicpimp.cloud.PimpSocket
+import com.mle.musicpimp.cloud.PimpServerSocket
 import com.mle.pimpcloud.ClientHandler
 import com.mle.pimpcloud.ws.PhoneClient
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
@@ -19,7 +19,7 @@ object ActorStorage {
     new ActorStorage[PhonesActor, JsValue, PhoneClient](actorSystem, PhonesActor)
 
   def servers(actorSystem: ActorSystem) =
-    new ActorStorage[ServersActor, JsValue, PimpSocket](actorSystem, ServersActor)
+    new ActorStorage[ServersActor, JsValue, PimpServerSocket](actorSystem, ServersActor)
 }
 
 /**

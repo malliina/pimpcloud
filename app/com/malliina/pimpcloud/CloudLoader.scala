@@ -1,5 +1,6 @@
 package com.malliina.pimpcloud
 
+import com.malliina.musicpimp.messaging.Pusher
 import controllers._
 import play.api.ApplicationLoader.Context
 import play.api.mvc.EssentialFilter
@@ -20,6 +21,9 @@ class CloudLoader extends ApplicationLoader {
 class CloudComponents(context: Context) extends BuiltInComponentsFromContext(context) {
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(new GzipFilter())
 
+  lazy val pusher = Pusher.fromConf
+  // Controllers
+  lazy val push = new Push(pusher)
   lazy val (s, ps) = JoinedSockets.joined(actorSystem)
   lazy val p = new Phones(s, ps)
   lazy val sc = new ServersController(s)
@@ -28,5 +32,5 @@ class CloudComponents(context: Context) extends BuiltInComponentsFromContext(con
   lazy val w = new Web(s)
   lazy val us = new UsageStreaming(s, p, ps, sc, aa)
   lazy val as = new Assets(httpErrorHandler)
-  lazy val router = new Routes(httpErrorHandler, p, w, ps, sc, s, as, us, l, aa)
+  lazy val router = new Routes(httpErrorHandler, p, w, push, ps, sc, s, as, us, l, aa)
 }

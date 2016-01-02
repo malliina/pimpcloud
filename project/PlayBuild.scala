@@ -18,7 +18,7 @@ object PlayBuild extends Build {
   val malliinaGroup = "com.malliina"
 
   val commonSettings = linuxSettings ++ Seq(
-    version := "0.5.1",
+    version := "0.6.0",
     scalaVersion := "2.11.7",
     retrieveManaged := false,
     fork in Test := true,
@@ -32,6 +32,7 @@ object PlayBuild extends Build {
       "org.java-websocket" % "Java-WebSocket" % "1.3.0",
       PlayImport.filters,
       PlayImport.cache,
+      PlayImport.specs2 % Test,
       "org.scalatest" %% "scalatest" % "2.2.5" % Test
     ),
     javacOptions ++= Seq(
@@ -54,6 +55,7 @@ object PlayBuild extends Build {
       val linuxName = (name in Linux).value
       Seq(
         s"-Dgoogle.oauth=/etc/$linuxName/google-oauth.key",
+        s"-Dpush.conf=/etc/$linuxName/push.conf",
         s"-Dlog.dir=/var/run/$linuxName/logs",
         "-Dlogger.resource=prod-logger.xml"
       )

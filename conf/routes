@@ -1,6 +1,9 @@
 GET         /                                  controllers.Phones.rootFolder
+GET         /health                            controllers.Web.ping
 GET         /login                             controllers.Web.login
 POST        /authenticate                      controllers.Web.formAuthenticate
+# Push notifications
+POST        /push                              controllers.Push.push
 # Proxy
 GET         /ping                              controllers.Phones.ping
 GET         /pingauth                          controllers.Phones.pingAuth

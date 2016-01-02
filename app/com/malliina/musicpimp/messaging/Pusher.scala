@@ -12,6 +12,8 @@ import scala.concurrent.Future
   * @author mle
   */
 class Pusher(apnsCredentials: APNSCredentials, gcmApiKey: String, admCredentials: ADMCredentials) {
+  def this(conf: PushConf) = this(conf.apns, conf.gcmApiKey, conf.adm)
+
   val apnsHandler = new APNSHandler(new APNSClient(
     apnsCredentials.keyStore,
     apnsCredentials.keyStorePass,
@@ -34,4 +36,8 @@ class Pusher(apnsCredentials: APNSCredentials, gcmApiKey: String, admCredentials
       mpns <- mpnsFuture
     } yield PushResult(apns, gcm, adm, mpns)
   }
+}
+
+object Pusher {
+  def fromConf: Pusher = new Pusher(PushConfReader.load)
 }

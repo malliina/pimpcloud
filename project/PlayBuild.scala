@@ -18,7 +18,7 @@ object PlayBuild extends Build {
   val malliinaGroup = "com.malliina"
 
   val commonSettings = linuxSettings ++ Seq(
-    version := "0.5.0",
+    version := "0.5.1",
     scalaVersion := "2.11.7",
     retrieveManaged := false,
     fork in Test := true,
@@ -28,6 +28,7 @@ object PlayBuild extends Build {
     ),
     libraryDependencies ++= Seq(
       malliinaGroup %% "play-base" % "2.5.0",
+      malliinaGroup %% "mobile-push" % "1.3.1",
       "org.java-websocket" % "Java-WebSocket" % "1.3.0",
       PlayImport.filters,
       PlayImport.cache,

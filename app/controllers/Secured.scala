@@ -1,14 +1,15 @@
 package controllers
 
-import com.mle.play.controllers.AccountController
-import com.mle.util.Log
+import com.malliina.play.controllers.AccountController
+import controllers.Secured.log
+import play.api.Logger
 import play.api.mvc._
 
 /**
- *
- * @author mle
- */
-trait Secured extends AccountController with PimpContentController with Log {
+  *
+  * @author mle
+  */
+trait Secured extends AccountController with PimpContentController {
   protected override def onUnauthorized(implicit request: RequestHeader): Result = {
     logUnauthorized(request)
     log debug s"Intended: ${request.uri}"
@@ -19,4 +20,8 @@ trait Secured extends AccountController with PimpContentController with Log {
   }
 
   def loginRedirectCall: Call = routes.Web.login()
+}
+
+object Secured {
+  private val log = Logger(getClass)
 }

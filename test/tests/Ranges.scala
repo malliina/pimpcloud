@@ -1,7 +1,7 @@
 package tests
 
-import com.mle.play.ContentRange
-import com.mle.storage.StorageInt
+import com.malliina.play.ContentRange
+import com.malliina.storage.StorageInt
 import org.scalatest.FunSuite
 
 /**

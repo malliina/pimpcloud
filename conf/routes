@@ -16,13 +16,13 @@ POST        /alarms                            controllers.Phones.editAlarm
 POST        /alarms/editor/add                 controllers.Phones.newAlarm
 GET         /playlists                         controllers.Phones.playlists
 POST        /playlists                         controllers.Phones.savePlaylist
-GET         /playlists/*playlist               controllers.Phones.playlist(playlist: com.mle.musicpimp.models.PlaylistID)
-POST        /playlists/delete/*playlist        controllers.Phones.deletePlaylist(playlist: com.mle.musicpimp.models.PlaylistID)
+GET         /playlists/*playlist               controllers.Phones.playlist(playlist: com.malliina.musicpimp.models.PlaylistID)
+POST        /playlists/delete/*playlist        controllers.Phones.deletePlaylist(playlist: com.malliina.musicpimp.models.PlaylistID)
 POST        /proxied/*cmd                      controllers.Phones.bodyProxied(cmd: String)
-GET         /mobile/ws                         com.mle.pimpcloud.ws.PhoneSockets.openSocket
-GET         /mobile/ws2                        com.mle.pimpcloud.ws.PhoneSockets.openSocket2
-GET         /ws/playback                       com.mle.pimpcloud.ws.PhoneSockets.openSocket
-GET         /ws/playback2                      com.mle.pimpcloud.ws.PhoneSockets.openSocket2
+GET         /mobile/ws                         com.malliina.pimpcloud.ws.PhoneSockets.openSocket
+GET         /mobile/ws2                        com.malliina.pimpcloud.ws.PhoneSockets.openSocket2
+GET         /ws/playback                       com.malliina.pimpcloud.ws.PhoneSockets.openSocket
+GET         /ws/playback2                      com.malliina.pimpcloud.ws.PhoneSockets.openSocket2
 # Servers
 POST        /track                             controllers.ServersController.receiveUpload
 GET         /servers/ws                        controllers.Servers.openSocket

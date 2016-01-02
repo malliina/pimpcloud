@@ -3,17 +3,19 @@ package controllers
 import java.net.{URLDecoder, URLEncoder}
 import java.nio.file.Paths
 
-import com.mle.concurrent.ExecutionContexts.cached
-import com.mle.concurrent.FutureOps
-import com.mle.musicpimp.audio.Directory
-import com.mle.musicpimp.cloud.PimpServerSocket
-import com.mle.musicpimp.json.JsonStrings._
-import com.mle.musicpimp.models.PlaylistID
-import com.mle.pimpcloud.ws.PhoneSockets
-import com.mle.pimpcloud.{ErrorMessage, ErrorResponse}
-import com.mle.play.ContentRange
-import com.mle.play.controllers.{BaseController, BaseSecurity}
-import com.mle.play.http.HttpConstants.{AUDIO_MPEG, NO_CACHE}
+import com.malliina.concurrent.ExecutionContexts.cached
+import com.malliina.concurrent.FutureOps
+import com.malliina.musicpimp.audio.Directory
+import com.malliina.musicpimp.cloud.PimpServerSocket
+import com.malliina.musicpimp.json.JsonStrings._
+import com.malliina.musicpimp.models.PlaylistID
+import com.malliina.pimpcloud.ws.PhoneSockets
+import com.malliina.pimpcloud.{ErrorMessage, ErrorResponse}
+import com.malliina.play.ContentRange
+import com.malliina.play.controllers.{BaseController, BaseSecurity}
+import com.malliina.play.http.HttpConstants.{AUDIO_MPEG, NO_CACHE}
+import controllers.Phones.log
+import play.api.Logger
 import play.api.http.ContentTypes
 import play.api.libs.MimeTypes
 import play.api.libs.json.{JsObject, JsValue, Json}
@@ -27,10 +29,12 @@ import scala.util.Try
   * @author mle
   */
 class Phones(val servers: Servers, val phoneSockets: PhoneSockets)
-  extends Controller with Secured with BaseSecurity with BaseController {
-  val DefaultSearchLimit = 100
-  val BYTES = "bytes"
-  val NONE = "none"
+  extends Controller
+  with Secured
+  with BaseSecurity
+  with BaseController {
+
+
 
   def ping = proxiedGetAction(PING)
 
@@ -45,7 +49,7 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets)
   def search = proxiedAction((req, socket) => {
     def query(key: String) = (req getQueryString key) map (_.trim) filter (_.nonEmpty)
     val termFromQuery = query(TERM)
-    val limit = query(LIMIT).filter(i => Try(i.toInt).isSuccess).map(_.toInt) getOrElse DefaultSearchLimit
+    val limit = query(LIMIT).filter(i => Try(i.toInt).isSuccess).map(_.toInt) getOrElse Phones.DefaultSearchLimit
     termFromQuery.fold[Future[Result]](Future.successful(BadRequest))(term => {
       folderResult(socket,
         _.search(term, limit).map(tracks => Directory(Nil, tracks)),
@@ -94,7 +98,7 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets)
                 )
               }).getOrElse {
                 result.withHeaders(
-                  ACCEPT_RANGES -> BYTES,
+                  ACCEPT_RANGES -> Phones.BYTES,
                   CONTENT_LENGTH -> trackSize.toBytes.toString,
                   CACHE_CONTROL -> NO_CACHE,
                   CONTENT_TYPE -> AUDIO_MPEG,
@@ -191,8 +195,14 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets)
 }
 
 object Phones {
-  val invalidCredentials = new NoSuchElementException("Invalid credentials")
+  val log = Logger(getClass)
+
+  val DefaultSearchLimit = 100
+  val BYTES = "bytes"
+  val NONE = "none"
   val EncodingUTF8 = "UTF-8"
+
+  val invalidCredentials = new NoSuchElementException("Invalid credentials")
 
   def path(id: String) = Try(Paths get decode(id))
 

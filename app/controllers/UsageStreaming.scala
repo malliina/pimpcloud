@@ -1,6 +1,6 @@
 package controllers
 
-import com.mle.pimpcloud.ws.PhoneSockets
+import com.malliina.pimpcloud.ws.PhoneSockets
 import play.api.libs.json.JsValue
 import play.api.mvc.Call
 import rx.lang.scala.Observable

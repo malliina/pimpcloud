@@ -1,6 +1,6 @@
 <configuration>
     <conversionRule conversionWord="coloredLevel" converterClass="play.api.Logger$ColoredLevel"/>
-    <appender name="RX" class="com.mle.logbackrx.BasicBoundedReplayRxAppender">
+    <appender name="RX" class="com.malliina.logbackrx.BasicBoundedReplayRxAppender">
         <bufferSize>100</bufferSize>
         <timeFormat>yyyy-MM-dd HH:mm:ss</timeFormat>
     </appender>

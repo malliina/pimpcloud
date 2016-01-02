@@ -1,15 +1,17 @@
 package controllers
 
-import com.mle.concurrent.FutureOps
-import com.mle.musicpimp.models.User
-import com.mle.pimpcloud.CloudCredentials
-import com.mle.play.controllers.{BaseSecurity, BaseController}
+import com.malliina.concurrent.FutureOps
+import com.malliina.musicpimp.models.User
+import com.malliina.pimpcloud.CloudCredentials
+import com.malliina.play.controllers.{BaseController, BaseSecurity}
+import controllers.Web.log
+import play.api.Logger
 import play.api.data.Form
 import play.api.data.Forms._
+import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.mvc._
 import views.html
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 /**
@@ -52,4 +54,8 @@ class Web(servers: Servers) extends Secured with BaseSecurity with BaseControlle
   def defaultLoginSuccessPage: Call = routes.Phones.rootFolder()
 
   def fut[T](body: => T) = Future successful body
+}
+
+object Web {
+  private val log = Logger(getClass)
 }

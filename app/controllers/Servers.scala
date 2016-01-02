@@ -3,18 +3,20 @@ package controllers
 import java.util.UUID
 
 import akka.actor.ActorSystem
-import com.mle.concurrent.ExecutionContexts.cached
-import com.mle.concurrent.FutureOps
-import com.mle.musicpimp.cloud.PimpServerSocket
-import com.mle.musicpimp.json.JsonStrings
-import com.mle.musicpimp.json.JsonStrings.{ADDRESS, BODY, CMD, EVENT, ID, REGISTERED, SERVERS}
-import com.mle.musicpimp.models.User
-import com.mle.pimpcloud.actors.ActorStorage
-import com.mle.pimpcloud.ws.StreamData
-import com.mle.pimpcloud.{CloudCredentials, PimpAuth}
-import com.mle.play.auth.Auth
-import com.mle.play.controllers.AuthResult
-import com.mle.ws.ServerSocket
+import com.malliina.concurrent.ExecutionContexts.cached
+import com.malliina.concurrent.FutureOps
+import com.malliina.musicpimp.cloud.PimpServerSocket
+import com.malliina.musicpimp.json.JsonStrings
+import com.malliina.musicpimp.json.JsonStrings.{ADDRESS, BODY, CMD, EVENT, ID, REGISTERED, SERVERS}
+import com.malliina.musicpimp.models.User
+import com.malliina.pimpcloud.actors.ActorStorage
+import com.malliina.pimpcloud.ws.StreamData
+import com.malliina.pimpcloud.{CloudCredentials, PimpAuth}
+import com.malliina.play.auth.Auth
+import com.malliina.play.controllers.AuthResult
+import com.malliina.ws.ServerSocket
+import controllers.Servers.log
+import play.api.Logger
 import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.mvc._
 import rx.lang.scala.Observable
@@ -86,7 +88,7 @@ abstract class Servers(actorSystem: ActorSystem) extends ServerSocket(ActorStora
             }
           })
         }
-      cloudID map (id => com.mle.play.controllers.AuthResult(id))
+      cloudID map (id => com.malliina.play.controllers.AuthResult(id))
     }).getOrElse(Future.failed(new NoSuchElementException))
   }
 
@@ -174,6 +176,10 @@ abstract class Servers(actorSystem: ActorSystem) extends ServerSocket(ActorStora
 
   def flattenInvalid[T](optFut: Option[Future[T]]) =
     optFut getOrElse Future.failed[T](Phones.invalidCredentials)
+}
+
+object Servers {
+  private val log = Logger(getClass)
 }
 
 case class Server(request: UUID, socket: PimpServerSocket)

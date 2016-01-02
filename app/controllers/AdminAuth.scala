@@ -1,6 +1,6 @@
 package controllers
 
-import com.mle.play.controllers.OAuthSecured
+import com.malliina.play.controllers.OAuthSecured
 import play.api.mvc.{Action, Call}
 
 /**

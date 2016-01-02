@@ -2,9 +2,11 @@ package controllers
 
 import java.util.UUID
 
-import com.mle.musicpimp.cloud.PimpServerSocket
-import com.mle.musicpimp.json.JsonStrings
-import com.mle.ws.JsonFutureSocket
+import com.malliina.musicpimp.cloud.PimpServerSocket
+import com.malliina.musicpimp.json.JsonStrings
+import com.malliina.ws.JsonFutureSocket
+import controllers.ServersController.log
+import play.api.Logger
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.mvc.{Action, EssentialAction, RequestHeader}
 
@@ -58,4 +60,8 @@ class ServersController(servers: Servers) extends Secured {
   def toFuture[T](opt: Option[T]): Future[T] = {
     opt.map(Future.successful).getOrElse(Future.failed(new NoSuchElementException))
   }
+}
+
+object ServersController {
+  private val log = Logger(getClass)
 }

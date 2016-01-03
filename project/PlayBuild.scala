@@ -19,7 +19,7 @@ object PlayBuild extends Build {
 
   val malliinaGroup = "com.malliina"
 
-  val commonSettings = JenkinsPlugin.settings ++ linuxSettings ++ Seq(
+  val commonSettings = jenkinsSettings ++ linuxSettings ++ Seq(
     version := "0.6.0",
     scalaVersion := "2.11.7",
     retrieveManaged := false,

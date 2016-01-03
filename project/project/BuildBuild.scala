@@ -21,7 +21,8 @@ object BuildBuild extends Build {
   def sbtPlugins = Seq(
     "com.typesafe.play" % "sbt-plugin" % "2.4.6",
     "com.malliina" %% "sbt-play" % "0.6.0",
-    "com.malliina" %% "sbt-packager" % "1.9.0"
+    "com.malliina" %% "sbt-packager" % "1.9.0",
+    "com.malliina" %% "sbt-jenkins-control" % "0.2.0"
   ) map addSbtPlugin
 
   override lazy val projects = Seq(root)

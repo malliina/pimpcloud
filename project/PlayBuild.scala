@@ -1,4 +1,6 @@
+import com.malliina.jenkinsctrl.models.{JobName, BuildOrder}
 import com.malliina.sbt.GenericKeys._
+import com.malliina.sbt.jenkinsctrl.{JenkinsKeys, JenkinsPlugin}
 import com.malliina.sbt.unix.LinuxKeys.{httpPort, httpsPort}
 import com.malliina.sbt.unix.LinuxPlugin
 import com.malliina.sbtplay.PlayProject
@@ -17,7 +19,7 @@ object PlayBuild extends Build {
 
   val malliinaGroup = "com.malliina"
 
-  val commonSettings = linuxSettings ++ Seq(
+  val commonSettings = JenkinsPlugin.settings ++ linuxSettings ++ Seq(
     version := "0.6.0",
     scalaVersion := "2.11.7",
     retrieveManaged := false,
@@ -43,6 +45,10 @@ object PlayBuild extends Build {
     scalacOptions += "-target:jvm-1.8",
     RoutesKeys.routesGenerator := InjectedRoutesGenerator,
     PlayKeys.externalizeResources := false
+  )
+
+  def jenkinsSettings = JenkinsPlugin.settings ++ Seq(
+    JenkinsKeys.jenkinsDefaultBuild := Option(BuildOrder.simple(JobName("pimpcloud")))
   )
 
   def linuxSettings = LinuxPlugin.playSettings ++ Seq(

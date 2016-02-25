@@ -18,9 +18,6 @@ import rx.lang.scala.Observable
 
 import scala.concurrent.Future
 
-/**
- * @author Michael
- */
 abstract class PhoneSockets(actorSystem: ActorSystem) extends PhoneActorSockets(ActorStorage.phones(actorSystem)) {
   override type AuthSuccess = PhoneConnection
 

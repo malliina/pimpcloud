@@ -2,9 +2,6 @@ package com.malliina.pimpcloud
 
 import play.api.libs.json.Json
 
-/**
- * @author mle
- */
 case class ErrorMessage(message: String)
 
 object ErrorMessage {

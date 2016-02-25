@@ -8,9 +8,6 @@ import play.api.{ApplicationLoader, BuiltInComponentsFromContext, Logger}
 import play.filters.gzip.GzipFilter
 import router.Routes
 
-/**
- * @author mle
- */
 class CloudLoader extends ApplicationLoader {
   def load(context: Context) = {
     Logger.configure(context.environment)

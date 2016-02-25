@@ -63,7 +63,9 @@ object PlayBuild extends Build {
         s"-Dgoogle.oauth=/etc/$linuxName/google-oauth.key",
         s"-Dpush.conf=/etc/$linuxName/push.conf",
         s"-Dlog.dir=/var/run/$linuxName/logs",
-        "-Dlogger.resource=prod-logger.xml"
+        "-Dlogger.resource=prod-logger.xml",
+        "-Dfile.encoding=UTF-8",
+        "-Dsun.jnu.encoding=UTF-8"
       )
     },
     PackagerKeys.packageSummary in Linux := "This is the pimpcloud summary.",

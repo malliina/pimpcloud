@@ -10,9 +10,6 @@ import play.api.mvc.RequestHeader
 
 import scala.concurrent.Future
 
-/**
- * @author mle
- */
 class JoinedSockets(actorSystem: ActorSystem) {
   val servers = new Servers(actorSystem) {
     override def sendToPhone(msg: JsValue, client: PimpServerSocket): Unit =
@@ -24,13 +21,11 @@ class JoinedSockets(actorSystem: ActorSystem) {
       authPhone(req)
   }
 
-  def onServerMessage(msg: JsValue, server: PimpServerSocket) = {
+  def onServerMessage(msg: JsValue, server: PimpServerSocket) =
     phones.storage.actor ! PhonesActor.MessageFromServer(msg, server)
-  }
 
-  def authPhone(req: RequestHeader): Future[PhoneConnection] = {
+  def authPhone(req: RequestHeader): Future[PhoneConnection] =
     servers.authPhone(req)
-  }
 }
 
 object JoinedSockets {

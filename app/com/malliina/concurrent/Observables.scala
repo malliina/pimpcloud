@@ -6,9 +6,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Future, Promise}
 
-/**
- * @author Michael
- */
 object Observables {
   def after[T](duration: Duration)(code: => T): Future[T] = {
     val p = Promise[T]()

@@ -4,12 +4,7 @@ import com.malliina.musicpimp.json.JsonFormatVersions._
 import play.api.http.MimeTypes
 import play.api.mvc.RequestHeader
 
-/**
-  * @author mle
-  */
 object PimpRequest {
-
-
   /**
     * @param request the request
     * @return the desired format of the response to `request`.
@@ -25,8 +20,7 @@ object PimpRequest {
     else None
   }
 
-  /**
-    * The desired format for clients compatible with API version 17 is
+  /** The desired format for clients compatible with API version 17 is
     * incorrectly determined to be HTML, because those clients do not
     * specify an Accept header in their WebSocket requests thus the server
     * thinks they are browsers by default. However, the WebSocket API does

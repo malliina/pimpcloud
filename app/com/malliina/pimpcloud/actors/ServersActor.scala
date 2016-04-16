@@ -4,11 +4,8 @@ import akka.actor.ActorLogging
 import com.malliina.musicpimp.cloud.PimpServerSocket
 import play.api.libs.json.JsValue
 
-/**
- * Manager of server websockets.
- *
- * @author mle
- */
+/** Manager of server websockets.
+  */
 class ServersActor extends ItemsActor[PimpServerSocket] with ActorLogging {
   override def receive: Receive = {
     case ServersActor.Connect(client) =>

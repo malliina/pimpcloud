@@ -6,8 +6,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 import scala.util.Try
 
-/**
-  * A [[Future]]-based API for event-based apps. It is expected that once a message has been sent using `proxy`, within
+/** A [[Future]]-based API for event-based apps. It is expected that once a message has been sent using `proxy`, within
   * a reasonable amount of time a response will be delivered to `complete`, which will complete the
   * [[Future]] returned by the initial call to `proxy`.
   *
@@ -26,8 +25,7 @@ trait FutureMessaging[T] {
     */
   def request(cmd: String, body: T, user: User, timeout: Duration): Future[T]
 
-  /**
-    * Sends a request.
+  /** Sends a request.
     *
     * @param payload
     * @return

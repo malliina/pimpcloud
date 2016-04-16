@@ -11,9 +11,7 @@ import play.api.libs.json.{JsValue, Json}
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Future, Promise}
-/**
-  * @author Michael
-  */
+
 trait UuidFutureMessaging extends FutureMessaging[JsValue] {
   val ongoing = TrieMap.empty[UUID, Promise[JsValue]]
 

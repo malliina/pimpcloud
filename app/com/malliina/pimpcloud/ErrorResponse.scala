@@ -3,9 +3,6 @@ package com.malliina.pimpcloud
 import play.api.http.Writeable
 import play.api.libs.json.Json
 
-/**
-  * @author mle
-  */
 case class ErrorResponse(errors: Seq[ErrorMessage])
 
 object ErrorResponse {

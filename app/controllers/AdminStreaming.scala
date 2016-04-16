@@ -10,9 +10,6 @@ import rx.lang.scala.Subscription
 
 import scala.concurrent.Future
 
-/**
-  * @author Michael
-  */
 abstract class AdminStreaming(adminAuth: AdminAuth) extends Controller with Streaming {
   override val subscriptions: ItemMap[WebSocketClient, Subscription] = StmItemMap.empty[WebSocketClient, Subscription]
 

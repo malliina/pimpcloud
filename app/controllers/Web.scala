@@ -14,9 +14,6 @@ import views.html
 
 import scala.concurrent.Future
 
-/**
- * @author Michael
- */
 class Web(servers: Servers) extends Secured with BaseSecurity with BaseController {
   val serverFormKey = "server"
 

@@ -14,21 +14,17 @@ import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.util.Try
 
-/**
-  * Emulates an HTTP client using a WebSocket channel. Supports timeouts.
+/** Emulates an HTTP client using a WebSocket channel. Supports timeouts.
   *
   * Protocol: Responses must be tagged with the same request ID we add to sent messages, so that we can
   * pair requests with responses.
-  *
-  * @author Michael
   */
 class JsonFutureSocket(val channel: Channel[JsValue], val id: String)
   extends UuidFutureMessaging {
 
   val timeout = 20.seconds
 
-  /**
-    * We expect responses to contain `REQUEST_ID` and `BODY` keys, which we parse. The request is completed with the
+  /** We expect responses to contain `REQUEST_ID` and `BODY` keys, which we parse. The request is completed with the
     * JSON object in `BODY`.
     *
     * @param response a JSON response from server
@@ -45,17 +41,15 @@ class JsonFutureSocket(val channel: Channel[JsValue], val id: String)
     (response \ SUCCESS).validate[Boolean].filter(_ == false).isError
   }
 
-  /**
-    * TODO Fix signature; what happens when the channel is closed and this method is called?
+  /** TODO Fix signature; what happens when the channel is closed and this method is called?
     *
     * @param json payload
     */
   def send(json: JsValue) = Try(channel push json)
 
-  /**
-    * Sends `body` as JSON and deserializes the response to `U`.
+  /** Sends `body` as JSON and deserializes the response to `U`.
     *
-    * @param body message payload
+    * @param body   message payload
     * @param writer json serializer
     * @param reader json deserializer
     * @tparam T type of request payload
@@ -66,12 +60,11 @@ class JsonFutureSocket(val channel: Channel[JsValue], val id: String)
     proxyD(user, cmd, writer writes body)
   }
 
-  /**
-    * Sends `body` and deserializes the response to type `T`.
+  /** Sends `body` and deserializes the response to type `T`.
     *
     * TODO check success status first, and any potential error
     *
-    * @param body payload
+    * @param body   payload
     * @param reader json deserializer
     * @tparam T type of response
     * @return a deserialized body, or a failed [[Future]] on failure

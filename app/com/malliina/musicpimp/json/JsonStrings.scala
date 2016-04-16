@@ -1,8 +1,5 @@
 package com.malliina.musicpimp.json
 
-/**
- * @author Michael
- */
 object JsonStrings {
   val CMD = "cmd"
   val PING = "ping"

@@ -7,9 +7,6 @@ import org.scalatest.FunSuite
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 
-/**
-  * @author mle
-  */
 class PushTests extends FunSuite {
   val testTask = PushTask(
     Option(

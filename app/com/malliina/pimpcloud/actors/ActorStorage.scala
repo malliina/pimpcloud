@@ -22,9 +22,6 @@ object ActorStorage {
     new ActorStorage[ServersActor, JsValue, PimpServerSocket](actorSystem, ServersActor)
 }
 
-/**
- * @author mle
- */
 class ActorStorage[A <: Actor : ClassTag, M, C](actorSystem: ActorSystem, val messages: MessagesBase[M, C])
   extends ClientHandler[M, C] {
 

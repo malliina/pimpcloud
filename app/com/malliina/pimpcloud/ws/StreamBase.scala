@@ -15,9 +15,7 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{BodyParser, MultipartFormData, Result}
 
 import scala.util.{Failure, Success, Try}
-/**
- * @author Michael
- */
+
 trait StreamBase[T] {
   val maxUploadSize = 1024.megs
 

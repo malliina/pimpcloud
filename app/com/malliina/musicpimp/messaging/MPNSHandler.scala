@@ -5,9 +5,6 @@ import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
 import scala.concurrent.Future
 
-/**
-  * @author mle
-  */
 class MPNSHandler(client: MPNSClient) extends PushRequestHandler[MPNSRequest, BasicResult] {
   def push(request: MPNSRequest): Future[Seq[BasicResult]] = {
     request.message

@@ -1,11 +1,10 @@
 package com.malliina.pimpcloud.actors
 
-/**
- * Base operations for messages and clients.
- *
- * @tparam M type of message
- * @tparam C type of client
- */
+/** Base operations for messages and clients.
+  *
+  * @tparam M type of message
+  * @tparam C type of client
+  */
 trait MessagesBase[M, C] {
 
   case class Connect(client: C)

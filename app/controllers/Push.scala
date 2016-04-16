@@ -9,9 +9,6 @@ import play.api.mvc.{Action, Controller}
 
 import scala.concurrent.Future
 
-/**
-  * @author mle
-  */
 class Push(pusher: Pusher) extends Controller {
   def push = Action.async(parse.json) { request =>
     val payload = request.body

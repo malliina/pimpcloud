@@ -3,9 +3,6 @@ package tests
 import org.scalatest.FunSuite
 import rx.lang.scala.subjects.ReplaySubject
 
-/**
- * @author Michael
- */
 class Rx extends FunSuite {
   val subject = ReplaySubject[Int]()
 

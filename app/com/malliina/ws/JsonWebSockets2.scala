@@ -8,9 +8,6 @@ import rx.lang.scala.Observable
 
 import scala.concurrent.duration.DurationInt
 
-/**
-  * @author mle
-  */
 trait JsonWebSockets2[C <: com.malliina.play.ws.SocketClient[JsValue]] extends WSController2[JsValue, C] {
   // prevents connections being dropped after 30s of inactivity; i don't know how to modify that timeout
   val pinger = Observable.interval(20.seconds).subscribe(_ => broadcast(JsonMessages.ping))

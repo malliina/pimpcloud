@@ -1,8 +1,5 @@
 package com.malliina.musicpimp.models
 
-/**
- * @author mle
- */
 case class User(name: String) {
   override def toString = name
 }

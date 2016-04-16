@@ -5,9 +5,6 @@ import rx.lang.scala.{Observable, Subscription}
 
 import scala.concurrent.ExecutionContext
 
-/**
- * @author Michael
- */
 object Enumerators {
   /**
    *

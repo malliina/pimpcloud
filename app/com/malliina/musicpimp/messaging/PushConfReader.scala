@@ -9,9 +9,6 @@ import com.malliina.util.{BaseConfigReader, Util}
 
 import scala.util.Try
 
-/**
-  * @author mle
-  */
 object PushConfReader extends BaseConfigReader[PushConf] {
   val ApnsKeyStore = "apnsKeyStore"
   val ApnsKeyStorePass = "apnsKeyStorePass"

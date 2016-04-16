@@ -8,9 +8,6 @@ import play.api.libs.iteratee.Concurrent.Channel
 import play.api.libs.json.JsValue
 import play.api.mvc.{BodyParser, MultipartFormData}
 
-/**
- * @author Michael
- */
 class NoCacheCloudStreams(id: String, channel: Channel[JsValue], val onUpdate: () => Unit)
   extends CloudStreams[Array[Byte]](id, channel) with ByteStreamBase {
 

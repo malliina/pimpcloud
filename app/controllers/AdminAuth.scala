@@ -3,9 +3,6 @@ package controllers
 import com.malliina.play.controllers.OAuthSecured
 import play.api.mvc.{Action, Call}
 
-/**
- * @author Michael
- */
 class AdminAuth extends OAuthSecured {
   // OAuth
   override val sessionUserKey: String = "email"

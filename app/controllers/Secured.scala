@@ -5,10 +5,6 @@ import controllers.Secured.log
 import play.api.Logger
 import play.api.mvc._
 
-/**
-  *
-  * @author mle
-  */
 trait Secured extends AccountController with PimpContentController {
   protected override def onUnauthorized(implicit request: RequestHeader): Result = {
     logUnauthorized(request)

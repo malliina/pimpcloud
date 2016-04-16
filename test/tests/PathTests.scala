@@ -5,9 +5,6 @@ import java.nio.file.Paths
 import controllers.Phones
 import org.scalatest.FunSuite
 
-/**
- * @author mle
- */
 class PathTests extends FunSuite {
   test("Paths.get fails for invalid paths") {
     val str = "?"

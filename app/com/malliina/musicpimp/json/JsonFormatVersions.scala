@@ -1,14 +1,11 @@
 package com.malliina.musicpimp.json
 
-/**
- * Clients specify the desired response format, including version, in the `Accept` HTTP header.
- *
- * This trait contains the supported JSON formats.
- *
- * Adapted from http://developer.github.com/v3/media/
- *
- * @author mle
- */
+/** Clients specify the desired response format, including version, in the `Accept` HTTP header.
+  *
+  * This trait contains the supported JSON formats.
+  *
+  * Adapted from http://developer.github.com/v3/media/
+  */
 trait JsonFormatVersions {
   val JSONv17 = versionString(Some(17))
   val JSONv18 = versionString(Some(18))

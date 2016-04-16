@@ -3,9 +3,6 @@ package com.malliina.musicpimp.messaging
 import com.ning.http.client.Response
 import play.api.libs.json.Json
 
-/**
-  * @author mle
-  */
 case class BasicResult(statusCode: Int)
 
 object BasicResult {

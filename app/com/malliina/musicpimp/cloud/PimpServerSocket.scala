@@ -17,9 +17,6 @@ import play.api.mvc.{RequestHeader, Result}
 
 import scala.concurrent.Future
 
-/**
-  * @author Michael
-  */
 class PimpServerSocket(channel: Channel[JsValue], id: String, val headers: RequestHeader, onUpdate: () => Unit)
   extends JsonFutureSocket(channel, id)
   with SocketClient[JsValue] {

@@ -2,9 +2,6 @@ package com.malliina.musicpimp.cloud
 
 import play.api.libs.json.Json
 
-/**
- * @author Michael
- */
 object PimpMessages {
 
   trait PimpMessage

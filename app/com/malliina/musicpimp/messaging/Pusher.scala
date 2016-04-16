@@ -8,9 +8,6 @@ import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
 import scala.concurrent.Future
 
-/**
-  * @author mle
-  */
 class Pusher(apnsCredentials: APNSCredentials, gcmApiKey: String, admCredentials: ADMCredentials) {
   def this(conf: PushConf) = this(conf.apns, conf.gcmApiKey, conf.adm)
 

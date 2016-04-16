@@ -2,9 +2,6 @@ package com.malliina.pimpcloud
 
 import scala.concurrent.Future
 
-/**
- * @author mle
- */
 trait ClientHandler[M, C] {
   def onConnect(c: C)
 

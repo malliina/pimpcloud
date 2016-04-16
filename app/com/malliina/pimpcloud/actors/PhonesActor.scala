@@ -4,11 +4,8 @@ import com.malliina.musicpimp.cloud.PimpServerSocket
 import com.malliina.pimpcloud.ws.PhoneClient
 import play.api.libs.json.JsValue
 
-/**
- * Manager of phone websockets.
- *
- * @author mle
- */
+/** Manager of phone websockets.
+  */
 class PhonesActor extends ItemsActor[PhoneClient] {
   override def receive: Receive = {
     case PhonesActor.Connect(client) =>

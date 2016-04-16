@@ -9,9 +9,6 @@ import rx.lang.scala.Observable
 
 import scala.concurrent.duration.DurationInt
 
-/**
- * @author Michael
- */
 class Logs(adminAuth: AdminAuth) extends AdminStreaming(adminAuth) with LogStreaming {
   override lazy val jsonEvents: Observable[JsValue] =
     logEvents.tumblingBuffer(100.millis).filter(_.nonEmpty).map(Json.toJson(_))

@@ -3,9 +3,6 @@ package com.malliina.ws
 import play.api.libs.iteratee.Concurrent
 import play.api.mvc.RequestHeader
 
-/**
- * @author Michael
- */
 trait WebSocketBase2[Message, Client <: com.malliina.play.ws.SocketClient[Message]] {
   type AuthSuccess
 

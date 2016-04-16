@@ -12,9 +12,6 @@ import play.api.mvc.{Action, EssentialAction, RequestHeader}
 
 import scala.concurrent.Future
 
-/**
- * @author mle
- */
 class ServersController(servers: Servers) extends Secured {
 
   def receiveUpload = serverAction(server => {

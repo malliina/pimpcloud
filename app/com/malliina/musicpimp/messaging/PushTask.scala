@@ -2,9 +2,6 @@ package com.malliina.musicpimp.messaging
 
 import play.api.libs.json.Json
 
-/**
-  * @author mle
-  */
 case class PushTask(apns: Option[APNSRequest],
                     gcm: Option[GCMRequest],
                     adm: Option[ADMRequest],

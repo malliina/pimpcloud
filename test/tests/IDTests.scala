@@ -6,9 +6,6 @@ import org.scalatest.FunSuite
 
 import scala.collection.concurrent.TrieMap
 
-/**
- * @author Michael
- */
 class IDTests extends FunSuite {
   val map = TrieMap.empty[UUID, Int]
   test("UUID.equals") {

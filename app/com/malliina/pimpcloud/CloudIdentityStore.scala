@@ -5,8 +5,7 @@ import com.malliina.pimpcloud.CloudIdentityStore.AlreadyExists
 trait CloudIdentityStore {
   type CloudID = String
 
-  /**
-    * Generates a new ID and stores it in the database.
+  /** Generates a new ID and stores it in the database.
     *
     * @return the ID or [[AlreadyExists]] if there's a collision
     */

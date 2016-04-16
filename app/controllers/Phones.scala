@@ -24,10 +24,6 @@ import play.api.mvc._
 import scala.concurrent.Future
 import scala.util.Try
 
-/**
-  *
-  * @author mle
-  */
 class Phones(val servers: Servers, val phoneSockets: PhoneSockets)
   extends Controller
   with Secured

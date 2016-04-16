@@ -5,9 +5,6 @@ import rx.lang.scala.{Observable, Subscription}
 
 import scala.concurrent.ExecutionContext
 
-/**
- * @author Michael
- */
 object Streaming {
 
 
@@ -20,5 +17,3 @@ object Streaming {
     case Input.EOF => 1
   }
 }
-
-

@@ -5,8 +5,5 @@ import com.malliina.pimpcloud.actors.{ActorStorage, PhonesActor}
 import com.malliina.pimpcloud.ws.PhoneClient
 import play.api.libs.json.JsValue
 
-/**
- * @author mle
- */
 abstract class PhoneActorSockets(val storage: ActorStorage[PhonesActor, JsValue, PhoneClient])
   extends JsonWebSockets2[PhoneClient] with WithStorage[JsValue, PhoneClient]

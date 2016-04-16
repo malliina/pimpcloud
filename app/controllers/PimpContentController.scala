@@ -1,6 +1,5 @@
 package controllers
 
-import com.malliina.musicpimp.json.JsonFormatVersions
 import controllers.PimpContentController.log
 import play.api.Logger
 import play.api.http.MimeTypes
@@ -9,12 +8,9 @@ import play.api.mvc.{Controller, RequestHeader, Result}
 
 import scala.concurrent.Future
 
-/**
- * Methods that choose the correct response to provide to clients
- * based on what they accept (HTML/JSON/which JSON version).
- *
- * @author mle
- */
+/** Methods that choose the correct response to provide to clients
+  * based on what they accept (HTML/JSON/which JSON version).
+  */
 trait PimpContentController extends Controller {
 
   import com.malliina.musicpimp.json.JsonFormatVersions._
@@ -56,9 +52,9 @@ trait PimpContentController extends Controller {
     pimpResult(status(html), status(json))
 
   /**
-   *
-   * @return the equivalent of "Unit" in JSON and HTML
-   */
+    *
+    * @return the equivalent of "Unit" in JSON and HTML
+    */
   def AckResponse(implicit request: RequestHeader) =
     pimpResult(html = Accepted, json = Accepted)
 }

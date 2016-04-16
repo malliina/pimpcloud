@@ -8,9 +8,6 @@ import play.api.libs.json.JsValue
 import play.api.mvc._
 import rx.lang.scala.subjects.BehaviorSubject
 
-/**
-  * @author Michael
-  */
 abstract class ServerSocket(storage: ActorStorage[ServersActor, JsValue, PimpServerSocket])
   extends ServerActorSockets(storage) {
 

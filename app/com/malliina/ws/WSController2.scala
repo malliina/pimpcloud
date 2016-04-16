@@ -9,39 +9,35 @@ import play.api.mvc._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-/**
- *
- * @author mle
- */
 trait WSController2[Message, Client <: com.malliina.play.ws.SocketClient[Message]]
   extends WebSocketBase2[Message, Client] {
   /**
-   * Implement this like `routes.YourController.openSocket()`.
-   *
-   * @return
-   */
+    * Implement this like `routes.YourController.openSocket()`.
+    *
+    * @return
+    */
   def openSocketCall: Call
 
   def wsUrl(implicit request: RequestHeader): String = openSocketCall.webSocketURL(request.secure)
 
   /**
-   * Opens a WebSocket connection.
-   *
-   * This is the controller for requests to ws://... or wss://... URIs.
-   *
-   * @return a websocket connection using messages of type Message
-   */
+    * Opens a WebSocket connection.
+    *
+    * This is the controller for requests to ws://... or wss://... URIs.
+    *
+    * @return a websocket connection using messages of type Message
+    */
   def ws(frameFormatter: WebSocket.FrameFormatter[Message]): WebSocket[Message, Message] =
     wsBase(req => Left(onUnauthorized(req)), frameFormatter)
 
   /**
-   * Instead of returning an Unauthorized result upon authentication failures, this opens then immediately closes a
-   * connection connections, sends no messages and ignores any messages.
-   *
-   * The Java-WebSocket client library hangs if an Unauthorized result is returned after a websocket connection attempt.
-   *
-   * @return
-   */
+    * Instead of returning an Unauthorized result upon authentication failures, this opens then immediately closes a
+    * connection connections, sends no messages and ignores any messages.
+    *
+    * The Java-WebSocket client library hangs if an Unauthorized result is returned after a websocket connection attempt.
+    *
+    * @return
+    */
   def ws2(frameFormatter: WebSocket.FrameFormatter[Message]): WebSocket[Message, Message] =
     wsBase(req => Right(unauthorizedSocket(req)), frameFormatter)
 
@@ -54,16 +50,16 @@ trait WSController2[Message, Client <: com.malliina.play.ws.SocketClient[Message
     })(frameFormatter)
 
   /**
-   * What do we want?
-   * - Future[Either[AuthFailure, AuthSuccess]]
-   * - Future[Option[AuthSuccess]]
-   * - Future[AuthSuccess]
-   *
-   * IMO: The first one, then the others as convenience based on the first. (_.toOption, _.toOption.get)
-   *
-   * @param req req
-   * @return a successful authentication result, or fails with a NoSuchElementException if authentication fails
-   */
+    * What do we want?
+    * - Future[Either[AuthFailure, AuthSuccess]]
+    * - Future[Option[AuthSuccess]]
+    * - Future[AuthSuccess]
+    *
+    * IMO: The first one, then the others as convenience based on the first. (_.toOption, _.toOption.get)
+    *
+    * @param req req
+    * @return a successful authentication result, or fails with a NoSuchElementException if authentication fails
+    */
   def authenticateAsync(req: RequestHeader): Future[AuthSuccess]
 
   private def authorizedSocket(user: AuthSuccess, req: RequestHeader): (Iteratee[Message, _], Enumerator[Message]) = {

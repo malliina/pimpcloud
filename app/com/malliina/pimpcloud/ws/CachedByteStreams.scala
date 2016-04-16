@@ -16,16 +16,13 @@ import rx.lang.scala.subjects.ReplaySubject
 
 import scala.collection.concurrent.TrieMap
 
-/**
- * We might receive multiple requests of the same resource (song) within a short period of time. We do not want to
- * strain the music source which might be a bottleneck, so we cache streams if they're not greater than
- * `cacheThreshold`. Caching consumes memory, but this trade-off is accepted. The streams are cached for as long as the
- * first stream is ongoing: client code must call `remove(UUID)` once the stream is complete.
- *
- * Falls back to non-cached streaming if the track is meets or exceeds `cacheThreshold`.
- *
- * @author Michael
- */
+/** We might receive multiple requests of the same resource (song) within a short period of time. We do not want to
+  * strain the music source which might be a bottleneck, so we cache streams if they're not greater than
+  * `cacheThreshold`. Caching consumes memory, but this trade-off is accepted. The streams are cached for as long as the
+  * first stream is ongoing: client code must call `remove(UUID)` once the stream is complete.
+  *
+  * Falls back to non-cached streaming if the track is meets or exceeds `cacheThreshold`.
+  */
 class CachedByteStreams(id: String, val channel: Channel[JsValue], val onUpdate: () => Unit)
   extends StreamBase[Array[Byte]] with ByteStreamBase with Log {
 

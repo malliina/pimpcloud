@@ -24,12 +24,9 @@ import rx.lang.scala.subjects.BehaviorSubject
 
 import scala.concurrent.Future
 
-/**
-  * WebSocket for connected MusicPimp servers.
+/** WebSocket for connected MusicPimp servers.
   *
   * Pushes player events sent by servers to any connected phones, and responds to requests.
-  *
-  * @author Michael
   */
 abstract class Servers(actorSystem: ActorSystem) extends ServerSocket(ActorStorage.servers(actorSystem)) {
   // not a secret but avoids unintentional connections

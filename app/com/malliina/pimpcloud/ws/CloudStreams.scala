@@ -11,16 +11,15 @@ import play.api.mvc.Result
 
 import scala.collection.concurrent.TrieMap
 
-/**
- * For each incoming request:
- *
- * 1) Assign an ID to the request
- * 2) Open a channel (or create a promise) onto which we push the eventual response
- * 3) Forward the request along with its ID to the destination server
- * 4) The destination server tags its response with the request ID
- * 5) Read the request ID from the response and push the response to the channel (or complete the promise)
- * 6) EOF and close the channel; this completes the request-response cycle
- */
+/** For each incoming request:
+  *
+  * 1) Assign an ID to the request
+  * 2) Open a channel (or create a promise) onto which we push the eventual response
+  * 3) Forward the request along with its ID to the destination server
+  * 4) The destination server tags its response with the request ID
+  * 5) Read the request ID from the response and push the response to the channel (or complete the promise)
+  * 6) EOF and close the channel; this completes the request-response cycle
+  */
 abstract class CloudStreams[T](id: String, val channel: Channel[JsValue]) extends StreamBase[T] {
   private val iteratees = TrieMap.empty[UUID, IterateeInfo[T]]
 
@@ -33,11 +32,10 @@ abstract class CloudStreams[T](id: String, val channel: Channel[JsValue]) extend
     connectEnumerator(uuid, enumerator, track, range)
   }
 
-  /**
-   * Transfer complete.
-   *
-   * @param uuid
-   */
+  /** Transfer complete.
+    *
+    * @param uuid
+    */
   def removeUUID(uuid: UUID) = {
     (iteratees remove uuid).foreach(ii => ii.channel.eofAndEnd())
   }

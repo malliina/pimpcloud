@@ -4,9 +4,6 @@ import com.malliina.musicpimp.models.User
 import com.malliina.play.auth.Auth
 import play.api.mvc.RequestHeader
 
-/**
-  * @author Michael
-  */
 object PimpAuth {
   def cloudCredentials(request: RequestHeader): Option[CloudCredentials] = {
     Auth.authHeaderParser(request)(decoded => {

@@ -5,9 +5,6 @@ import play.api.libs.json.JsValue
 import play.api.mvc.Call
 import rx.lang.scala.Observable
 
-/**
- * @author Michael
- */
 class UsageStreaming(servers: Servers,
                      phones: Phones,
                      phoneSockets: PhoneSockets,

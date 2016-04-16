@@ -2,9 +2,6 @@ package com.malliina.musicpimp.messaging
 
 import scala.concurrent.Future
 
-/**
-  * @author mle
-  */
 trait PushRequestHandler[Req, Res] {
   def push(request: Req): Future[Seq[Res]]
 

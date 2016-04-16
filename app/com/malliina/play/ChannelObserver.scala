@@ -3,9 +3,6 @@ package com.malliina.play
 import play.api.libs.iteratee.Concurrent.Channel
 import rx.lang.scala.Observer
 
-/**
- * @author Michael
- */
 class ChannelObserver[T](channel: Channel[T]) extends Observer[T] {
   override def onNext(elem: T): Unit = channel push elem
 

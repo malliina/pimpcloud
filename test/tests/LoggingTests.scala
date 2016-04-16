@@ -4,8 +4,8 @@ import com.malliina.logbackrx.LogbackUtils
 import org.scalatest.FunSuite
 
 class LoggingTests extends FunSuite {
-  test("cannot retrieve appender from scalatest") {
+  test("can retrieve appender from scalatest") {
     val appender = LogbackUtils.appender("RX")
-    assert(appender.isEmpty)
+    assert(appender.isDefined)
   }
 }

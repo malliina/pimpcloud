@@ -12,7 +12,8 @@ import play.api.test.{FakeRequest, WithApplicationLoader}
 class WithApp extends WithApplicationLoader(new CloudLoader)
 
 class HttpPushTests extends Specification {
-  val testToken = APNSToken.build("9f3c2f830256954ada78bf56894fa7586307f0eedb7763117c84e0c1eee8347a").get
+  val testToken = APNSToken.build("6c9969eee832f6ed2a11d04d6daa404db13cc3d97f7298f0c042616fc2a5cc34").get
+//  val testToken = APNSToken.build("9f3c2f830256954ada78bf56894fa7586307f0eedb7763117c84e0c1eee8347a").get
   val testTask = PushTask(
     Option(
       APNSRequest(

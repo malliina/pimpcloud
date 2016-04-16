@@ -41,7 +41,9 @@ object PushConfReader extends BaseConfigReader[PushConf] {
       admClientSecret <- get(AdmClientSecret)
     } yield {
       val isSandbox = get(ApnsSandbox) contains "true"
-      PushConf(APNSCredentials(ks, keyStorePass, isSandbox), gcmApiKey, ADMCredentials(admClientId, admClientSecret))
+      val apns = APNSCredentials(ks, keyStorePass, isSandbox)
+      val adm = ADMCredentials(admClientId, admClientSecret)
+      PushConf(apns, gcmApiKey, adm)
     }
   }
 

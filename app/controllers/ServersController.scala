@@ -2,17 +2,17 @@ package controllers
 
 import java.util.UUID
 
+import akka.stream.Materializer
 import com.malliina.musicpimp.cloud.PimpServerSocket
 import com.malliina.musicpimp.json.JsonStrings
 import com.malliina.ws.JsonFutureSocket
 import controllers.ServersController.log
 import play.api.Logger
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.mvc.{Action, EssentialAction, RequestHeader}
 
 import scala.concurrent.Future
 
-class ServersController(servers: Servers) extends Secured {
+class ServersController(servers: Servers, val mat: Materializer) extends Secured {
 
   def receiveUpload = serverAction(server => {
     val requestID = server.request
@@ -21,7 +21,7 @@ class ServersController(servers: Servers) extends Secured {
     parser.fold[EssentialAction](Action(NotFound))(parser => {
       val maxSize = transfers.maxUploadSize
       log info s"Streaming at most $maxSize for request $requestID"
-      val composedParser = parse.maxLength(maxSize.toBytes, parser)
+      val composedParser = parse.maxLength(maxSize.toBytes, parser)(mat)
       Action(composedParser)(httpRequest => {
         transfers remove requestID
         httpRequest.body match {
@@ -44,6 +44,7 @@ class ServersController(servers: Servers) extends Secured {
       requestID <- req.headers get JsonStrings.REQUEST_ID
       uuid <- JsonFutureSocket.tryParseUUID(requestID)
     } yield uuid
+    implicit val ec = mat.executionContext
     for {
       uuid <- toFuture(uuidOpt)
       ss <- servers.connectedServers

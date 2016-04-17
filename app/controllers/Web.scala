@@ -1,5 +1,6 @@
 package controllers
 
+import akka.stream.Materializer
 import com.malliina.concurrent.FutureOps
 import com.malliina.musicpimp.models.User
 import com.malliina.pimpcloud.CloudCredentials
@@ -14,7 +15,7 @@ import views.html
 
 import scala.concurrent.Future
 
-class Web(servers: Servers) extends Secured with BaseSecurity with BaseController {
+class Web(servers: Servers, val mat: Materializer) extends Secured with BaseSecurity with BaseController {
   val serverFormKey = "server"
 
   def ping = Action(NoCache(Ok))

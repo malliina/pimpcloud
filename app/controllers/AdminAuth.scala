@@ -1,9 +1,10 @@
 package controllers
 
+import akka.stream.Materializer
 import com.malliina.play.controllers.OAuthSecured
 import play.api.mvc.{Action, Call}
 
-class AdminAuth extends OAuthSecured {
+class AdminAuth(val mat: Materializer) extends OAuthSecured {
   // OAuth
   override val sessionUserKey: String = "email"
 

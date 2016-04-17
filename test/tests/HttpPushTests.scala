@@ -26,13 +26,13 @@ class HttpPushTests extends Specification {
 
   "App" should {
     "respond to health check" in new WithApp {
-      val response = route(FakeRequest(GET, "/health")).get
+      val response = route(app, FakeRequest(GET, "/health")).get
       status(response) mustEqual 200
     }
 
     "push a notification" in new WithApp {
       val body = Json.obj(Push.Cmd -> Push.PushValue, Push.Body -> testTask)
-      val response = route(FakeRequest(POST, "/push").withJsonBody(body)).get
+      val response = route(app, FakeRequest(POST, "/push").withJsonBody(body)).get
       val result = (contentAsJson(response) \ Push.ResultKey).as[PushResult]
       result.apns.size mustEqual 1
     }

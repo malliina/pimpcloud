@@ -15,11 +15,11 @@ class PhonesActor extends ItemsActor[PhoneClient] {
       clients -= client
       sender() ! clients
     case PhonesActor.Message(message, recipient) =>
-      clients.find(_ == recipient).foreach(_.channel push message)
+      clients.find(_ == recipient).foreach(_.channel offer message)
     case PhonesActor.MessageFromServer(message, server) =>
-      clients.filter(_.connectedServer == server).foreach(_.channel push message)
+      clients.filter(_.connectedServer == server).foreach(_.channel offer message)
     case PhonesActor.Broadcast(message) =>
-      clients.foreach(_.channel push message)
+      clients.foreach(_.channel offer message)
     case PhonesActor.GetClients =>
       sender() ! clients
   }

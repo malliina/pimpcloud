@@ -1,36 +1,36 @@
 package com.malliina.pimpcloud
 
-import akka.actor.ActorSystem
+import akka.stream.Materializer
 import com.malliina.musicpimp.cloud.PimpServerSocket
-import com.malliina.pimpcloud.actors.PhonesActor
-import com.malliina.pimpcloud.ws.PhoneSockets
+import com.malliina.pimpcloud.ws.{PhoneClient, PhoneSockets}
+import com.malliina.ws.RxStmStorage
 import controllers.{PhoneConnection, Servers}
 import play.api.libs.json.JsValue
 import play.api.mvc.RequestHeader
 
 import scala.concurrent.Future
 
-class JoinedSockets(actorSystem: ActorSystem) {
-  val servers = new Servers(actorSystem) {
+class JoinedSockets(mat: Materializer) {
+  val servers = new Servers(mat) {
     override def sendToPhone(msg: JsValue, client: PimpServerSocket): Unit =
       onServerMessage(msg, client)
   }
 
-  val phones = new PhoneSockets(actorSystem) {
+  val phones = new PhoneSockets(RxStmStorage[PhoneClient](), mat) {
     override def authenticatePhone(req: RequestHeader): Future[PhoneConnection] =
       authPhone(req)
   }
 
   def onServerMessage(msg: JsValue, server: PimpServerSocket) =
-    phones.storage.actor ! PhonesActor.MessageFromServer(msg, server)
+    phones.send(msg, server)
 
   def authPhone(req: RequestHeader): Future[PhoneConnection] =
     servers.authPhone(req)
 }
 
 object JoinedSockets {
-  def joined(actorSystem: ActorSystem): (Servers, PhoneSockets) = {
-    val joined = new JoinedSockets(actorSystem)
+  def joined(mat: Materializer): (Servers, PhoneSockets) = {
+    val joined = new JoinedSockets(mat)
     (joined.servers, joined.phones)
   }
 }

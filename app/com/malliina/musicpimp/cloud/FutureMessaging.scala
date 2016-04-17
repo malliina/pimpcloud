@@ -1,5 +1,6 @@
 package com.malliina.musicpimp.cloud
 
+import akka.stream.QueueOfferResult
 import com.malliina.musicpimp.models.User
 
 import scala.concurrent.Future
@@ -30,7 +31,7 @@ trait FutureMessaging[T] {
     * @param payload
     * @return
     */
-  def send(payload: T): Try[Unit]
+  def send(payload: T): Future[QueueOfferResult]
 
   /**
     * Completes a request with `response`. It's assumed that we can find the matching `request` by parsing `response`.

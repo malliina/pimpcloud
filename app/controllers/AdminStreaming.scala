@@ -1,7 +1,8 @@
 package controllers
 
 import com.malliina.maps.{ItemMap, StmItemMap}
-import com.malliina.play.controllers.{AuthResult, Streaming}
+import com.malliina.play.controllers.Streaming
+import com.malliina.play.http.AuthResult
 import com.malliina.play.ws.WebSocketClient
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.mvc.{Controller, EssentialAction, RequestHeader}

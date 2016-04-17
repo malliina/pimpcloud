@@ -1,6 +1,6 @@
 package com.malliina.musicpimp.messaging
 
-import com.ning.http.client.Response
+import org.asynchttpclient.Response
 import play.api.libs.json.Json
 
 case class BasicResult(statusCode: Int)

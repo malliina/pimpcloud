@@ -2,24 +2,24 @@ package com.malliina.ws
 
 import java.util.UUID
 
+import akka.stream.QueueOfferResult
+import akka.stream.scaladsl.SourceQueue
 import com.malliina.musicpimp.cloud.UuidFutureMessaging
 import com.malliina.musicpimp.json.JsonStrings.{BODY, REQUEST_ID, SUCCESS}
 import com.malliina.musicpimp.models.User
 import com.malliina.util.Utils
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import play.api.libs.iteratee.Concurrent.Channel
 import play.api.libs.json._
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
-import scala.util.Try
 
 /** Emulates an HTTP client using a WebSocket channel. Supports timeouts.
   *
   * Protocol: Responses must be tagged with the same request ID we add to sent messages, so that we can
   * pair requests with responses.
   */
-class JsonFutureSocket(val channel: Channel[JsValue], val id: String)
+class JsonFutureSocket(val channel: SourceQueue[JsValue], val id: String)
   extends UuidFutureMessaging {
 
   val timeout = 20.seconds
@@ -45,7 +45,7 @@ class JsonFutureSocket(val channel: Channel[JsValue], val id: String)
     *
     * @param json payload
     */
-  def send(json: JsValue) = Try(channel push json)
+  def send(json: JsValue): Future[QueueOfferResult] = channel offer json
 
   /** Sends `body` as JSON and deserializes the response to `U`.
     *
@@ -56,9 +56,8 @@ class JsonFutureSocket(val channel: Channel[JsValue], val id: String)
     * @tparam U type of response
     * @return the response
     */
-  def proxyT[T, U](cmd: String, body: T, user: User)(implicit writer: Writes[T], reader: Reads[U]): Future[U] = {
+  def proxyT[T, U](cmd: String, body: T, user: User)(implicit writer: Writes[T], reader: Reads[U]): Future[U] =
     proxyD(user, cmd, writer writes body)
-  }
 
   /** Sends `body` and deserializes the response to type `T`.
     *
@@ -69,21 +68,18 @@ class JsonFutureSocket(val channel: Channel[JsValue], val id: String)
     * @tparam T type of response
     * @return a deserialized body, or a failed [[Future]] on failure
     */
-  def proxyD[T](user: User, cmd: String, body: JsValue)(implicit reader: Reads[T]): Future[T] = {
+  def proxyD[T](user: User, cmd: String, body: JsValue)(implicit reader: Reads[T]): Future[T] =
     proxyD2[T](user, cmd, body).map(_.get)
-  }
 
-  def proxyD2[T](user: User, cmd: String, body: JsValue)(implicit reader: Reads[T]): Future[JsResult[T]] = {
+  def proxyD2[T](user: User, cmd: String, body: JsValue)(implicit reader: Reads[T]): Future[JsResult[T]] =
     defaultProxy(user, cmd, body).map(_.validate[T])
-  }
 
   /**
     * @param body payload
     * @return response
     */
-  def defaultProxy(user: User, cmd: String, body: JsValue): Future[JsValue] = {
+  def defaultProxy(user: User, cmd: String, body: JsValue): Future[JsValue] =
     request(cmd, body, user, timeout)
-  }
 }
 
 object JsonFutureSocket {

@@ -1,23 +1,24 @@
 package com.malliina.ws
 
+import akka.stream.Materializer
+import akka.stream.scaladsl.SourceQueue
 import com.malliina.musicpimp.cloud.PimpServerSocket
-import com.malliina.pimpcloud.actors.{ActorStorage, ServersActor}
-import com.malliina.play.controllers.AuthResult
-import play.api.libs.iteratee.Concurrent.Channel
+import com.malliina.play.http.AuthResult
 import play.api.libs.json.JsValue
 import play.api.mvc._
 import rx.lang.scala.subjects.BehaviorSubject
 
-abstract class ServerSocket(storage: ActorStorage[ServersActor, JsValue, PimpServerSocket])
-  extends ServerActorSockets(storage) {
+abstract class ServerSocket(val storage: RxStmStorage[PimpServerSocket], val mat: Materializer)
+  extends ServerActorSockets {
 
+  override type Client = PimpServerSocket
   override type AuthSuccess = AuthResult
   val subject = BehaviorSubject[SocketEvent](Users(Nil))
 
   def openSocketCall: Call
 
-  override def newClient(user: AuthSuccess, channel: Channel[JsValue])(implicit request: RequestHeader): PimpServerSocket =
-    new PimpServerSocket(channel, user.user, request, updateRequestList)
+  override def newClient(user: AuthSuccess, channel: SourceQueue[JsValue])(implicit request: RequestHeader): PimpServerSocket =
+    new PimpServerSocket(channel, user.user, request, mat, updateRequestList)
 
   def updateRequestList(): Unit
 

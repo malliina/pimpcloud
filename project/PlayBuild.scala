@@ -20,7 +20,7 @@ object PlayBuild extends Build {
   val malliinaGroup = "com.malliina"
 
   val commonSettings = jenkinsSettings ++ linuxSettings ++ Seq(
-    version := "0.6.0",
+    version := "1.0.0",
     scalaVersion := "2.11.7",
     retrieveManaged := false,
     fork in Test := true,
@@ -29,13 +29,13 @@ object PlayBuild extends Build {
       Resolver.bintrayRepo("malliina", "maven")
     ),
     libraryDependencies ++= Seq(
-      malliinaGroup %% "play-base" % "2.5.0",
-      malliinaGroup %% "mobile-push" % "1.3.1",
+      malliinaGroup %% "play-base" % "2.8.0",
+      malliinaGroup %% "mobile-push" % "1.5.0",
       "org.java-websocket" % "Java-WebSocket" % "1.3.0",
       PlayImport.filters,
       PlayImport.cache,
       PlayImport.specs2 % Test,
-      "org.scalatest" %% "scalatest" % "2.2.5" % Test
+      "org.scalatest" %% "scalatest" % "2.2.6" % Test
     ),
     javacOptions ++= Seq(
       "-source", "1.8",

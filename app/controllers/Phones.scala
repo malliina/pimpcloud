@@ -3,6 +3,7 @@ package controllers
 import java.net.{URLDecoder, URLEncoder}
 import java.nio.file.Paths
 
+import akka.stream.Materializer
 import com.malliina.concurrent.ExecutionContexts.cached
 import com.malliina.concurrent.FutureOps
 import com.malliina.musicpimp.audio.Directory
@@ -24,13 +25,11 @@ import play.api.mvc._
 import scala.concurrent.Future
 import scala.util.Try
 
-class Phones(val servers: Servers, val phoneSockets: PhoneSockets)
+class Phones(val servers: Servers, val phoneSockets: PhoneSockets, val mat: Materializer)
   extends Controller
-  with Secured
-  with BaseSecurity
-  with BaseController {
-
-
+    with Secured
+    with BaseSecurity
+    with BaseController {
 
   def ping = proxiedGetAction(PING)
 
@@ -79,28 +78,33 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets)
           val name = path.getFileName.toString
           // resolves track metadata from the server so we can set Content-Length
           log debug s"Looking up meta..."
-          socket.meta(id).map(track => {
+          socket.meta(id).flatMap(track => {
             // proxies request
             val trackSize = track.size
             val rangeTry = ContentRange.fromHeader(req, trackSize)
             val rangeOrAll = rangeTry getOrElse ContentRange.all(trackSize)
-            val resultOpt = socket.streamRange(track, rangeOrAll)
-            resultOpt.map(result => {
-              rangeTry.map(range => {
-                result.withHeaders(
-                  CONTENT_RANGE -> range.contentRange,
-                  CONTENT_LENGTH -> s"${range.contentLength}",
-                  CONTENT_TYPE -> MimeTypes.forFileName(name).getOrElse(ContentTypes.BINARY)
-                )
-              }).getOrElse {
-                result.withHeaders(
-                  ACCEPT_RANGES -> Phones.BYTES,
-                  CONTENT_LENGTH -> trackSize.toBytes.toString,
-                  CACHE_CONTROL -> NO_CACHE,
-                  CONTENT_TYPE -> AUDIO_MPEG,
-                  CONTENT_DISPOSITION -> s"""attachment; filename="$name"""")
-              }
-            }).getOrElse(BadRequest)
+            val resultFuture = socket.streamRange(track, rangeOrAll)
+            resultFuture map { resultOpt =>
+              resultOpt.map(result => {
+                rangeTry.map(range => {
+                  result.withHeaders(
+                    CONTENT_RANGE -> range.contentRange,
+                    CONTENT_LENGTH -> s"${range.contentLength}",
+                    CONTENT_TYPE -> MimeTypes.forFileName(name).getOrElse(ContentTypes.BINARY)
+                  )
+                }).getOrElse {
+                  result.withHeaders(
+                    ACCEPT_RANGES -> Phones.BYTES,
+                    CONTENT_LENGTH -> trackSize.toBytes.toString,
+                    CACHE_CONTROL -> NO_CACHE,
+                    CONTENT_TYPE -> AUDIO_MPEG,
+                    CONTENT_DISPOSITION -> s"""attachment; filename="$name"""")
+                }
+              }).getOrElse(BadRequest)
+            } recoverAll { err =>
+              log.error(s"Cannot compute result", err)
+              serverError(s"The server failed")
+            }
           }).recoverAll(_ => notFound(s"ID not found $id"))
         }).getOrElse(Future.successful(badRequest(s"Illegal track ID $id")))
       })
@@ -186,6 +190,8 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets)
   def notFound(message: String) = NotFound(simpleError(message))
 
   def badRequest(message: String) = BadRequest(simpleError(message))
+
+  def serverError(message: String) = InternalServerError(simpleError(message))
 
   def simpleError(message: String) = ErrorResponse(Seq(ErrorMessage(message)))
 }

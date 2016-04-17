@@ -6,6 +6,7 @@ import com.malliina.concurrent.Observables
 import com.malliina.musicpimp.cloud.UuidFutureMessaging.log
 import com.malliina.musicpimp.models.User
 import play.api.Logger
+import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json.{JsValue, Json}
 
 import scala.collection.concurrent.TrieMap

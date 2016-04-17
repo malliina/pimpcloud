@@ -1,5 +1,6 @@
 package controllers
 
+import akka.stream.Materializer
 import com.malliina.logbackrx.RxLogback.EventMapping
 import com.malliina.logbackrx.{BasicBoundedReplayRxAppender, LogbackUtils}
 import com.malliina.play.controllers.LogStreaming
@@ -9,7 +10,7 @@ import rx.lang.scala.Observable
 
 import scala.concurrent.duration.DurationInt
 
-class Logs(adminAuth: AdminAuth) extends AdminStreaming(adminAuth) with LogStreaming {
+class Logs(adminAuth: AdminAuth, val mat: Materializer) extends AdminStreaming(adminAuth) with LogStreaming {
   override lazy val jsonEvents: Observable[JsValue] =
     logEvents.tumblingBuffer(100.millis).filter(_.nonEmpty).map(Json.toJson(_))
 

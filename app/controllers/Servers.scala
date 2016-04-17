@@ -2,19 +2,18 @@ package controllers
 
 import java.util.UUID
 
-import akka.actor.ActorSystem
+import akka.stream.Materializer
 import com.malliina.concurrent.ExecutionContexts.cached
 import com.malliina.concurrent.FutureOps
 import com.malliina.musicpimp.cloud.PimpServerSocket
 import com.malliina.musicpimp.json.JsonStrings
-import com.malliina.musicpimp.json.JsonStrings.{ADDRESS, BODY, CMD, EVENT, ID, REGISTERED, SERVERS}
+import com.malliina.musicpimp.json.JsonStrings._
 import com.malliina.musicpimp.models.User
-import com.malliina.pimpcloud.actors.ActorStorage
 import com.malliina.pimpcloud.ws.StreamData
 import com.malliina.pimpcloud.{CloudCredentials, PimpAuth}
 import com.malliina.play.auth.Auth
-import com.malliina.play.controllers.AuthResult
-import com.malliina.ws.ServerSocket
+import com.malliina.play.http.AuthResult
+import com.malliina.ws.{RxStmStorage, ServerSocket}
 import controllers.Servers.log
 import play.api.Logger
 import play.api.libs.json.{JsValue, Json, Writes}
@@ -28,7 +27,8 @@ import scala.concurrent.Future
   *
   * Pushes player events sent by servers to any connected phones, and responds to requests.
   */
-abstract class Servers(actorSystem: ActorSystem) extends ServerSocket(ActorStorage.servers(actorSystem)) {
+abstract class Servers(mat: Materializer)
+  extends ServerSocket(RxStmStorage[PimpServerSocket](), mat) {
   // not a secret but avoids unintentional connections
   val serverPassword = "pimp"
 
@@ -85,20 +85,17 @@ abstract class Servers(actorSystem: ActorSystem) extends ServerSocket(ActorStora
             }
           })
         }
-      cloudID map (id => com.malliina.play.controllers.AuthResult(id))
+      cloudID map (id => AuthResult(id))
     }).getOrElse(Future.failed(new NoSuchElementException))
   }
 
-
-  override def welcomeMessage(client: PimpServerSocket): Option[JsValue] = {
+  override def welcomeMessage(client: PimpServerSocket): Option[JsValue] =
     Some(Json.obj(CMD -> REGISTERED, BODY -> Json.obj(ID -> client.id)))
-  }
 
-  def isConnected(serverID: String): Future[Boolean] = {
+  def isConnected(serverID: String): Future[Boolean] =
     connectedServers.exists(cs => cs.exists(_.id == serverID))
-  }
 
-  def connectedServers: Future[Set[PimpServerSocket]] = storage.clients
+  def connectedServers: Future[Set[PimpServerSocket]] = Future.successful(storage.clients.toSet)
 
   override def onMessage(msg: JsValue, client: PimpServerSocket): Boolean = {
     log debug s"Got message: $msg from client: $client"

@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorSystem, Props}
 import akka.pattern.ask
 import akka.util.Timeout
 import com.malliina.musicpimp.cloud.PimpServerSocket
-import com.malliina.pimpcloud.ClientHandler
+import com.malliina.pimpcloud.AsyncClientHandler
 import com.malliina.pimpcloud.ws.PhoneClient
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json.JsValue
@@ -23,7 +23,7 @@ object ActorStorage {
 }
 
 class ActorStorage[A <: Actor : ClassTag, M, C](actorSystem: ActorSystem, val messages: MessagesBase[M, C])
-  extends ClientHandler[M, C] {
+  extends AsyncClientHandler[M, C] {
 
   // Observable of the connected clients
   val users = BehaviorSubject[Set[C]](Set.empty[C])
@@ -31,24 +31,21 @@ class ActorStorage[A <: Actor : ClassTag, M, C](actorSystem: ActorSystem, val me
 
   val actor = actorSystem.actorOf(Props[A])
 
-  def updateClients(cs: Set[C]) = users.onNext(cs)
-
-  def onConnect(client: C): Unit = {
+  def onConnect(client: C): Future[Unit] =
     sendAndUpdate(messages.Connect(client))
-  }
 
-  def onDisconnect(client: C): Unit = {
+  def onDisconnect(client: C): Future[Unit] =
     sendAndUpdate(messages.Disconnect(client))
-  }
 
-  def broadcast(message: M): Unit = {
-    actor ! messages.Broadcast(message)
-  }
+  def broadcast(message: M): Future[Unit] =
+    Future.successful(actor ! messages.Broadcast(message))
 
   def clients: Future[Set[C]] = (actor ? messages.GetClients).mapTo[messages.Clients].map(_.clients)
 
-  private def sendAndUpdate[T](msg: T): Unit = {
+  private def sendAndUpdate[T](msg: T): Future[Unit] = {
     val clients = (actor ? msg).mapTo[messages.Clients]
-    clients.map(cs => updateClients(cs.clients))
+    clients.map(cs => updateClients(cs.clients)).map(_ => ())
   }
+
+  private def updateClients(cs: Set[C]) = users.onNext(cs)
 }

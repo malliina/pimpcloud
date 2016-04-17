@@ -1,9 +1,8 @@
 package com.malliina.ws
 
-import com.malliina.musicpimp.cloud.PimpServerSocket
-import com.malliina.pimpcloud.WithStorage
-import com.malliina.pimpcloud.actors.{ActorStorage, ServersActor}
-import play.api.libs.json.JsValue
+import com.malliina.pimpcloud.ws.StorageSocket
+import com.malliina.play.ws.JsonWebSockets
 
-abstract class ServerActorSockets(val storage: ActorStorage[ServersActor, JsValue, PimpServerSocket])
-  extends JsonWebSockets2[PimpServerSocket] with WithStorage[JsValue, PimpServerSocket]
+abstract class ServerActorSockets
+  extends JsonWebSockets
+    with StorageSocket

@@ -25,7 +25,7 @@ import scala.concurrent.Future
   */
 abstract class CloudStreams[T](id: String, val channel: SourceQueue[JsValue], mat: Materializer)
   extends StreamBase[T] {
-  private val iteratees = TrieMap.empty[UUID, IterateeInfo[T]]
+  private val iteratees = TrieMap.empty[UUID, ChannelInfo[T]]
 
   def snapshot: Seq[StreamData] = iteratees.map(kv => StreamData(kv._1, id, kv._2.track, kv._2.range)).toSeq
 
@@ -39,7 +39,7 @@ abstract class CloudStreams[T](id: String, val channel: SourceQueue[JsValue], ma
   def streamRange(track: Track, range: ContentRange): Future[Option[Result]] = {
     val (queue, source) = Streaming.sourceQueue[T](mat)
     val uuid = UUID.randomUUID()
-    iteratees += (uuid -> IterateeInfo(queue, id, track, range))
+    iteratees += (uuid -> ChannelInfo(queue, id, track, range))
     connectEnumerator(uuid, source, track, range)
   }
 
@@ -54,10 +54,10 @@ abstract class CloudStreams[T](id: String, val channel: SourceQueue[JsValue], ma
   def get(uuid: UUID) = iteratees get uuid
 }
 
-case class IterateeInfo[T](channel: SourceQueue[Option[T]],
-                           serverID: String,
-                           track: Track,
-                           range: ContentRange) {
+case class ChannelInfo[T](channel: SourceQueue[Option[T]],
+                          serverID: String,
+                          track: Track,
+                          range: ContentRange) {
   def send(t: T) = channel.offer(Option(t))
 
   def close() = channel.offer(None)

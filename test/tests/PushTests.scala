@@ -17,9 +17,9 @@ class PushTests extends FunSuite {
     None
   )
 
-  test("can push") {
-    val pusher = Pusher.fromConf
-    val res = Await.result(pusher.push(testTask), 30.seconds)
-    assert(res.apns.size === 1)
-  }
+//  test("can push") {
+//    val pusher = Pusher.fromConf
+//    val res = Await.result(pusher.push(testTask), 30.seconds)
+//    assert(res.apns.size === 1)
+//  }
 }

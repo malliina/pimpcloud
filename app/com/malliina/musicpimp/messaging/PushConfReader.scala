@@ -13,7 +13,6 @@ object PushConfReader extends BaseConfigReader[PushConf] {
   val ApnsKeyStore = "apnsKeyStore"
   val ApnsKeyStorePass = "apnsKeyStorePass"
   val ApnsKeyStoreType = "apnsKeyStoreType"
-  val ApnsSandbox = "apnsSandbox"
   val GcmApiKey = "gcmApiKey"
   val AdmClientId = "admClientId"
   val AdmClientSecret = "admClientSecret"
@@ -35,13 +34,11 @@ object PushConfReader extends BaseConfigReader[PushConf] {
       keyStoreType = get(ApnsKeyStoreType) getOrElse DefaultKeyStoreType
       keyStorePath = Paths.get(keyStore)
       ks <- loadKeyStore(keyStorePath, keyStorePass, keyStoreType).toOption
-      sandbox <- get(ApnsSandbox)
       gcmApiKey <- get(GcmApiKey)
       admClientId <- get(AdmClientId)
       admClientSecret <- get(AdmClientSecret)
     } yield {
-      val isSandbox = get(ApnsSandbox) contains "true"
-      val apns = APNSCredentials(ks, keyStorePass, isSandbox)
+      val apns = APNSCredentials(ks, keyStorePass)
       val adm = ADMCredentials(admClientId, admClientSecret)
       PushConf(apns, gcmApiKey, adm)
     }

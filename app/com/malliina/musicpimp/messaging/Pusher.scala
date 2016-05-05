@@ -11,10 +11,16 @@ import scala.concurrent.Future
 class Pusher(apnsCredentials: APNSCredentials, gcmApiKey: String, admCredentials: ADMCredentials) {
   def this(conf: PushConf) = this(conf.apns, conf.gcmApiKey, conf.adm)
 
-  val apnsHandler = new APNSHandler(new APNSClient(
+  // We push both to the sandboxed and prod environments in all cases,
+  // because if we deploy from xcode we need sandboxed notifications
+  val prodApns = new APNSHandler(new APNSClient(
     apnsCredentials.keyStore,
     apnsCredentials.keyStorePass,
-    isSandbox = apnsCredentials.isSandbox))
+    isSandbox = false))
+  val sandboxApns = new APNSHandler(new APNSClient(
+    apnsCredentials.keyStore,
+    apnsCredentials.keyStorePass,
+    isSandbox = true))
   val gcmHandler = new GCMHandler(new GCMClient(gcmApiKey))
   val admHandler = new ADMHandler(new ADMClient(
     admCredentials.clientId,
@@ -22,16 +28,18 @@ class Pusher(apnsCredentials: APNSCredentials, gcmApiKey: String, admCredentials
   val mpnsHandler = new MPNSHandler(new MPNSClient)
 
   def push(pushTask: PushTask): Future[PushResult] = {
-    val apnsFuture = apnsHandler.push(pushTask.apns)
+    val prodApnsFuture = prodApns.push(pushTask.apns)
+    val sandboxApnsFuture = sandboxApns.push(pushTask.apns)
     val gcmFuture = gcmHandler.push(pushTask.gcm)
     val admFuture = admHandler.push(pushTask.adm)
     val mpnsFuture = mpnsHandler.push(pushTask.mpns)
     for {
-      apns <- apnsFuture
+      apnsProd <- prodApnsFuture
+      apnsSandbox <- sandboxApnsFuture
       gcm <- gcmFuture
       adm <- admFuture
       mpns <- mpnsFuture
-    } yield PushResult(apns, gcm, adm, mpns)
+    } yield PushResult(apnsProd ++ apnsSandbox, gcm, adm, mpns)
   }
 }
 

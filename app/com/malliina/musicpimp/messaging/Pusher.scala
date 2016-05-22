@@ -4,7 +4,7 @@ import com.malliina.push.adm.ADMClient
 import com.malliina.push.apns.APNSClient
 import com.malliina.push.gcm.GCMClient
 import com.malliina.push.mpns.MPNSClient
-import com.malliina.push.wns.WNSCredentials
+import com.malliina.push.wns.{WNSClient, WNSCredentials}
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
 import scala.concurrent.Future
@@ -30,6 +30,7 @@ class Pusher(apnsCredentials: APNSCredentials,
     admCredentials.clientId,
     admCredentials.clientSecret))
   val mpnsHandler = new MPNSHandler(new MPNSClient)
+  val wnsHandler = new WNSHandler(new WNSClient(wnsCredentials))
 
   def push(pushTask: PushTask): Future[PushResult] = {
     val prodApnsFuture = prodApns.push(pushTask.apns)
@@ -37,13 +38,15 @@ class Pusher(apnsCredentials: APNSCredentials,
     val gcmFuture = gcmHandler.push(pushTask.gcm)
     val admFuture = admHandler.push(pushTask.adm)
     val mpnsFuture = mpnsHandler.push(pushTask.mpns)
+    val wnsFuture = wnsHandler.push(pushTask.wns)
     for {
       apnsProd <- prodApnsFuture
       apnsSandbox <- sandboxApnsFuture
       gcm <- gcmFuture
       adm <- admFuture
       mpns <- mpnsFuture
-    } yield PushResult(apnsProd ++ apnsSandbox, gcm, adm, mpns)
+      wns <- wnsFuture
+    } yield PushResult(apnsProd ++ apnsSandbox, gcm, adm, mpns, wns)
   }
 }
 

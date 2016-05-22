@@ -26,6 +26,7 @@ class HttpPushTests extends Specification {
         APNSMessage.badged("this is a test", badge = 4))),
     None,
     None,
+    None,
     None
   )
 

@@ -14,6 +14,7 @@ class PushTests extends FunSuite {
         APNSMessage.badged("Simple message", badge = 7))),
     None,
     None,
+    None,
     None
   )
 

@@ -30,7 +30,7 @@ object PlayBuild extends Build {
     ),
     libraryDependencies ++= Seq(
       malliinaGroup %% "play-base" % "2.8.0",
-      malliinaGroup %% "mobile-push" % "1.5.0",
+      malliinaGroup %% "mobile-push" % "1.6.1",
       "org.java-websocket" % "Java-WebSocket" % "1.3.0",
       PlayImport.filters,
       PlayImport.cache,

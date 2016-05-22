@@ -5,6 +5,7 @@ import java.nio.file.{Path, Paths}
 import java.security.KeyStore
 
 import com.malliina.file.StorageFile
+import com.malliina.push.wns.WNSCredentials
 import com.malliina.util.{BaseConfigReader, Util}
 
 import scala.util.Try
@@ -16,6 +17,8 @@ object PushConfReader extends BaseConfigReader[PushConf] {
   val GcmApiKey = "gcmApiKey"
   val AdmClientId = "admClientId"
   val AdmClientSecret = "admClientSecret"
+  val WnsPackageSid = "wnsPackageSid"
+  val WnsClientSecret = "wnsClientSecret"
 
   val DefaultKeyStoreType = "PKCS12"
 
@@ -37,10 +40,13 @@ object PushConfReader extends BaseConfigReader[PushConf] {
       gcmApiKey <- get(GcmApiKey)
       admClientId <- get(AdmClientId)
       admClientSecret <- get(AdmClientSecret)
+      wnsPackageSid <- get(WnsPackageSid)
+      wnsClientSecret <- get(WnsClientSecret)
     } yield {
       val apns = APNSCredentials(ks, keyStorePass)
       val adm = ADMCredentials(admClientId, admClientSecret)
-      PushConf(apns, gcmApiKey, adm)
+      val wns = WNSCredentials(wnsPackageSid, wnsClientSecret)
+      PushConf(apns, gcmApiKey, adm, wns)
     }
   }
 

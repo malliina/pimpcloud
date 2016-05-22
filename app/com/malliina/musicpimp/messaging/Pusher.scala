@@ -4,12 +4,16 @@ import com.malliina.push.adm.ADMClient
 import com.malliina.push.apns.APNSClient
 import com.malliina.push.gcm.GCMClient
 import com.malliina.push.mpns.MPNSClient
+import com.malliina.push.wns.WNSCredentials
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
 import scala.concurrent.Future
 
-class Pusher(apnsCredentials: APNSCredentials, gcmApiKey: String, admCredentials: ADMCredentials) {
-  def this(conf: PushConf) = this(conf.apns, conf.gcmApiKey, conf.adm)
+class Pusher(apnsCredentials: APNSCredentials,
+             gcmApiKey: String,
+             admCredentials: ADMCredentials,
+             wnsCredentials: WNSCredentials) {
+  def this(conf: PushConf) = this(conf.apns, conf.gcmApiKey, conf.adm, conf.wns)
 
   // We push both to the sandboxed and prod environments in all cases,
   // because if we deploy from xcode we need sandboxed notifications

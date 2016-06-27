@@ -44,4 +44,7 @@ object JsonStrings {
   val PlaylistDelete = "playlist_delete"
   val PlaylistKey = "playlist"
   val PlaylistsKey = "playlists"
+
+  val Recent = "recent"
+  val Popular = "popular"
 }

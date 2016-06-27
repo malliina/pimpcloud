@@ -10,11 +10,13 @@ import com.malliina.musicpimp.audio.Directory
 import com.malliina.musicpimp.cloud.PimpServerSocket
 import com.malliina.musicpimp.json.JsonStrings._
 import com.malliina.musicpimp.models.PlaylistID
+import com.malliina.musicpimp.stats.ItemLimits
 import com.malliina.pimpcloud.ws.PhoneSockets
 import com.malliina.pimpcloud.{ErrorMessage, ErrorResponse}
 import com.malliina.play.ContentRange
 import com.malliina.play.controllers.{BaseController, BaseSecurity}
 import com.malliina.play.http.HttpConstants.{AUDIO_MPEG, NO_CACHE}
+import com.malliina.play.json.JsonMessages
 import controllers.Phones.log
 import play.api.Logger
 import play.api.http.ContentTypes
@@ -45,7 +47,7 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets, val mat: Mate
     def query(key: String) = (req getQueryString key) map (_.trim) filter (_.nonEmpty)
     val termFromQuery = query(TERM)
     val limit = query(LIMIT).filter(i => Try(i.toInt).isSuccess).map(_.toInt) getOrElse Phones.DefaultSearchLimit
-    termFromQuery.fold[Future[Result]](Future.successful(BadRequest))(term => {
+    termFromQuery.fold[Future[Result]](fut(BadRequest))(term => {
       folderResult(socket,
         _.search(term, limit).map(tracks => Directory(Nil, tracks)),
         (SEARCH, PimpServerSocket.body(TERM -> term, LIMIT -> limit))
@@ -61,8 +63,7 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets, val mat: Mate
 
   def beam = bodyProxied(BEAM)
 
-  /**
-    * Relays track `id` to the client from the target.
+  /** Relays track `id` to the client from the target.
     *
     * Sends a message over WebSocket to the target that it should send `id` to this server. This server then forwards the
     * response of the target to the client.
@@ -70,29 +71,29 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets, val mat: Mate
     * @param id id of the requested track
     */
   def track(id: String): EssentialAction = {
-    phoneAction(conn => {
+    phoneAction { conn =>
       val socket = conn.server
-      Action.async(req => {
+      Action.async { req =>
         log info s"Serving $id"
-        Phones.path(id).map(path => {
+        Phones.path(id).map { path =>
           val name = path.getFileName.toString
           // resolves track metadata from the server so we can set Content-Length
           log debug s"Looking up meta..."
-          socket.meta(id).flatMap(track => {
+          socket.meta(id).flatMap { track =>
             // proxies request
             val trackSize = track.size
             val rangeTry = ContentRange.fromHeader(req, trackSize)
             val rangeOrAll = rangeTry getOrElse ContentRange.all(trackSize)
             val resultFuture = socket.streamRange(track, rangeOrAll)
             resultFuture map { resultOpt =>
-              resultOpt.map(result => {
-                rangeTry.map(range => {
+              resultOpt.map { result =>
+                rangeTry map { range =>
                   result.withHeaders(
                     CONTENT_RANGE -> range.contentRange,
                     CONTENT_LENGTH -> s"${range.contentLength}",
                     CONTENT_TYPE -> MimeTypes.forFileName(name).getOrElse(ContentTypes.BINARY)
                   )
-                }).getOrElse {
+                } getOrElse {
                   result.withHeaders(
                     ACCEPT_RANGES -> Phones.BYTES,
                     CONTENT_LENGTH -> trackSize.toBytes.toString,
@@ -100,15 +101,15 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets, val mat: Mate
                     CONTENT_TYPE -> AUDIO_MPEG,
                     CONTENT_DISPOSITION -> s"""attachment; filename="$name"""")
                 }
-              }).getOrElse(BadRequest)
+              }.getOrElse(BadRequest)
             } recoverAll { err =>
               log.error(s"Cannot compute result", err)
               serverError(s"The server failed")
             }
-          }).recoverAll(_ => notFound(s"ID not found $id"))
-        }).getOrElse(Future.successful(badRequest(s"Illegal track ID $id")))
-      })
-    })
+          }.recoverAll(_ => notFound(s"ID not found $id"))
+        }.getOrElse(fut(badRequest(s"Illegal track ID $id")))
+      }
+    }
   }
 
   def playlists = proxiedGetAction(PlaylistsGet)
@@ -119,11 +120,21 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets, val mat: Mate
 
   def deletePlaylist(id: PlaylistID) = playlistAction(PlaylistDelete, id)
 
-  private def playlistAction(cmd: String, id: PlaylistID) = {
-    proxiedJsonAction(cmd, _ => playlistIdJson(id))
-  }
+  def popular = metaAction(Popular)
 
-  private def playlistIdJson(id: PlaylistID) = Option(Json.obj(ID -> id.id))
+  def recent = metaAction(Recent)
+
+  def metaAction(cmd: String) =
+    proxiedJsonAction(cmd) { req =>
+      ItemLimits.fromRequest(req).right.flatMap { limits =>
+        Json.toJson(limits).asOpt[JsObject].toRight("Not a JSON object")
+      }
+    }
+
+  private def playlistAction(cmd: String, id: PlaylistID) =
+    proxiedJsonAction(cmd)(_ => playlistIdJson(id))
+
+  private def playlistIdJson(id: PlaylistID) = Right(Json.obj(ID -> id.id))
 
   /**
     * Sends the request body as JSON to the server this phone is connected to, and responds with the JSON the server
@@ -134,13 +145,11 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets, val mat: Mate
     * @param cmd command to server
     * @return an action that responds as JSON with whatever the connected server returned in its `body` field
     */
-  def bodyProxied(cmd: String) = {
-    customProxied(cmd, req => req.body.asOpt[JsObject])
-  }
+  def bodyProxied(cmd: String) =
+    customProxied(cmd)(req => req.body.asOpt[JsObject].toRight(s"Body is not JSON"))
 
-  protected def customProxied(cmd: String, body: Request[JsValue] => Option[JsObject]) = {
+  protected def customProxied(cmd: String)(body: Request[JsValue] => Either[String, JsObject]) =
     proxiedParsedJsonAction(parse.json)(cmd, body)
-  }
 
   private def folderAction(html: PimpServerSocket => Future[Directory],
                            json: RequestHeader => (String, JsObject)) =
@@ -158,30 +167,28 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets, val mat: Mate
     proxiedParsedAction(parse.anyContent)(f)
 
   private def proxiedParsedAction[A](parser: BodyParser[A])(f: (Request[A], PhoneConnection) => Future[Result]): EssentialAction =
-    phoneAction(socket => Action.async(parser)(implicit req => f(req, socket)))
+    phoneAction(socket => Action.async(parser)(req => f(req, socket)))
 
   private def proxiedGetAction(cmd: String) = proxiedJsonMessageAction(cmd)
 
-  private def proxiedJsonMessageAction(cmd: String): EssentialAction = {
-    proxiedJsonAction(cmd, _ => Some(Json.obj()))
-  }
+  private def proxiedJsonMessageAction(cmd: String): EssentialAction =
+    proxiedJsonAction(cmd)(_ => Right(Json.obj()))
 
-  private def proxiedJsonAction(cmd: String, f: RequestHeader => Option[JsObject]): EssentialAction =
+  private def proxiedJsonAction(cmd: String)(f: RequestHeader => Either[String, JsObject]): EssentialAction =
     proxiedParsedJsonAction(parse.anyContent)(cmd, f)
 
-  private def proxiedParsedJsonAction[A](parser: BodyParser[A])(cmd: String, f: Request[A] => Option[JsObject]): EssentialAction = {
-    phoneAction(socket => {
-      Action.async(parser)(req => {
-        f(req)
-          .map(json => proxiedJson(cmd, json, socket).recoverAll(t => BadGateway))
-          .getOrElse(fut(BadRequest))
-      })
-    })
+  private def proxiedParsedJsonAction[A](parser: BodyParser[A])(cmd: String, f: Request[A] => Either[String, JsObject]): EssentialAction = {
+    phoneAction { socket =>
+      Action.async(parser) { req =>
+        f(req).fold(
+          err => fut(badRequest(err)),
+          json => proxiedJson(cmd, json, socket).recoverAll(t => BadGateway))
+      }
+    }
   }
 
-  def proxiedJson(cmd: String, body: JsValue, conn: PhoneConnection) = {
+  def proxiedJson(cmd: String, body: JsValue, conn: PhoneConnection) =
     conn.server.defaultProxy(conn.user, cmd, body) map (js => Ok(js))
-  }
 
   def phoneAction(f: PhoneConnection => EssentialAction) = LoggedSecureActionAsync(servers.authPhone)(f)
 

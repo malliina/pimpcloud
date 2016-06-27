@@ -11,6 +11,8 @@ GET         /playback                          controllers.Phones.status
 POST        /playback/stream                   controllers.Phones.beam
 GET         /folders                           controllers.Phones.rootFolder
 GET         /folders/*folder                   controllers.Phones.folder(folder)
+GET         /player/recent                     controllers.Phones.recent
+GET         /player/popular                    controllers.Phones.popular
 GET         /tracks/*id                        controllers.Phones.track(id)
 GET         /downloads/*id                     controllers.Phones.track(id)
 GET         /search                            controllers.Phones.search

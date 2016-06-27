@@ -20,8 +20,8 @@ object PlayBuild extends Build {
   val malliinaGroup = "com.malliina"
 
   val commonSettings = jenkinsSettings ++ linuxSettings ++ Seq(
-    version := "1.0.1",
-    scalaVersion := "2.11.7",
+    version := "1.1.0",
+    scalaVersion := "2.11.8",
     retrieveManaged := false,
     fork in Test := true,
     parallelExecution in Test := false,
@@ -42,7 +42,6 @@ object PlayBuild extends Build {
       "-target", "1.8",
       "-Xlint:-options"
     ),
-    scalacOptions += "-target:jvm-1.8",
     RoutesKeys.routesGenerator := InjectedRoutesGenerator,
     PlayKeys.externalizeResources := false
   )

@@ -50,10 +50,10 @@ class CachedByteStreams(id: String,
 
   private def attachToOngoing(track: Track, range: ContentRange): Option[Result] = {
     val title = track.title
-    cachedStreams.values.find(s => s.track == track && s.range == range).map(info => {
+    cachedStreams.values.find(s => s.track == track && s.range == range) map { info =>
       log info s"Attaching to ongoing stream of $title, range $range"
       resultify(toSource(info.stream), range)
-    })
+    }
   }
 
   private def send(track: Track, range: ContentRange): Future[Option[Result]] = {

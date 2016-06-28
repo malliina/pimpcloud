@@ -30,16 +30,14 @@ class JsonFutureSocket(val channel: SourceQueue[JsValue], val id: String)
     * @param response a JSON response from server
     * @return a response, parsed
     */
-  override def extract(response: JsValue): Option[BodyAndId] = {
+  override def extract(response: JsValue): Option[BodyAndId] =
     for {
       uuid <- (response \ REQUEST_ID).asOpt[UUID]
       body <- (response \ BODY).toOption
     } yield BodyAndId(body, uuid)
-  }
 
-  override def isSuccess(response: JsValue): Boolean = {
+  override def isSuccess(response: JsValue): Boolean =
     (response \ SUCCESS).validate[Boolean].filter(_ == false).isError
-  }
 
   /** TODO Fix signature; what happens when the channel is closed and this method is called?
     *
@@ -50,28 +48,25 @@ class JsonFutureSocket(val channel: SourceQueue[JsValue], val id: String)
   /** Sends `body` as JSON and deserializes the response to `U`.
     *
     * @param body   message payload
-    * @param writer json serializer
-    * @param reader json deserializer
     * @tparam T type of request payload
     * @tparam U type of response
     * @return the response
     */
-  def proxyT[T, U](cmd: String, body: T, user: User)(implicit writer: Writes[T], reader: Reads[U]): Future[U] =
-    proxyD(user, cmd, writer writes body)
+  def proxyT[T: Writes, U: Reads](cmd: String, body: T, user: User): Future[U] =
+    proxyD(user, cmd, Json.toJson(body))
 
   /** Sends `body` and deserializes the response to type `T`.
     *
     * TODO check success status first, and any potential error
     *
     * @param body   payload
-    * @param reader json deserializer
     * @tparam T type of response
     * @return a deserialized body, or a failed [[Future]] on failure
     */
-  def proxyD[T](user: User, cmd: String, body: JsValue)(implicit reader: Reads[T]): Future[T] =
+  def proxyD[T: Reads](user: User, cmd: String, body: JsValue): Future[T] =
     proxyD2[T](user, cmd, body).map(_.get)
 
-  def proxyD2[T](user: User, cmd: String, body: JsValue)(implicit reader: Reads[T]): Future[JsResult[T]] =
+  def proxyD2[T: Reads](user: User, cmd: String, body: JsValue): Future[JsResult[T]] =
     defaultProxy(user, cmd, body).map(_.validate[T])
 
   /**

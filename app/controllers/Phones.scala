@@ -14,9 +14,8 @@ import com.malliina.musicpimp.stats.ItemLimits
 import com.malliina.pimpcloud.ws.PhoneSockets
 import com.malliina.pimpcloud.{ErrorMessage, ErrorResponse}
 import com.malliina.play.ContentRange
-import com.malliina.play.controllers.{BaseController, BaseSecurity}
+import com.malliina.play.controllers.BaseController
 import com.malliina.play.http.HttpConstants.{AUDIO_MPEG, NO_CACHE}
-import com.malliina.play.json.JsonMessages
 import controllers.Phones.log
 import play.api.Logger
 import play.api.http.ContentTypes
@@ -28,9 +27,7 @@ import scala.concurrent.Future
 import scala.util.Try
 
 class Phones(val servers: Servers, val phoneSockets: PhoneSockets, val mat: Materializer)
-  extends Controller
-    with Secured
-    with BaseSecurity
+  extends Secured
     with BaseController {
 
   def ping = proxiedGetAction(PING)
@@ -43,17 +40,17 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets, val mat: Mate
 
   def status = proxiedGetAction(STATUS)
 
-  def search = proxiedAction((req, socket) => {
+  def search = proxiedAction { (req, socket) =>
     def query(key: String) = (req getQueryString key) map (_.trim) filter (_.nonEmpty)
     val termFromQuery = query(TERM)
     val limit = query(LIMIT).filter(i => Try(i.toInt).isSuccess).map(_.toInt) getOrElse Phones.DefaultSearchLimit
     termFromQuery.fold[Future[Result]](fut(BadRequest))(term => {
-      folderResult(socket,
+      folderResult(req, socket)(
         _.search(term, limit).map(tracks => Directory(Nil, tracks)),
         (SEARCH, PimpServerSocket.body(TERM -> term, LIMIT -> limit))
-      )(req)
+      )
     })
-  })
+  }
 
   def alarms = proxiedGetAction(ALARMS)
 
@@ -153,13 +150,12 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets, val mat: Mate
 
   private def folderAction(html: PimpServerSocket => Future[Directory],
                            json: RequestHeader => (String, JsObject)) =
-    proxiedAction((req, socket) => folderResult(socket, html, json(req))(req))
+    proxiedAction((req, socket) => folderResult(req, socket)(html, json(req)))
 
-  private def folderResult(socket: PhoneConnection,
-                           html: PimpServerSocket => Future[Directory],
-                           json: => (String, JsObject))(implicit req: RequestHeader) =
-    pimpResult(
-      html(socket.server).map(dir => Ok(views.html.index(dir, phoneSockets.wsUrl))),
+  private def folderResult(req: RequestHeader, socket: PhoneConnection)(html: PimpServerSocket => Future[Directory],
+                                                                        json: => (String, JsObject)) =
+    pimpResultAsync(req)(
+      html(socket.server).map(dir => Ok(views.html.index(dir, phoneSockets.wsUrl(req)))),
       proxiedJson(json._1, json._2, socket)
     ).recoverAll(_ => BadGateway)
 

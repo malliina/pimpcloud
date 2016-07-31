@@ -49,7 +49,11 @@ abstract class PhoneSockets(val storage: RxStmStorage[PhoneClient], val mat: Mat
         .flatMap(resp => client.channel offer resp)
         .recoverAll(t => log.warn(s"Status request failed.", t))
     } else {
-      client.connectedServer send Json.obj(CMD -> JsonStrings.PLAYER, BODY -> msg)
+      val payload = Json.obj(
+        CMD -> JsonStrings.PLAYER,
+        BODY -> msg,
+        USERNAME -> client.phoneUser.name)
+      client.connectedServer send payload
     }
     true
   }

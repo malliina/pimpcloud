@@ -21,5 +21,5 @@ class Logs(adminAuth: AdminAuth, val mat: Materializer) extends AdminStreaming(a
 
   override def clients: Seq[Client] = subscriptions.keys
 
-  def logs = navigate(implicit req => views.html.logs(wsUrl(req)))
+  def logs = navigate(req => views.html.logs(wsUrl(req)))
 }

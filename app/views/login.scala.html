@@ -1,4 +1,4 @@
-@(loginForm: Form[com.malliina.pimpcloud.CloudCredentials], web: Web, motd: Option[String] = None)(implicit flash: Flash)
+@(loginForm: Form[com.malliina.pimpcloud.CloudCredentials], web: Web, flash: Flash, motd: Option[String] = None)
 
 @basePage(title = "Welcome") {
     @util.css2("login.css")

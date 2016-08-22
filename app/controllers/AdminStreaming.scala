@@ -14,15 +14,14 @@ import scala.concurrent.Future
 abstract class AdminStreaming(adminAuth: AdminAuth) extends Controller with Streaming {
   override val subscriptions: ItemMap[WebSocketClient, Subscription] = StmItemMap.empty[WebSocketClient, Subscription]
 
-  override def authenticateAsync(req: RequestHeader): Future[AuthResult] = {
+  override def authenticateAsync(req: RequestHeader): Future[AuthResult] =
     getOrFail(adminAuth.authenticate(req))
-  }
 
   def navigate(page: => Html): EssentialAction =
     navigate(_ => page)
 
   def navigate(f: RequestHeader => Html): EssentialAction =
-    adminAuth.AuthAction(implicit req => Ok(f(req)))
+    adminAuth.AuthAction(req => Ok(f(req)))
 
   private def getOrFail[T](f: Future[Option[T]]): Future[T] =
     f.flatMap(_.map(Future.successful).getOrElse(Future.failed(new NoSuchElementException)))

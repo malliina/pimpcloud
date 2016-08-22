@@ -16,5 +16,5 @@ class UsageStreaming(servers: Servers,
 
   override def openSocketCall: Call = routes.UsageStreaming.openSocket()
 
-  def index = navigate(implicit req => views.html.admin(wsUrl(req)))
+  def index = navigate(req => views.html.admin(wsUrl(req)))
 }

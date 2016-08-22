@@ -26,15 +26,16 @@ class Web(servers: Servers, val mat: Materializer) extends Secured with BaseSecu
     passFormKey -> nonEmptyText
   )(CloudCredentials.apply)(CloudCredentials.unapply))
 
-  def login = Action(implicit req => Ok(views.html.login(cloudForm, this)))
+  def login = Action(req => Ok(views.html.login(cloudForm, this, req.flash)))
 
-  def formAuthenticate = Action.async(implicit request => {
+  def formAuthenticate = Action.async { request =>
+    val flash = request.flash
     val remoteAddress = request.remoteAddress
-    cloudForm.bindFromRequest.fold(
+    cloudForm.bindFromRequest()(request).fold(
       formWithErrors => {
         val user = formWithErrors.data.getOrElse(userFormKey, "")
         log warn s"Authentication failed for user: $user from: $remoteAddress"
-        fut(BadRequest(html.login(formWithErrors, this)))
+        fut(BadRequest(html.login(formWithErrors, this, flash)))
       },
       creds => {
         servers.validate(creds).map(_ => {
@@ -44,10 +45,10 @@ class Web(servers: Servers, val mat: Materializer) extends Secured with BaseSecu
           log info s"Authentication succeeded to: $who from: $remoteAddress"
           val intendedUrl = request.session.get(INTENDED_URI) getOrElse defaultLoginSuccessPage.url
           Redirect(intendedUrl).withSession(Security.username -> server)
-        }).recoverAll(t => BadRequest(html.login(cloudForm.withGlobalError("Invalid credentials."), this)))
+        }).recoverAll(t => BadRequest(html.login(cloudForm.withGlobalError("Invalid credentials."), this, flash)))
       }
     )
-  })
+  }
 
   def defaultLoginSuccessPage: Call = routes.Phones.rootFolder()
 

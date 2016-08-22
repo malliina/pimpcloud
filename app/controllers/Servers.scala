@@ -137,17 +137,19 @@ abstract class Servers(mat: Materializer)
       .recoverAll(_ => sessionAuth(req, servers).get)
   }
 
-  def headerAuthAsync(req: RequestHeader, servers: Set[PimpServerSocket]): Future[PhoneConnection] = flattenInvalid {
-    PimpAuth.cloudCredentials(req).map(creds => validate(creds, servers))
-  }
+  def headerAuthAsync(req: RequestHeader, servers: Set[PimpServerSocket]): Future[PhoneConnection] =
+    flattenInvalid {
+      PimpAuth.cloudCredentials(req).map(creds => validate(creds, servers))
+    }
 
-  def queryAuth(req: RequestHeader, servers: Set[PimpServerSocket]): Future[PhoneConnection] = flattenInvalid {
-    for {
-      s <- req.queryString get JsonStrings.SERVER_KEY
-      server <- s.headOption
-      creds <- Auth.credentialsFromQuery(req)
-    } yield validate(CloudCredentials(server, User(creds.username), creds.password), servers)
-  }
+  def queryAuth(req: RequestHeader, servers: Set[PimpServerSocket]): Future[PhoneConnection] =
+    flattenInvalid {
+      for {
+        s <- req.queryString get JsonStrings.SERVER_KEY
+        server <- s.headOption
+        creds <- Auth.credentialsFromQuery(req)
+      } yield validate(CloudCredentials(server, User(creds.username), creds.password), servers)
+    }
 
   def sessionAuth(req: RequestHeader, servers: Set[PimpServerSocket]): Option[PhoneConnection] = {
     req.session.get(Security.username)
@@ -162,10 +164,12 @@ abstract class Servers(mat: Materializer)
     * @return a socket or a [[Future]] failed with [[NoSuchElementException]] if validation fails
     */
   def validate(creds: CloudCredentials, servers: Set[PimpServerSocket]): Future[PhoneConnection] = flattenInvalid {
-    servers.find(_.id == creds.cloudID).map(server => {
+    servers.find(_.id == creds.cloudID) map { server =>
       val user = creds.username
-      server.authenticate(user.name, creds.password).filter(_ == true).map(_ => PhoneConnection(user, server))
-    })
+      server.authenticate(user.name, creds.password)
+        .filter(_ == true)
+        .map(_ => PhoneConnection(user, server))
+    }
   }
 
   def flattenInvalid[T](optFut: Option[Future[T]]) =

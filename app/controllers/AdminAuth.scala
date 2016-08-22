@@ -19,7 +19,7 @@ class AdminAuth(val mat: Materializer) extends OAuthSecured {
   override def ejectCall: Call = routes.AdminAuth.eject()
 
   // HTML
-  def logout = AuthAction(implicit req => ejectWith(logoutMessage).withNewSession)
+  def logout = AuthAction(req => ejectWith(logoutMessage).withNewSession)
 
-  def eject = Logged(Action(implicit req => Ok(views.html.eject(messageKey))))
+  def eject = Logged(Action(req => Ok(views.html.eject(messageKey)(req.flash))))
 }

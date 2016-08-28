@@ -59,35 +59,38 @@ abstract class Servers(mat: Materializer)
     * @param request
     * @return a valid cloud ID, or None if the cloud ID generation failed
     */
-  override def authenticateAsync(request: RequestHeader): Future[AuthResult] = {
-    Auth.basicCredentials(request).filter(_.password == serverPassword).map(creds => {
-      val user = creds.username
-      val cloudID: Future[String] =
-        if (user.nonEmpty) {
-          isConnected(user).flatMap(connected => {
-            if (connected) {
-              val msg = s"Unable to register client: $user. Another client with that ID is already connected."
-              log warn msg
-              Future.failed(new NoSuchElementException(msg))
-            } else {
-              Future.successful(user)
+  override def authenticateAsync(request: RequestHeader): Future[AuthResult] =
+    Auth.basicCredentials(request)
+      .filter(_.password == serverPassword)
+      .map { creds =>
+        val user = creds.username
+        val cloudID: Future[String] =
+          if (user.nonEmpty) {
+            isConnected(user) flatMap { connected =>
+              if (connected) {
+                val msg = s"Unable to register client: $user. Another client with that ID is already connected."
+                log warn msg
+                Future.failed(new NoSuchElementException(msg))
+              } else {
+                Future.successful(user)
+              }
             }
-          })
-        } else {
-          val id = newID()
-          isConnected(id).flatMap(connected => {
-            if (connected) {
-              val msg = s"A collision occurred while generating a random client ID: $id. Unable to register client."
-              log error msg
-              Future.failed(new NoSuchElementException(msg))
-            } else {
-              Future.successful(id)
+          } else {
+            val id = newID()
+            isConnected(id) flatMap { connected =>
+              if (connected) {
+                val msg = s"A collision occurred while generating a random client ID: $id. Unable to register client."
+                log error msg
+                Future.failed(new NoSuchElementException(msg))
+              } else {
+                Future.successful(id)
+              }
             }
-          })
-        }
-      cloudID map (id => AuthResult(id))
-    }).getOrElse(Future.failed(new NoSuchElementException))
-  }
+          }
+        cloudID map (id => AuthResult(id))
+      }.getOrElse {
+      Future.failed(new NoSuchElementException)
+    }
 
   override def welcomeMessage(client: PimpServerSocket): Option[JsValue] =
     Some(Json.obj(CMD -> REGISTERED, BODY -> Json.obj(ID -> client.id)))

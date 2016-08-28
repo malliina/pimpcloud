@@ -56,7 +56,7 @@ trait PimpContentController extends Controller {
     *
     * @return the equivalent of "Unit" in JSON and HTML
     */
-  def AckResponse(request: RequestHeader) =
+  def ackResponse(request: RequestHeader) =
     pimpResult(request)(html = Accepted, json = Accepted)
 }
 

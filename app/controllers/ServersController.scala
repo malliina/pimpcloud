@@ -14,15 +14,15 @@ import scala.concurrent.Future
 
 class ServersController(servers: Servers, val mat: Materializer) extends Secured {
 
-  def receiveUpload = serverAction(server => {
+  def receiveUpload = serverAction { server =>
     val requestID = server.request
     val transfers = server.socket.fileTransfers
     val parser = transfers parser requestID
-    parser.fold[EssentialAction](Action(NotFound))(parser => {
+    parser.fold[EssentialAction](Action(NotFound)) { parser =>
       val maxSize = transfers.maxUploadSize
       log info s"Streaming at most $maxSize for request $requestID"
       val composedParser = parse.maxLength(maxSize.toBytes, parser)(mat)
-      Action(composedParser)(httpRequest => {
+      Action(composedParser) { httpRequest =>
         transfers remove requestID
         httpRequest.body match {
           case Left(tooMuch) =>
@@ -33,9 +33,9 @@ class ServersController(servers: Servers, val mat: Materializer) extends Secured
             log info s"Streamed $fileCount file(s) for request $requestID"
             Ok
         }
-      })
-    })
-  })
+      }
+    }
+  }
 
   def serverAction(f: Server => EssentialAction) = LoggedSecureActionAsync(authServer)(f)
 
@@ -55,9 +55,8 @@ class ServersController(servers: Servers, val mat: Materializer) extends Secured
   def findServer(ss: Set[PimpServerSocket], uuid: UUID): Option[Server] =
     ss.find(_.fileTransfers.exists(uuid)).map(s => Server(uuid, s))
 
-  def toFuture[T](opt: Option[T]): Future[T] = {
+  def toFuture[T](opt: Option[T]): Future[T] =
     opt.map(Future.successful).getOrElse(Future.failed(new NoSuchElementException))
-  }
 }
 
 object ServersController {

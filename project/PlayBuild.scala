@@ -20,7 +20,7 @@ object PlayBuild {
   val malliinaGroup = "com.malliina"
 
   val commonSettings = jenkinsSettings ++ linuxSettings ++ Seq(
-    version := "1.4.0",
+    version := "1.4.1",
     scalaVersion := "2.11.8",
     retrieveManaged := false,
     fork in Test := true,
@@ -29,7 +29,7 @@ object PlayBuild {
       Resolver.bintrayRepo("malliina", "maven")
     ),
     libraryDependencies ++= Seq(
-      malliinaGroup %% "play-base" % "3.1.2",
+      malliinaGroup %% "play-base" % "3.1.4",
       malliinaGroup %% "mobile-push" % "1.6.1",
       "org.java-websocket" % "Java-WebSocket" % "1.3.0",
       PlayImport.filters,

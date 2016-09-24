@@ -13,11 +13,25 @@ import com.malliina.pimpcloud.ws.{NoCacheByteStreams, StreamBase}
 import com.malliina.play.ContentRange
 import com.malliina.play.models.Username
 import com.malliina.ws.JsonFutureSocket
+import play.api.Logger
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json._
 import play.api.mvc.{RequestHeader, Result}
 
 import scala.concurrent.Future
+
+object PimpServerSocket {
+  val DefaultSearchLimit = 100
+  val nobody = Username("nobody")
+
+  def idBody(id: String): JsObject = body(ID -> id)
+
+  /**
+    * @return a JSON object with parameter `cmd` in key `cmd` and dictionary `more` in key `body`
+    */
+  def body(more: (String, Json.JsValueWrapper)*): JsObject =
+    Json.obj(more: _*)
+}
 
 class PimpServerSocket(channel: SourceQueue[JsValue],
                        id: Username,
@@ -71,18 +85,4 @@ class PimpServerSocket(channel: SourceQueue[JsValue],
     proxyD[T](user, cmd, body(more: _*))
 
   private def simpleProxy(cmd: String) = defaultProxy(nobody, cmd, Json.obj())
-}
-
-object PimpServerSocket {
-  val DefaultSearchLimit = 100
-
-  val nobody = Username("nobody")
-
-  def idBody(id: String): JsObject = body(ID -> id)
-
-  /**
-    * @return a JSON object with parameter `cmd` in key `cmd` and dictionary `more` in key `body`
-    */
-  def body(more: (String, Json.JsValueWrapper)*): JsObject =
-    Json.obj(more: _*)
 }

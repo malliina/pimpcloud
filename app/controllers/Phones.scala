@@ -3,7 +3,6 @@ package controllers
 import java.net.{URLDecoder, URLEncoder}
 import java.nio.file.Paths
 
-import akka.stream.Materializer
 import com.malliina.concurrent.ExecutionContexts.cached
 import com.malliina.concurrent.FutureOps
 import com.malliina.musicpimp.audio.Directory
@@ -16,7 +15,6 @@ import com.malliina.pimpcloud.{ErrorMessage, ErrorResponse}
 import com.malliina.play.ContentRange
 import com.malliina.play.controllers.BaseController
 import com.malliina.play.http.HttpConstants
-import com.malliina.play.http.HttpConstants.{AudioMpeg, NoCache}
 import controllers.Phones.log
 import play.api.Logger
 import play.api.http.ContentTypes
@@ -204,7 +202,8 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets, val auth: Clo
   def proxiedJson(cmd: String, body: JsValue, conn: PhoneConnection) =
     conn.server.defaultProxy(conn.user, cmd, body) map (js => Ok(js))
 
-  def phoneAction(f: PhoneConnection => EssentialAction) = auth.loggedSecureActionAsync(servers.authPhone)(f)
+  def phoneAction(f: PhoneConnection => EssentialAction) =
+    auth.loggedSecureActionAsync(servers.authPhone)(f)
 
   def fut[T](body: => T) = Future successful body
 

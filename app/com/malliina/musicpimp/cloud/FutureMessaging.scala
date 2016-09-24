@@ -1,11 +1,10 @@
 package com.malliina.musicpimp.cloud
 
 import akka.stream.QueueOfferResult
-import com.malliina.musicpimp.models.User
+import com.malliina.play.models.Username
 
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
-import scala.util.Try
 
 /** A [[Future]]-based API for event-based apps. It is expected that once a message has been sent using `proxy`, within
   * a reasonable amount of time a response will be delivered to `complete`, which will complete the
@@ -24,7 +23,7 @@ trait FutureMessaging[T] {
     * @param timeout request timeout
     * @return the response, which may fail with a [[concurrent.TimeoutException]]
     */
-  def request(cmd: String, body: T, user: User, timeout: Duration): Future[T]
+  def request(cmd: String, body: T, user: Username, timeout: Duration): Future[T]
 
   /** Sends a request.
     *

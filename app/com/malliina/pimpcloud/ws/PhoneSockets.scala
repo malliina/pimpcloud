@@ -19,7 +19,7 @@ import rx.lang.scala.Observable
 import scala.concurrent.Future
 
 abstract class PhoneSockets(val storage: RxStmStorage[PhoneClient], val mat: Materializer)
-  extends PhoneActorSockets {
+  extends PhoneActorSockets(mat) {
   override type Client = PhoneClient
   override type AuthSuccess = PhoneConnection
 
@@ -28,18 +28,19 @@ abstract class PhoneSockets(val storage: RxStmStorage[PhoneClient], val mat: Mat
     ADDRESS -> o.req.remoteAddress
   ))
 
-  def send(message: Message, from: PimpServerSocket) =
-    Future.traverse(clients.filter(_.connectedServer == from))(_.channel.offer(message))
+  val usersJson: Observable[JsObject] =
+    storage.users.map(phoneClients => Json.obj(EVENT -> PHONES, BODY -> phoneClients))
 
-  val usersJson: Observable[JsObject] = storage.users.map(phoneClients => Json.obj(EVENT -> PHONES, BODY -> phoneClients))
+  def authenticatePhone(req: RequestHeader): Future[AuthSuccess]
+
+  def send(message: Message, from: PimpServerSocket) =
+    clients.flatMap(cs => Future.traverse(cs.filter(_.connectedServer == from))(_.channel.offer(message)))
 
   override def openSocketCall: Call = routes.PhoneSockets.openSocket()
 
   override def authenticateAsync(req: RequestHeader): Future[AuthSuccess] = authenticatePhone(req)
 
-  def authenticatePhone(req: RequestHeader): Future[AuthSuccess]
-
-  override def newClient(authResult: AuthSuccess, channel: SourceQueue[JsValue])(implicit request: RequestHeader): PhoneClient =
+  override def newClient(authResult: PhoneConnection, channel: SourceQueue[JsValue], request: RequestHeader): PhoneClient =
     PhoneClient(authResult, channel, request)
 
   override def onMessage(msg: Message, client: PhoneClient): Boolean = {

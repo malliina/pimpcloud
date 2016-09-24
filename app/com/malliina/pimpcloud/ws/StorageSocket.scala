@@ -1,15 +1,17 @@
 package com.malliina.pimpcloud.ws
 
-import com.malliina.play.ws.WebSocketBase
+import com.malliina.play.ws.SyncSockets
 import com.malliina.ws.SocketStorage
 
-trait StorageSocket {
-  self: WebSocketBase =>
+trait StorageSocket extends SyncSockets {
   def storage: SocketStorage[Client]
 
-  override def clients: Seq[Client] = storage.clients
+  override def clientsSync: Seq[Client] =
+    storage.clients
 
-  override def onConnect(client: Client): Unit = storage.onConnect(client)
+  override def onConnectSync(client: Client): Unit =
+    storage.onConnect(client)
 
-  override def onDisconnect(client: Client): Unit = storage.onDisconnect(client)
+  override def onDisconnectSync(client: Client): Unit =
+    storage.onDisconnect(client)
 }

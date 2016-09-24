@@ -19,15 +19,17 @@ class CloudLoader extends ApplicationLoader {
 class CloudComponents(context: Context) extends BuiltInComponentsFromContext(context) {
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(new GzipFilter())
 
+  // Components
+  lazy val auth = new CloudAuth(materializer)
   lazy val pusher = Pusher.fromConf
   // Controllers
   lazy val push = new Push(pusher)
   lazy val (s, ps) = JoinedSockets.joined(materializer)
-  lazy val p = new Phones(s, ps, materializer)
-  lazy val sc = new ServersController(s, materializer)
+  lazy val p = new Phones(s, ps, auth)
+  lazy val sc = new ServersController(s, auth)
   lazy val aa = new AdminAuth(materializer)
   lazy val l = new Logs(aa, materializer)
-  lazy val w = new Web(s, materializer)
+  lazy val w = new Web(s, auth)
   lazy val us = new UsageStreaming(s, p, ps, sc, aa, materializer)
   lazy val as = new Assets(httpErrorHandler)
   lazy val router = new Routes(httpErrorHandler, p, w, push, ps, sc, s, as, us, l, aa)

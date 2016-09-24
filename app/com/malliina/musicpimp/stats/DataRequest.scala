@@ -1,6 +1,6 @@
 package com.malliina.musicpimp.stats
 
-import com.malliina.musicpimp.models.User
+import com.malliina.play.models.Username
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.Security.AuthenticatedRequest
 import play.api.mvc.{QueryStringBindable, RequestHeader}
@@ -11,7 +11,7 @@ import play.api.mvc.{QueryStringBindable, RequestHeader}
   * @param from     start index of results, inclusive
   * @param until    end index, exclusive
   */
-case class DataRequest(username: User, from: Int, until: Int) {
+case class DataRequest(username: Username, from: Int, until: Int) {
   val maxItems = math.max(0, until - from)
 }
 
@@ -26,21 +26,21 @@ object DataRequest {
 
   val binder = QueryStringBindable.bindableInt
 
-  def default(user: User): DataRequest =
+  def default(user: Username): DataRequest =
     apply(user, DefaultItemCount)
 
-  def apply(user: User, items: Int): DataRequest =
+  def apply(user: Username, items: Int): DataRequest =
     apply(user, 0, items)
 
-  def fromRequest(request: AuthenticatedRequest[_, User]): Either[String, DataRequest] =
+  def fromRequest(request: AuthenticatedRequest[_, Username]): Either[String, DataRequest] =
     fromRequest(request.user, request)
 
-  def fromRequest(user: User, request: RequestHeader): Either[String, DataRequest] =
+  def fromRequest(user: Username, request: RequestHeader): Either[String, DataRequest] =
     ItemLimits.fromRequest(request).right map { limits =>
       DataRequest(user, limits.from, limits.until)
     }
 
-  def fromJson(user: User, body: JsValue) =
+  def fromJson(user: Username, body: JsValue) =
     ItemLimits.fromJson(body) map { limits =>
       DataRequest(user, limits.from, limits.until)
     }

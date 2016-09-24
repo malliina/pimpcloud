@@ -10,7 +10,10 @@ import rx.lang.scala.Observable
 
 import scala.concurrent.duration.DurationInt
 
-class Logs(adminAuth: AdminAuth, val mat: Materializer) extends AdminStreaming(adminAuth) with LogStreaming {
+class Logs(adminAuth: AdminAuth, val mat: Materializer)
+  extends AdminStreaming(adminAuth)
+    with LogStreaming {
+
   override lazy val jsonEvents: Observable[JsValue] =
     logEvents.tumblingBuffer(100.millis).filter(_.nonEmpty).map(Json.toJson(_))
 
@@ -18,8 +21,6 @@ class Logs(adminAuth: AdminAuth, val mat: Materializer) extends AdminStreaming(a
     LogbackUtils.getAppender[BasicBoundedReplayRxAppender]("RX")
 
   override def openSocketCall: Call = routes.Logs.openSocket()
-
-  override def clients: Seq[Client] = subscriptions.keys
 
   def logs = navigate(req => views.html.logs(wsUrl(req)))
 }

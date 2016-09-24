@@ -41,7 +41,7 @@ trait StreamBase[T] {
     streamChanged()
   }
 
-  protected def connectEnumerator(uuid: UUID, source: Source[T, NotUsed], track: Track, range: ContentRange): Future[Option[Result]] = {
+  protected def connectSource(uuid: UUID, source: Source[T, NotUsed], track: Track, range: ContentRange): Future[Option[Result]] = {
     val result = resultify(source, range)
     val connectSuccess = connect(uuid, track, range)
     connectSuccess.map(isSuccess => if(isSuccess) Option(result) else None)

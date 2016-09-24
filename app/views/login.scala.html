@@ -4,7 +4,7 @@
     @util.css2("login.css")
     @util.div("container") {
         @bs.rowColumn("col-md-4") {
-            @flash.get(web.FEEDBACK).map { message =>
+            @flash.get(web.feedback).map { message =>
                 <p class="lead">@message</p>
             }
         }

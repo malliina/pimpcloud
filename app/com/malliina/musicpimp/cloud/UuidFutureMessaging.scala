@@ -4,7 +4,7 @@ import java.util.UUID
 
 import com.malliina.concurrent.Observables
 import com.malliina.musicpimp.cloud.UuidFutureMessaging.log
-import com.malliina.musicpimp.models.User
+import com.malliina.play.models.Username
 import play.api.Logger
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json.{JsValue, Json}
@@ -20,7 +20,7 @@ trait UuidFutureMessaging extends FutureMessaging[JsValue] {
 
   def isSuccess(response: JsValue): Boolean = true
 
-  override def request(cmd: String, message: JsValue, user: User, timeout: Duration): Future[JsValue] = {
+  override def request(cmd: String, message: JsValue, user: Username, timeout: Duration): Future[JsValue] = {
     // generates UUID for this request-response pair
     val uuid = UUID.randomUUID()
     val responsePromise = Promise[JsValue]()
@@ -50,41 +50,43 @@ trait UuidFutureMessaging extends FutureMessaging[JsValue] {
     task
   }
 
-  def complete(response: JsValue): Boolean = {
-    extract(response).exists(pair => {
+  def complete(response: JsValue): Boolean =
+    extract(response) exists { pair =>
       val uuid = pair.uuid
       val body = pair.body
       if (isSuccess(response)) succeed(uuid, body)
       else fail(uuid, body)
-    })
-  }
+    }
 
   /**
     * Completes the ongoing [[Promise]] identified by `requestID` with `responseBody`.
     *
-    * @param requestID the request ID
+    * @param requestID    the request ID
     * @param responseBody the payload of the response, that is, the 'body' JSON value
     * @return true if an ongoing request with ID `requestID` existed, false otherwise
     */
-  def succeed(requestID: UUID, responseBody: JsValue): Boolean = baseComplete(requestID)(_.trySuccess(responseBody))
+  def succeed(requestID: UUID, responseBody: JsValue): Boolean =
+    baseComplete(requestID)(_.trySuccess(responseBody))
 
   /**
     * Fails the ongoing [[Promise]] identified by `requestID` with a [[RequestFailure]] containing `responseBody`.
     *
-    * @param requestID request ID
+    * @param requestID    request ID
     * @param responseBody body of failed response
     * @return true if an ongoing request with ID `requestID` existed, false otherwise
     */
-  def fail(requestID: UUID, responseBody: JsValue) = failExceptionally(requestID, new RequestFailure(responseBody))
+  def fail(requestID: UUID, responseBody: JsValue) =
+    failExceptionally(requestID, new RequestFailure(responseBody))
 
-  def failExceptionally(requestID: UUID, t: Throwable) = baseComplete(requestID)(_.tryFailure(t))
+  def failExceptionally(requestID: UUID, t: Throwable) =
+    baseComplete(requestID)(_.tryFailure(t))
 
   private def baseComplete(request: UUID)(f: Promise[JsValue] => Unit) = {
-    (ongoing get request).exists(promise => {
+    (ongoing get request).exists { promise =>
       f(promise)
       ongoing -= request
       true
-    })
+    }
   }
 
   class RequestFailure(val response: JsValue) extends Exception

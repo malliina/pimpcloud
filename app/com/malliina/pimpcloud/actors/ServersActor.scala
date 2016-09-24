@@ -2,6 +2,7 @@ package com.malliina.pimpcloud.actors
 
 import akka.actor.ActorLogging
 import com.malliina.musicpimp.cloud.PimpServerSocket
+import com.malliina.play.models.Username
 import play.api.libs.json.JsValue
 
 /** Manager of server websockets.
@@ -24,7 +25,7 @@ class ServersActor extends ItemsActor[PimpServerSocket] with ActorLogging {
       sender() ! ServersActor.Clients(clients)
   }
 
-  def logEvent(id: String, action: String) =
+  def logEvent(id: Username, action: String) =
     log info s"MusicPimp client $action: $id. Clients connected: ${clients.size}"
 }
 

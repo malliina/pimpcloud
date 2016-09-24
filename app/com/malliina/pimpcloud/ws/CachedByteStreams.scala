@@ -7,6 +7,7 @@ import akka.stream.scaladsl.SourceQueue
 import akka.util.ByteString
 import com.malliina.musicpimp.audio.Track
 import com.malliina.pimpcloud.ws.CachedByteStreams.log
+import com.malliina.play.models.Username
 import com.malliina.play.streams.StreamParsers
 import com.malliina.play.{ContentRange, StreamConversions}
 import com.malliina.storage.StorageInt
@@ -26,7 +27,7 @@ import scala.concurrent.Future
   *
   * Falls back to non-cached streaming if the track is meets or exceeds `cacheThreshold`.
   */
-class CachedByteStreams(id: String,
+class CachedByteStreams(id: Username,
                         val channel: SourceQueue[JsValue],
                         val mat: Materializer,
                         val onUpdate: () => Unit)
@@ -34,7 +35,7 @@ class CachedByteStreams(id: String,
 
   val cacheThreshold = 256.megs
   private val cachedStreams = TrieMap.empty[UUID, StreamInfo]
-  private val notCached = new NoCacheCloudStreams(id, channel, mat, onUpdate)
+  private val notCached = new NoCacheByteStreams(id, channel, mat, onUpdate)
 
   override def snapshot = cachedStreams.map(kv => StreamData(kv._1, id, kv._2.track, kv._2.range)).toSeq ++ notCached.snapshot
 
@@ -67,7 +68,7 @@ class CachedByteStreams(id: String,
       val subject = ReplaySubject[ByteString]()
       val uuid = UUID.randomUUID()
       cachedStreams += (uuid -> StreamInfo(track, range, subject))
-      connectEnumerator(uuid, toSource(subject), track, range)
+      connectSource(uuid, toSource(subject), track, range)
     }
   }
 

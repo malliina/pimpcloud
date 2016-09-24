@@ -5,6 +5,7 @@ import java.util.UUID
 import akka.stream.Materializer
 import akka.stream.scaladsl.SourceQueue
 import com.malliina.musicpimp.audio.Track
+import com.malliina.play.models.Username
 import com.malliina.play.{ContentRange, Streaming}
 import play.api.libs.json.JsValue
 import play.api.mvc.Result
@@ -23,7 +24,7 @@ import scala.concurrent.Future
   *
   * @tparam T type of stream element, e.g. a ByteString
   */
-abstract class CloudStreams[T](id: String, val channel: SourceQueue[JsValue], mat: Materializer)
+abstract class CloudStreams[T](id: Username, val channel: SourceQueue[JsValue], mat: Materializer)
   extends StreamBase[T] {
   private val iteratees = TrieMap.empty[UUID, ChannelInfo[T]]
 
@@ -40,7 +41,7 @@ abstract class CloudStreams[T](id: String, val channel: SourceQueue[JsValue], ma
     val (queue, source) = Streaming.sourceQueue[T](mat)
     val uuid = UUID.randomUUID()
     iteratees += (uuid -> ChannelInfo(queue, id, track, range))
-    connectEnumerator(uuid, source, track, range)
+    connectSource(uuid, source, track, range)
   }
 
   /** Transfer complete.
@@ -55,7 +56,7 @@ abstract class CloudStreams[T](id: String, val channel: SourceQueue[JsValue], ma
 }
 
 case class ChannelInfo[T](channel: SourceQueue[Option[T]],
-                          serverID: String,
+                          serverID: Username,
                           track: Track,
                           range: ContentRange) {
   def send(t: T) = channel.offer(Option(t))

@@ -1,25 +1,20 @@
 package controllers
 
 import akka.stream.Materializer
-import com.malliina.play.controllers.OAuthSecured
-import play.api.mvc.{Action, Call}
+import com.malliina.play.controllers.{OAuthControl, OAuthSecured}
+import play.api.mvc.{Action, Results}
+import views.html
 
-class AdminAuth(val mat: Materializer) extends OAuthSecured {
-  // OAuth
-  override val sessionUserKey: String = "email"
+class AdminAuth(oauth: OAuthControl, mat: Materializer) extends OAuthSecured(oauth, mat) {
+  def this(mat: Materializer) = this(new AdminOAuth(mat), mat)
 
-  override def isAuthorized(email: String): Boolean = email == "malliina123@gmail.com"
+  def initiate = oauth.initiate
 
-  override def startOAuth: Call = routes.AdminAuth.initiate()
-
-  override def oAuthRedir: Call = routes.AdminAuth.redirResponse()
-
-  override def onOAuthSuccess: Call = routes.UsageStreaming.index()
-
-  override def ejectCall: Call = routes.AdminAuth.eject()
+  def redirResponse = oauth.redirResponse
 
   // HTML
-  def logout = AuthAction(req => ejectWith(logoutMessage).withNewSession)
+  def logout = authAction(req => oauth.ejectWith(oauth.logoutMessage).withNewSession)
 
-  def eject = Logged(Action(req => Ok(views.html.eject(messageKey)(req.flash))))
+  def eject = logged(Action(req => Results.Ok(html.eject(oauth.messageKey)(req.flash))))
+
 }

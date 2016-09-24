@@ -5,14 +5,15 @@ import java.util.UUID
 import akka.stream.Materializer
 import akka.stream.scaladsl.SourceQueue
 import akka.util.ByteString
+import com.malliina.play.models.Username
 import com.malliina.play.streams.StreamParsers
 import play.api.libs.json.JsValue
 import play.api.mvc.{BodyParser, MultipartFormData}
 
-class NoCacheCloudStreams(id: String,
-                          channel: SourceQueue[JsValue],
-                          val mat: Materializer,
-                          val onUpdate: () => Unit)
+class NoCacheByteStreams(id: Username,
+                         channel: SourceQueue[JsValue],
+                         val mat: Materializer,
+                         val onUpdate: () => Unit)
   extends CloudStreams[ByteString](id, channel, mat)
     with ByteStreamBase {
 

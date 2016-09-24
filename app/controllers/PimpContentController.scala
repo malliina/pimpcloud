@@ -4,7 +4,8 @@ import controllers.PimpContentController.log
 import play.api.Logger
 import play.api.http.MimeTypes
 import play.api.libs.json.JsValue
-import play.api.mvc.{Controller, RequestHeader, Result}
+import play.api.mvc.Results.{Accepted, NotAcceptable, Ok, Status}
+import play.api.mvc.{RequestHeader, Result}
 import play.twirl.api.Html
 
 import scala.concurrent.Future
@@ -12,7 +13,7 @@ import scala.concurrent.Future
 /** Methods that choose the correct response to provide to clients
   * based on what they accept (HTML/JSON/which JSON version).
   */
-trait PimpContentController extends Controller {
+trait PimpContentController {
 
   import com.malliina.musicpimp.json.JsonFormatVersions._
 
@@ -60,6 +61,6 @@ trait PimpContentController extends Controller {
     pimpResult(request)(html = Accepted, json = Accepted)
 }
 
-object PimpContentController {
+object PimpContentController extends PimpContentController {
   private val log = Logger(getClass)
 }

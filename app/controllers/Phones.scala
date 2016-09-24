@@ -15,7 +15,8 @@ import com.malliina.pimpcloud.ws.PhoneSockets
 import com.malliina.pimpcloud.{ErrorMessage, ErrorResponse}
 import com.malliina.play.ContentRange
 import com.malliina.play.controllers.BaseController
-import com.malliina.play.http.HttpConstants.{AUDIO_MPEG, NO_CACHE}
+import com.malliina.play.http.HttpConstants
+import com.malliina.play.http.HttpConstants.{AudioMpeg, NoCache}
 import controllers.Phones.log
 import play.api.Logger
 import play.api.http.ContentTypes
@@ -26,9 +27,26 @@ import play.api.mvc._
 import scala.concurrent.Future
 import scala.util.Try
 
-class Phones(val servers: Servers, val phoneSockets: PhoneSockets, val mat: Materializer)
-  extends Secured
-    with BaseController {
+object Phones {
+  val log = Logger(getClass)
+
+  val DefaultSearchLimit = 100
+  val Bytes = "bytes"
+  val EncodingUTF8 = "UTF-8"
+
+  val invalidCredentials = new NoSuchElementException("Invalid credentials")
+
+  def path(id: String) = Try(Paths get decode(id))
+
+  def decode(id: String) = URLDecoder.decode(id, EncodingUTF8)
+
+  def encode(id: String) = URLEncoder.encode(id, EncodingUTF8)
+}
+
+class Phones(val servers: Servers, val phoneSockets: PhoneSockets, val auth: CloudAuth)
+  extends Secured(auth)
+    with BaseController
+    with Controller {
 
   def ping = proxiedGetAction(PING)
 
@@ -92,10 +110,10 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets, val mat: Mate
                   )
                 } getOrElse {
                   result.withHeaders(
-                    ACCEPT_RANGES -> Phones.BYTES,
+                    ACCEPT_RANGES -> Phones.Bytes,
                     CONTENT_LENGTH -> trackSize.toBytes.toString,
-                    CACHE_CONTROL -> NO_CACHE,
-                    CONTENT_TYPE -> AUDIO_MPEG,
+                    CACHE_CONTROL -> HttpConstants.NoCache,
+                    CONTENT_TYPE -> HttpConstants.AudioMpeg,
                     CONTENT_DISPOSITION -> s"""attachment; filename="$name"""")
                 }
               }.getOrElse(BadRequest)
@@ -143,7 +161,7 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets, val mat: Mate
     * @return an action that responds as JSON with whatever the connected server returned in its `body` field
     */
   def bodyProxied(cmd: String) =
-    customProxied(cmd)(req => req.body.asOpt[JsObject].toRight(s"Body is not JSON"))
+  customProxied(cmd)(req => req.body.asOpt[JsObject].toRight(s"Body is not JSON"))
 
   protected def customProxied(cmd: String)(body: Request[JsValue] => Either[String, JsObject]) =
     proxiedParsedJsonAction(parse.json)(cmd, body)
@@ -186,7 +204,7 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets, val mat: Mate
   def proxiedJson(cmd: String, body: JsValue, conn: PhoneConnection) =
     conn.server.defaultProxy(conn.user, cmd, body) map (js => Ok(js))
 
-  def phoneAction(f: PhoneConnection => EssentialAction) = LoggedSecureActionAsync(servers.authPhone)(f)
+  def phoneAction(f: PhoneConnection => EssentialAction) = auth.loggedSecureActionAsync(servers.authPhone)(f)
 
   def fut[T](body: => T) = Future successful body
 
@@ -199,19 +217,3 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets, val mat: Mate
   def simpleError(message: String) = ErrorResponse(Seq(ErrorMessage(message)))
 }
 
-object Phones {
-  val log = Logger(getClass)
-
-  val DefaultSearchLimit = 100
-  val BYTES = "bytes"
-  val NONE = "none"
-  val EncodingUTF8 = "UTF-8"
-
-  val invalidCredentials = new NoSuchElementException("Invalid credentials")
-
-  def path(id: String) = Try(Paths get decode(id))
-
-  def decode(id: String) = URLDecoder.decode(id, EncodingUTF8)
-
-  def encode(id: String) = URLEncoder.encode(id, EncodingUTF8)
-}

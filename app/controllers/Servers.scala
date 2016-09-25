@@ -3,11 +3,11 @@ package controllers
 import java.util.UUID
 
 import akka.stream.Materializer
-import com.malliina.concurrent.ExecutionContexts.cached
 import com.malliina.concurrent.FutureOps
 import com.malliina.musicpimp.cloud.PimpServerSocket
 import com.malliina.musicpimp.json.JsonStrings
 import com.malliina.musicpimp.json.JsonStrings._
+import com.malliina.pimpcloud.models.CloudID
 import com.malliina.pimpcloud.ws.StreamData
 import com.malliina.pimpcloud.{CloudCredentials, PimpAuth}
 import com.malliina.play.auth.Auth
@@ -65,8 +65,8 @@ abstract class Servers(mat: Materializer)
     .map { creds =>
       val user = creds.username
       val cloudID: Future[Username] =
-        if (user.nonEmpty) {
-          val username = Username(user)
+        if (user.name.nonEmpty) {
+          val username = user
           isConnected(username) flatMap { connected =>
             if (connected) {
               val msg = s"Unable to register client: $user. Another client with that ID is already connected."
@@ -150,9 +150,9 @@ abstract class Servers(mat: Materializer)
     flattenInvalid {
       for {
         s <- req.queryString get JsonStrings.SERVER_KEY
-        server <- s.headOption
+        server <- s.headOption.map(CloudID.apply)
         creds <- Auth.credentialsFromQuery(req)
-      } yield validate(CloudCredentials(server, Username(creds.username), creds.password), servers)
+      } yield validate(CloudCredentials(server, creds.username, creds.password), servers)
     }
 
   def sessionAuth(req: RequestHeader, servers: Set[PimpServerSocket]): Option[PhoneConnection] = {

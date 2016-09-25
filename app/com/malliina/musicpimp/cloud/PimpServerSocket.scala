@@ -11,9 +11,8 @@ import com.malliina.musicpimp.json.JsonStrings._
 import com.malliina.musicpimp.models._
 import com.malliina.pimpcloud.ws.{NoCacheByteStreams, StreamBase}
 import com.malliina.play.ContentRange
-import com.malliina.play.models.Username
+import com.malliina.play.models.{Password, Username}
 import com.malliina.ws.JsonFutureSocket
-import play.api.Logger
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json._
 import play.api.mvc.{RequestHeader, Result}
@@ -56,10 +55,10 @@ class PimpServerSocket(channel: SourceQueue[JsValue],
     * @param pass password
     * @return true if authentication succeeds, false if the credentials are bogus or any failure occurs
     */
-  def authenticate(user: Username, pass: String): Future[Boolean] =
+  def authenticate(user: Username, pass: Password): Future[Boolean] =
     authenticate3(user, pass).map(_ => true).recoverAll(_ => false)
 
-  def authenticate3(user: Username, pass: String): Future[Version] =
+  def authenticate3(user: Username, pass: Password): Future[Version] =
     proxied[Version](nobody, AUTHENTICATE, USERNAME -> user, PASSWORD -> pass)
 
   def rootFolder = proxied[Directory](nobody, ROOT_FOLDER)

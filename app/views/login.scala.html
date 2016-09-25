@@ -4,7 +4,7 @@
     @util.css2("login.css")
     @util.div("container") {
         @bs.rowColumn("col-md-4") {
-            @flash.get(web.feedback).map { message =>
+            @flash.get(web.forms.feedback).map { message =>
                 <p class="lead">@message</p>
             }
         }
@@ -12,8 +12,8 @@
             <form class="form-signin" name="loginForm" action="@routes.Web.formAuthenticate()" method="POST">
                 <h2 class="form-signin-heading">Please sign in</h2>
                 <input type="text" class="form-control" name="@web.serverFormKey" id="@web.serverFormKey" placeholder="Server" autofocus>
-                <input type="text" class="form-control" name="@web.userFormKey" id="@web.userFormKey" placeholder="Username" autofocus>
-                <input type="password" class="form-control" name="@web.passFormKey" id="@web.passFormKey" placeholder="Password">
+                <input type="text" class="form-control" name="@web.forms.userFormKey" id="@web.forms.userFormKey" placeholder="Username" autofocus>
+                <input type="password" class="form-control" name="@web.forms.passFormKey" id="@web.forms.passFormKey" placeholder="Password">
                 <button type="submit" id="loginbutton" class="btn btn-lg btn-primary btn-block">Sign in</button>
             </form>
         }

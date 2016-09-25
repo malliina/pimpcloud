@@ -11,7 +11,7 @@ import play.api.mvc.{Action, Controller, EssentialAction, RequestHeader}
 
 import scala.concurrent.Future
 
-class ServersController(servers: Servers, auth: CloudAuth) extends Secured(auth) with Controller {
+class ServersController(servers: Servers, auth: CloudAuth) extends Controller {
 
   def receiveUpload = serverAction { server =>
     val requestID = server.request

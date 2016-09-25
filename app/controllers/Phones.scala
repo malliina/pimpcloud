@@ -42,8 +42,8 @@ object Phones {
 }
 
 class Phones(val servers: Servers, val phoneSockets: PhoneSockets, val auth: CloudAuth)
-  extends Secured(auth)
-    with BaseController
+  extends BaseController
+    with PimpContentController
     with Controller {
 
   def ping = proxiedGetAction(PING)

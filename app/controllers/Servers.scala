@@ -10,7 +10,7 @@ import com.malliina.musicpimp.json.JsonStrings._
 import com.malliina.pimpcloud.ws.StreamData
 import com.malliina.play.auth.Auth
 import com.malliina.play.http.AuthedRequest
-import com.malliina.play.models.Username
+import com.malliina.play.models.{Password, Username}
 import com.malliina.ws.{RxStmStorage, ServerSocket}
 import controllers.Servers.log
 import play.api.Logger
@@ -28,7 +28,7 @@ import scala.concurrent.Future
 abstract class Servers(mat: Materializer)
   extends ServerSocket(RxStmStorage[PimpServerSocket](), mat) {
   // not a secret but avoids unintentional connections
-  val serverPassword = "pimp"
+  val serverPassword = Password("pimp")
 
   implicit val writer = Writes[PimpServerSocket](o => Json.obj(
     ID -> o.id,
@@ -50,46 +50,47 @@ abstract class Servers(mat: Materializer)
 
   def newID(): Username = Username(UUID.randomUUID().toString take 5)
 
-  /**
-    * The server must authenticate with Basic HTTP authentication. The username must either be an empty string for
+  /** The server must authenticate with Basic HTTP authentication. The username must either be an empty string for
     * new clients, or a previously used cloud ID for old clients. The password must be pimp.
     *
     * @param request
     * @return a valid cloud ID, or None if the cloud ID generation failed
     */
-  override def authenticateAsync(request: RequestHeader): Future[AuthedRequest] =
-  Auth.basicCredentials(request)
-    .filter(_.password == serverPassword)
-    .map { creds =>
-      val user = creds.username
-      val cloudID: Future[Username] =
-        if (user.name.nonEmpty) {
-          val username = user
-          isConnected(username) flatMap { connected =>
-            if (connected) {
-              val msg = s"Unable to register client: $user. Another client with that ID is already connected."
-              log warn msg
-              Future.failed(new NoSuchElementException(msg))
-            } else {
-              Future.successful(username)
+  override def authenticateAsync(request: RequestHeader): Future[AuthedRequest] = {
+    Auth.basicCredentials(request)
+      .filter(_.password == serverPassword)
+      .map { creds =>
+        val user = creds.username
+        val cloudID: Future[Username] =
+          if (user.name.nonEmpty) {
+            val username = user
+            isConnected(username) flatMap { connected =>
+              if (connected) {
+                val msg = s"Unable to register client: $user. Another client with that ID is already connected."
+                log warn msg
+                Future.failed(new NoSuchElementException(msg))
+              } else {
+                Future.successful(username)
+              }
+            }
+          } else {
+            val id = newID()
+            isConnected(id) flatMap { connected =>
+              if (connected) {
+                val msg = s"A collision occurred while generating a random client ID: $id. Unable to register client."
+                log error msg
+                Future.failed(new NoSuchElementException(msg))
+              } else {
+                Future.successful(id)
+              }
             }
           }
-        } else {
-          val id = newID()
-          isConnected(id) flatMap { connected =>
-            if (connected) {
-              val msg = s"A collision occurred while generating a random client ID: $id. Unable to register client."
-              log error msg
-              Future.failed(new NoSuchElementException(msg))
-            } else {
-              Future.successful(id)
-            }
-          }
-        }
-      cloudID map (id => AuthedRequest(id, request))
-    }.getOrElse {
-    Future.failed(new NoSuchElementException)
+        cloudID map (id => AuthedRequest(id, request))
+      }.getOrElse {
+      Future.failed(new NoSuchElementException)
+    }
   }
+
 
   override def welcomeMessage(client: PimpServerSocket): Option[JsValue] =
     Some(Json.obj(CMD -> REGISTERED, BODY -> Json.obj(ID -> client.id)))

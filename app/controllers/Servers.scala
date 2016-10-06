@@ -7,9 +7,7 @@ import com.malliina.concurrent.FutureOps
 import com.malliina.musicpimp.cloud.PimpServerSocket
 import com.malliina.musicpimp.json.JsonStrings
 import com.malliina.musicpimp.json.JsonStrings._
-import com.malliina.pimpcloud.models.CloudID
 import com.malliina.pimpcloud.ws.StreamData
-import com.malliina.pimpcloud.{CloudCredentials, PimpAuth}
 import com.malliina.play.auth.Auth
 import com.malliina.play.http.AuthedRequest
 import com.malliina.play.models.Username
@@ -124,61 +122,6 @@ abstract class Servers(mat: Materializer)
   }
 
   def sendToPhone(msg: JsValue, client: PimpServerSocket): Unit
-
-  def authPhone(req: RequestHeader): Future[PhoneConnection] =
-    connectedServers.flatMap(servers => authPhone(req, servers))
-
-  /**
-    * Fails with a [[NoSuchElementException]] if authentication fails.
-    *
-    * @param req request
-    * @return the socket, if auth succeeds
-    */
-  def authPhone(req: RequestHeader, servers: Set[PimpServerSocket]): Future[PhoneConnection] = {
-    // header -> query -> session
-    headerAuthAsync(req, servers)
-      .recoverWithAll(_ => queryAuth(req, servers))
-      .recoverAll(_ => sessionAuth(req, servers).get)
-  }
-
-  def headerAuthAsync(req: RequestHeader, servers: Set[PimpServerSocket]): Future[PhoneConnection] =
-    flattenInvalid {
-      PimpAuth.cloudCredentials(req).map(creds => validate(creds, servers))
-    }
-
-  def queryAuth(req: RequestHeader, servers: Set[PimpServerSocket]): Future[PhoneConnection] =
-    flattenInvalid {
-      for {
-        s <- req.queryString get JsonStrings.SERVER_KEY
-        server <- s.headOption.map(CloudID.apply)
-        creds <- Auth.credentialsFromQuery(req)
-      } yield validate(CloudCredentials(server, creds.username, creds.password), servers)
-    }
-
-  def sessionAuth(req: RequestHeader, servers: Set[PimpServerSocket]): Option[PhoneConnection] = {
-    req.session.get(Security.username)
-      .map(Username.apply)
-      .flatMap(user => servers.find(_.id == user).map(server => PhoneConnection(user, server)))
-  }
-
-  def validate(creds: CloudCredentials): Future[PhoneConnection] =
-    connectedServers.flatMap(servers => validate(creds, servers))
-
-  /**
-    * @param creds
-    * @return a socket or a [[Future]] failed with [[NoSuchElementException]] if validation fails
-    */
-  def validate(creds: CloudCredentials, servers: Set[PimpServerSocket]): Future[PhoneConnection] = flattenInvalid {
-    servers.find(_.id.name == creds.cloudID) map { server =>
-      val user = creds.username
-      server.authenticate(user, creds.password)
-        .filter(_ == true)
-        .map(_ => PhoneConnection(user, server))
-    }
-  }
-
-  def flattenInvalid[T](optFut: Option[Future[T]]) =
-    optFut getOrElse Future.failed[T](Phones.invalidCredentials)
 }
 
 object Servers {

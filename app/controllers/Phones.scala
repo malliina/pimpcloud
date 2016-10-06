@@ -10,6 +10,8 @@ import com.malliina.musicpimp.cloud.PimpServerSocket
 import com.malliina.musicpimp.json.JsonStrings._
 import com.malliina.musicpimp.models.PlaylistID
 import com.malliina.musicpimp.stats.ItemLimits
+import com.malliina.pimpcloud.auth.CloudAuthentication
+import com.malliina.pimpcloud.models.{FolderID, TrackID}
 import com.malliina.pimpcloud.ws.PhoneSockets
 import com.malliina.pimpcloud.{ErrorMessage, ErrorResponse}
 import com.malliina.play.ContentRange
@@ -34,14 +36,14 @@ object Phones {
 
   val invalidCredentials = new NoSuchElementException("Invalid credentials")
 
-  def path(id: String) = Try(Paths get decode(id))
+  def path(id: TrackID) = Try(Paths get decode(id.id))
 
   def decode(id: String) = URLDecoder.decode(id, EncodingUTF8)
 
   def encode(id: String) = URLEncoder.encode(id, EncodingUTF8)
 }
 
-class Phones(val servers: Servers, val phoneSockets: PhoneSockets, val auth: CloudAuth)
+class Phones(val cloudAuths: CloudAuthentication, val phoneSockets: PhoneSockets, val auth: CloudAuth)
   extends BaseController
     with PimpContentController
     with Controller {
@@ -52,7 +54,7 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets, val auth: Clo
 
   def rootFolder = folderAction(_.rootFolder, _ => (ROOT_FOLDER, Json.obj()))
 
-  def folder(id: String) = folderAction(_.folder(id), req => (FOLDER, PimpServerSocket.idBody(id)))
+  def folder(id: FolderID) = folderAction(_.folder(id), req => (FOLDER, PimpServerSocket.idBody(id)))
 
   def status = proxiedGetAction(STATUS)
 
@@ -83,7 +85,7 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets, val auth: Clo
     *
     * @param id id of the requested track
     */
-  def track(id: String): EssentialAction = {
+  def track(id: TrackID): EssentialAction = {
     phoneAction { conn =>
       val socket = conn.server
       Action.async { req =>
@@ -203,7 +205,7 @@ class Phones(val servers: Servers, val phoneSockets: PhoneSockets, val auth: Clo
     conn.server.defaultProxy(conn.user, cmd, body) map (js => Ok(js))
 
   def phoneAction(f: PhoneConnection => EssentialAction) =
-    auth.loggedSecureActionAsync(servers.authPhone)(f)
+    auth.loggedSecureActionAsync(cloudAuths.authPhone)(f)
 
   def fut[T](body: => T) = Future successful body
 

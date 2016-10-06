@@ -14,7 +14,7 @@ import com.malliina.storage.StorageInt
 import play.api.Logger
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{BodyParser, MultipartFormData, Result}
-
+import com.malliina.concurrent.FutureOps
 import scala.concurrent.Future
 
 trait StreamBase[T] {
@@ -36,9 +36,10 @@ trait StreamBase[T] {
 
   def exists(uuid: UUID): Boolean
 
-  def remove(uuid: UUID) = {
+  def remove(uuid: UUID): Future[Unit] = {
     removeUUID(uuid)
-    streamChanged()
+      .recoverAll(_ => ())
+      .map(_ => streamChanged())
   }
 
   protected def connectSource(uuid: UUID, source: Source[T, NotUsed], track: Track, range: ContentRange): Future[Option[Result]] = {
@@ -49,6 +50,9 @@ trait StreamBase[T] {
 
   protected def resultify(source: Source[T, NotUsed], range: ContentRange): Result
 
+  /**
+    * @return true if the server received the upload request, false otherwise
+    */
   private def connect(uuid: UUID, track: Track, range: ContentRange): Future[Boolean] = {
     tryConnect(uuid, track, range) map { result =>
       log info s"Connected $uuid for ${track.title} with range $range"
@@ -70,7 +74,7 @@ trait StreamBase[T] {
     channel offer payload
   }
 
-  protected def removeUUID(uuid: UUID): Unit
+  protected def removeUUID(uuid: UUID): Future[Unit]
 
   protected def streamChanged(): Unit = onUpdate()
 }

@@ -2,6 +2,7 @@ package controllers
 
 import com.malliina.concurrent.FutureOps
 import com.malliina.pimpcloud.CloudCredentials
+import com.malliina.pimpcloud.auth.CloudAuthentication
 import com.malliina.pimpcloud.models.CloudID
 import com.malliina.play.controllers.{AccountForms, BaseController}
 import com.malliina.play.models.{Password, Username}
@@ -14,7 +15,7 @@ import views.html
 
 import scala.concurrent.Future
 
-class Web(servers: Servers, auth: CloudAuth, val forms: AccountForms)
+class Web(authActions: CloudAuthentication, auth: CloudAuth, val forms: AccountForms)
   extends BaseController
     with Controller {
 
@@ -41,7 +42,7 @@ class Web(servers: Servers, auth: CloudAuth, val forms: AccountForms)
       },
       creds => {
         implicit val ec = auth.mat.executionContext
-        servers.validate(creds).map(_ => {
+        authActions.validate(creds).map(_ => {
           val server = creds.cloudID
           val user = creds.username
           val who = s"$user@$server"

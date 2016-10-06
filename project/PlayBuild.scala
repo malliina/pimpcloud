@@ -20,7 +20,7 @@ object PlayBuild {
   val malliinaGroup = "com.malliina"
 
   val commonSettings = jenkinsSettings ++ linuxSettings ++ Seq(
-    version := "1.4.3",
+    version := "1.4.4",
     scalaVersion := "2.11.8",
     retrieveManaged := false,
     fork in Test := true,
@@ -34,7 +34,8 @@ object PlayBuild {
       "org.java-websocket" % "Java-WebSocket" % "1.3.0",
       PlayImport.filters,
       PlayImport.cache,
-      "org.scalatest" %% "scalatest" % "3.0.0" % Test
+//      "org.scalatest" %% "scalatest" % "3.0.0" % Test,
+      "org.scalatestplus.play" %% "scalatestplus-play" % "1.5.1" % Test
     ),
     javacOptions ++= Seq(
       "-source", "1.8",

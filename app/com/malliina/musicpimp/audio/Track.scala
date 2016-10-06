@@ -1,12 +1,13 @@
 package com.malliina.musicpimp.audio
 
 import com.malliina.json.JsonFormats
+import com.malliina.pimpcloud.models.TrackID
 import com.malliina.storage.StorageSize
 import play.api.libs.json.Json
 
 import scala.concurrent.duration.Duration
 
-case class Track(id: String,
+case class Track(id: TrackID,
                  title: String,
                  album: String,
                  artist: String,

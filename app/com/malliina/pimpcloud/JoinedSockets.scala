@@ -2,6 +2,7 @@ package com.malliina.pimpcloud
 
 import akka.stream.Materializer
 import com.malliina.musicpimp.cloud.PimpServerSocket
+import com.malliina.pimpcloud.auth.{FakeAuth, ProdAuth}
 import com.malliina.pimpcloud.ws.{PhoneClient, PhoneSockets}
 import com.malliina.ws.RxStmStorage
 import controllers.{PhoneConnection, Servers}
@@ -16,6 +17,9 @@ class JoinedSockets(mat: Materializer) {
       onServerMessage(msg, client)
   }
 
+  val auths = new ProdAuth(servers)
+//  val auths = new FakeAuth(mat)
+
   val phones = new PhoneSockets(RxStmStorage[PhoneClient](), mat) {
     override def authenticatePhone(req: RequestHeader): Future[PhoneConnection] =
       authPhone(req)
@@ -25,12 +29,5 @@ class JoinedSockets(mat: Materializer) {
     phones.send(msg, server)
 
   def authPhone(req: RequestHeader): Future[PhoneConnection] =
-    servers.authPhone(req)
-}
-
-object JoinedSockets {
-  def joined(mat: Materializer): (Servers, PhoneSockets) = {
-    val joined = new JoinedSockets(mat)
-    (joined.servers, joined.phones)
-  }
+    auths.authPhone(req)
 }

@@ -10,11 +10,11 @@ GET         /pingauth                          controllers.Phones.pingAuth
 GET         /playback                          controllers.Phones.status
 POST        /playback/stream                   controllers.Phones.beam
 GET         /folders                           controllers.Phones.rootFolder
-GET         /folders/*folder                   controllers.Phones.folder(folder)
+GET         /folders/*folder                   controllers.Phones.folder(folder: com.malliina.pimpcloud.models.FolderID)
 GET         /player/recent                     controllers.Phones.recent
 GET         /player/popular                    controllers.Phones.popular
-GET         /tracks/*id                        controllers.Phones.track(id)
-GET         /downloads/*id                     controllers.Phones.track(id)
+GET         /tracks/*id                        controllers.Phones.track(id: com.malliina.pimpcloud.models.TrackID)
+GET         /downloads/*id                     controllers.Phones.track(id: com.malliina.pimpcloud.models.TrackID)
 GET         /search                            controllers.Phones.search
 GET         /alarms                            controllers.Phones.alarms
 POST        /alarms                            controllers.Phones.editAlarm

@@ -31,10 +31,7 @@ abstract class CloudStreams[T](id: Username, val channel: SourceQueue[JsValue], 
   def snapshot: Seq[StreamData] = iteratees.map(kv => StreamData(kv._1, id, kv._2.track, kv._2.range)).toSeq
 
   /**
-    *
-    * @param track
-    * @param range
-    * @return
+    * @return a Result if the server received the upload request, None otherwise
     * @see https://groups.google.com/forum/#!searchin/akka-user/source.queue/akka-user/zzGSuRG4YVA/NEjwAT76CAAJ
     */
   def streamRange(track: Track, range: ContentRange): Future[Option[Result]] = {
@@ -48,11 +45,15 @@ abstract class CloudStreams[T](id: Username, val channel: SourceQueue[JsValue], 
     *
     * @param uuid
     */
-  def removeUUID(uuid: UUID) = (iteratees remove uuid).foreach(_.close())
+  def removeUUID(uuid: UUID): Future[Unit] = {
+    (iteratees remove uuid)
+      .map(_.close().map(_ => ()))
+      .getOrElse(Future.successful(()))
+  }
 
   def exists(uuid: UUID) = iteratees contains uuid
 
-  def get(uuid: UUID) = iteratees get uuid
+  def get(uuid: UUID): Option[ChannelInfo[T]] = iteratees get uuid
 }
 
 case class ChannelInfo[T](channel: SourceQueue[Option[T]],

@@ -2,7 +2,6 @@ package com.malliina.pimpcloud.ws
 
 import akka.stream.Materializer
 import akka.stream.scaladsl.SourceQueue
-import com.malliina.concurrent.ExecutionContexts.cached
 import com.malliina.concurrent.FutureOps
 import com.malliina.musicpimp.cloud.PimpServerSocket
 import com.malliina.musicpimp.json.JsonStrings

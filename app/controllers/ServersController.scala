@@ -1,20 +1,15 @@
 package controllers
 
-import java.util.UUID
-
-import com.malliina.musicpimp.cloud.PimpServerSocket
-import com.malliina.musicpimp.json.JsonStrings
-import com.malliina.ws.JsonFutureSocket
+import com.malliina.pimpcloud.auth.CloudAuthentication
 import controllers.ServersController.log
 import play.api.Logger
-import play.api.mvc.{Action, Controller, EssentialAction, RequestHeader}
+import play.api.mvc.{Action, Controller, EssentialAction}
 
-import scala.concurrent.Future
-
-class ServersController(servers: Servers, auth: CloudAuth) extends Controller {
+class ServersController(cloudAuth: CloudAuthentication, auth: CloudAuth) extends Controller {
 
   def receiveUpload = serverAction { server =>
     val requestID = server.request
+    log info s"Processing $requestID..."
     val transfers = server.socket.fileTransfers
     val parser = transfers parser requestID
     parser.fold[EssentialAction](Action(NotFound)) { parser =>
@@ -36,26 +31,8 @@ class ServersController(servers: Servers, auth: CloudAuth) extends Controller {
     }
   }
 
-  def serverAction(f: Server => EssentialAction) = auth.loggedSecureActionAsync(authServer)(f)
-
-  def authServer(req: RequestHeader): Future[Server] = {
-    val uuidOpt = for {
-      requestID <- req.headers get JsonStrings.REQUEST_ID
-      uuid <- JsonFutureSocket.tryParseUUID(requestID)
-    } yield uuid
-    implicit val ec = auth.mat.executionContext
-    for {
-      uuid <- toFuture(uuidOpt)
-      ss <- servers.connectedServers
-      server <- toFuture(findServer(ss, uuid))
-    } yield server
-  }
-
-  def findServer(ss: Set[PimpServerSocket], uuid: UUID): Option[Server] =
-    ss.find(_.fileTransfers.exists(uuid)).map(s => Server(uuid, s))
-
-  def toFuture[T](opt: Option[T]): Future[T] =
-    opt.map(Future.successful).getOrElse(Future.failed(new NoSuchElementException))
+  def serverAction(f: Server => EssentialAction): EssentialAction =
+    auth.loggedSecureActionAsync(cloudAuth.authServer)(f)
 }
 
 object ServersController {

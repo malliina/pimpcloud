@@ -5,6 +5,8 @@ import com.malliina.pimpcloud.CloudLoader
 import com.malliina.push.apns.{APNSClient, APNSMessage, APNSToken}
 import controllers.Push
 import org.specs2.mutable.Specification
+import play.api.ApplicationLoader.Context
+import play.api.{ApplicationLoader, Environment, Mode}
 import play.api.libs.json.Json
 import play.api.test.Helpers._
 import play.api.test.{FakeRequest, WithApplicationLoader}
@@ -12,6 +14,13 @@ import play.api.test.{FakeRequest, WithApplicationLoader}
 import scala.concurrent.Await
 
 class WithApp extends WithApplicationLoader(new CloudLoader)
+
+object WithApp {
+  def createTestAppContext: Context = {
+    val env = new Environment(new java.io.File("."), ApplicationLoader.getClass.getClassLoader, Mode.Test)
+    ApplicationLoader.createContext(env)
+  }
+}
 
 class HttpPushTests extends Specification {
 //  val tokenString = "193942675140b3d429311de140bd08ff423712ec9c3ea365b12e61b84609afa9"

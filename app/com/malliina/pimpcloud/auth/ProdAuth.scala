@@ -80,7 +80,7 @@ class ProdAuth(servers: Servers) extends CloudAuthentication {
     * @return a socket or a [[Future]] failed with [[NoSuchElementException]] if validation fails
     */
   private def validate(creds: CloudCredentials, servers: Set[PimpServerSocket]): Future[PhoneConnection] = flattenInvalid {
-    servers.find(_.id.name == creds.cloudID) map { server =>
+    servers.find(_.id.name == creds.cloudID.id) map { server =>
       val user = creds.username
       server.authenticate(user, creds.password)
         .filter(_ == true)

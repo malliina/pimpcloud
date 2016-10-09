@@ -7,7 +7,9 @@ import play.api.mvc.{Action, Controller, EssentialAction}
 
 class ServersController(cloudAuth: CloudAuthentication, auth: CloudAuth) extends Controller {
 
-  def receiveUpload = serverAction { server =>
+  def receiveUpload = serverAction(receive)
+
+  def receive(server: ServerRequest) = {
     val requestID = server.request
     log info s"Processing $requestID..."
     val transfers = server.socket.fileTransfers
@@ -31,7 +33,7 @@ class ServersController(cloudAuth: CloudAuthentication, auth: CloudAuth) extends
     }
   }
 
-  def serverAction(f: Server => EssentialAction): EssentialAction =
+  def serverAction(f: ServerRequest => EssentialAction): EssentialAction =
     auth.loggedSecureActionAsync(cloudAuth.authServer)(f)
 }
 

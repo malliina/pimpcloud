@@ -129,6 +129,6 @@ object Servers {
   private val log = Logger(getClass)
 }
 
-case class Server(request: UUID, socket: PimpServerSocket)
+case class ServerRequest(request: UUID, socket: PimpServerSocket)
 
 case class PhoneConnection(user: Username, server: PimpServerSocket)

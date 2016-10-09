@@ -18,7 +18,7 @@ import scala.concurrent.Future
 class ProdAuth(servers: Servers) extends CloudAuthentication {
   implicit val ec = servers.mat.executionContext
 
-  override def authServer(req: RequestHeader): Future[Server] = {
+  override def authServer(req: RequestHeader): Future[ServerRequest] = {
     val uuidOpt = for {
       requestID <- req.headers get JsonStrings.REQUEST_ID
       uuid <- JsonFutureSocket.tryParseUUID(requestID)
@@ -36,8 +36,8 @@ class ProdAuth(servers: Servers) extends CloudAuthentication {
   override def validate(creds: CloudCredentials): Future[PhoneConnection] =
     connectedServers.flatMap(servers => validate(creds, servers))
 
-  private def findServer(ss: Set[PimpServerSocket], uuid: UUID): Option[Server] =
-    ss.find(_.fileTransfers.exists(uuid)).map(s => Server(uuid, s))
+  private def findServer(ss: Set[PimpServerSocket], uuid: UUID): Option[ServerRequest] =
+    ss.find(_.fileTransfers.exists(uuid)).map(s => ServerRequest(uuid, s))
 
   private def toFuture[T](opt: Option[T]): Future[T] =
     opt.map(Future.successful).getOrElse(Future.failed(new NoSuchElementException))
@@ -49,12 +49,12 @@ class ProdAuth(servers: Servers) extends CloudAuthentication {
     */
   private def authPhone(req: RequestHeader, servers: Set[PimpServerSocket]): Future[PhoneConnection] = {
     // header -> query -> session
-    headerAuthAsync(req, servers)
+    headerAuth(req, servers)
       .recoverWithAll(_ => queryAuth(req, servers))
       .recoverAll(_ => sessionAuth(req, servers).get)
   }
 
-  private def headerAuthAsync(req: RequestHeader, servers: Set[PimpServerSocket]): Future[PhoneConnection] =
+  private def headerAuth(req: RequestHeader, servers: Set[PimpServerSocket]): Future[PhoneConnection] =
     flattenInvalid {
       PimpAuth.cloudCredentials(req).map(creds => validate(creds, servers))
     }
@@ -80,7 +80,7 @@ class ProdAuth(servers: Servers) extends CloudAuthentication {
     * @return a socket or a [[Future]] failed with [[NoSuchElementException]] if validation fails
     */
   private def validate(creds: CloudCredentials, servers: Set[PimpServerSocket]): Future[PhoneConnection] = flattenInvalid {
-    servers.find(_.id.name == creds.cloudID.id) map { server =>
+    servers.find(_.id == creds.cloudID) map { server =>
       val user = creds.username
       server.authenticate(user, creds.password)
         .filter(_ == true)

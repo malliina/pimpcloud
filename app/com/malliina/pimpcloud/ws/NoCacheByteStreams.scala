@@ -6,6 +6,7 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.SourceQueue
 import akka.util.ByteString
 import com.malliina.concurrent.FutureOps
+import com.malliina.pimpcloud.models.CloudID
 import com.malliina.pimpcloud.ws.NoCacheByteStreams.log
 import com.malliina.play.models.Username
 import com.malliina.play.streams.StreamParsers
@@ -13,7 +14,7 @@ import play.api.Logger
 import play.api.libs.json.JsValue
 import play.api.mvc.{BodyParser, MultipartFormData}
 
-class NoCacheByteStreams(id: Username,
+class NoCacheByteStreams(id: CloudID,
                          channel: SourceQueue[JsValue],
                          val mat: Materializer,
                          val onUpdate: () => Unit)

@@ -3,6 +3,7 @@ package com.malliina.ws
 import akka.stream.Materializer
 import akka.stream.scaladsl.SourceQueue
 import com.malliina.musicpimp.cloud.PimpServerSocket
+import com.malliina.pimpcloud.models.CloudID
 import com.malliina.play.http.AuthedRequest
 import play.api.libs.json.JsValue
 import play.api.mvc._
@@ -20,7 +21,7 @@ abstract class ServerSocket(val storage: RxStmStorage[PimpServerSocket], val mat
   def updateRequestList(): Unit
 
   override def newClient(authResult: AuthedRequest, channel: SourceQueue[JsValue], request: RequestHeader): PimpServerSocket =
-    new PimpServerSocket(channel, authResult.user, request, mat, updateRequestList)
+    new PimpServerSocket(channel, CloudID(authResult.user.name), request, mat, updateRequestList)
 
   override def onConnectSync(client: PimpServerSocket): Unit = {
     super.onConnectSync(client)

@@ -1,6 +1,6 @@
 package com.malliina.pimpcloud.ws
 
-import akka.stream.Materializer
+import akka.stream.{Materializer, QueueOfferResult}
 import akka.stream.scaladsl.SourceQueue
 import com.malliina.concurrent.FutureOps
 import com.malliina.musicpimp.cloud.PimpServerSocket
@@ -32,7 +32,8 @@ abstract class PhoneSockets(val storage: RxStmStorage[PhoneClient], val mat: Mat
 
   def authenticatePhone(req: RequestHeader): Future[AuthSuccess]
 
-  def send(message: Message, from: PimpServerSocket) =
+  // TODO this is shit; cannot concurrently offer
+  def send(message: Message, from: PimpServerSocket): Future[Seq[QueueOfferResult]] =
     clients.flatMap(cs => Future.traverse(cs.filter(_.connectedServer == from))(_.channel.offer(message)))
 
   override def openSocketCall: Call = routes.PhoneSockets.openSocket()

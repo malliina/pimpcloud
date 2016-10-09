@@ -9,7 +9,7 @@ import com.malliina.musicpimp.cloud.PimpMessages.Version
 import com.malliina.musicpimp.cloud.PimpServerSocket.{body, idBody, nobody}
 import com.malliina.musicpimp.json.JsonStrings._
 import com.malliina.musicpimp.models._
-import com.malliina.pimpcloud.models.{FolderID, Identifiable, TrackID}
+import com.malliina.pimpcloud.models.{CloudID, FolderID, Identifiable, TrackID}
 import com.malliina.pimpcloud.ws.{CachedByteStreams, NoCacheByteStreams, StreamBase}
 import com.malliina.play.ContentRange
 import com.malliina.play.models.{Password, Username}
@@ -33,8 +33,15 @@ object PimpServerSocket {
     Json.obj(more: _*)
 }
 
+/**
+  * @param channel
+  * @param id the cloud ID of the server
+  * @param headers
+  * @param mat
+  * @param onUpdate
+  */
 class PimpServerSocket(channel: SourceQueue[JsValue],
-                       id: Username,
+                       id: CloudID,
                        val headers: RequestHeader,
                        mat: Materializer,
                        onUpdate: () => Unit)

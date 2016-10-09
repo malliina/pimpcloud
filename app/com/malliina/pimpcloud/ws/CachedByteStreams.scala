@@ -6,6 +6,7 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.SourceQueue
 import akka.util.ByteString
 import com.malliina.musicpimp.audio.Track
+import com.malliina.pimpcloud.models.CloudID
 import com.malliina.pimpcloud.ws.CachedByteStreams.log
 import com.malliina.play.models.Username
 import com.malliina.play.streams.StreamParsers
@@ -27,7 +28,7 @@ import scala.concurrent.Future
   *
   * Falls back to non-cached streaming if the track is meets or exceeds `cacheThreshold`.
   */
-class CachedByteStreams(id: Username,
+class CachedByteStreams(id: CloudID,
                         val channel: SourceQueue[JsValue],
                         val mat: Materializer,
                         val onUpdate: () => Unit)

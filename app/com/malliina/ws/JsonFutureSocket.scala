@@ -5,6 +5,7 @@ import java.util.UUID
 import akka.stream.scaladsl.SourceQueue
 import com.malliina.musicpimp.cloud.UuidFutureMessaging
 import com.malliina.musicpimp.json.JsonStrings.{BODY, REQUEST_ID, SUCCESS}
+import com.malliina.pimpcloud.models.CloudID
 import com.malliina.play.models.Username
 import com.malliina.util.Utils
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
@@ -18,7 +19,7 @@ import scala.concurrent.duration.DurationInt
   * Protocol: Responses must be tagged with the same request ID we add to sent messages, so that we can
   * pair requests with responses.
   */
-class JsonFutureSocket(val channel: SourceQueue[JsValue], val id: Username)
+class JsonFutureSocket(val channel: SourceQueue[JsValue], val id: CloudID)
   extends UuidFutureMessaging
     with com.malliina.play.ws.SocketClient[JsValue] {
 
@@ -31,10 +32,10 @@ class JsonFutureSocket(val channel: SourceQueue[JsValue], val id: Username)
     * @return a response, parsed
     */
   override def extract(response: JsValue): Option[BodyAndId] =
-  for {
-    uuid <- (response \ REQUEST_ID).asOpt[UUID]
-    body <- (response \ BODY).toOption
-  } yield BodyAndId(body, uuid)
+    for {
+      uuid <- (response \ REQUEST_ID).asOpt[UUID]
+      body <- (response \ BODY).toOption
+    } yield BodyAndId(body, uuid)
 
   override def isSuccess(response: JsValue): Boolean =
     (response \ SUCCESS).validate[Boolean].filter(_ == false).isError
@@ -53,7 +54,7 @@ class JsonFutureSocket(val channel: SourceQueue[JsValue], val id: Username)
     * @return the response
     */
   def proxyT[T: Writes, U: Reads](cmd: String, body: T, user: Username): Future[U] =
-  proxyD(user, cmd, Json.toJson(body))
+    proxyD(user, cmd, Json.toJson(body))
 
   /** Sends `body` and deserializes the response to type `T`.
     *
@@ -64,7 +65,7 @@ class JsonFutureSocket(val channel: SourceQueue[JsValue], val id: Username)
     * @return a deserialized body, or a failed [[Future]] on failure
     */
   def proxyD[T: Reads](user: Username, cmd: String, body: JsValue): Future[T] =
-  proxyD2[T](user, cmd, body).map(_.get)
+    proxyD2[T](user, cmd, body).map(_.get)
 
   def proxyD2[T: Reads](user: Username, cmd: String, body: JsValue): Future[JsResult[T]] =
     defaultProxy(user, cmd, body).map(_.validate[T])
@@ -74,7 +75,7 @@ class JsonFutureSocket(val channel: SourceQueue[JsValue], val id: Username)
     * @return response
     */
   def defaultProxy(user: Username, cmd: String, body: JsValue): Future[JsValue] =
-  request(cmd, body, user, timeout)
+    request(cmd, body, user, timeout)
 }
 
 object JsonFutureSocket {

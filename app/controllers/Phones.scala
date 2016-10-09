@@ -48,35 +48,35 @@ class Phones(val cloudAuths: CloudAuthentication, val phoneSockets: PhoneSockets
     with PimpContentController
     with Controller {
 
-  def ping = proxiedGetAction(PING)
+  def ping = proxiedGetAction(Ping)
 
   def pingAuth = proxiedAction((req, socket) => socket.server.pingAuth.map(v => NoCache(Ok(Json toJson v))))
 
-  def rootFolder = folderAction(_.rootFolder, _ => (ROOT_FOLDER, Json.obj()))
+  def rootFolder = folderAction(_.rootFolder, _ => (RootFolder, Json.obj()))
 
-  def folder(id: FolderID) = folderAction(_.folder(id), req => (FOLDER, PimpServerSocket.idBody(id)))
+  def folder(id: FolderID) = folderAction(_.folder(id), req => (FolderKey, PimpServerSocket.idBody(id)))
 
-  def status = proxiedGetAction(STATUS)
+  def status = proxiedGetAction(StatusKey)
 
   def search = proxiedAction { (req, socket) =>
     def query(key: String) = (req getQueryString key) map (_.trim) filter (_.nonEmpty)
-    val termFromQuery = query(TERM)
-    val limit = query(LIMIT).filter(i => Try(i.toInt).isSuccess).map(_.toInt) getOrElse Phones.DefaultSearchLimit
+    val termFromQuery = query(Term)
+    val limit = query(Limit).filter(i => Try(i.toInt).isSuccess).map(_.toInt) getOrElse Phones.DefaultSearchLimit
     termFromQuery.fold[Future[Result]](fut(BadRequest))(term => {
       folderResult(req, socket)(
         _.search(term, limit).map(tracks => Directory(Nil, tracks)),
-        (SEARCH, PimpServerSocket.body(TERM -> term, LIMIT -> limit))
+        (SearchKey, PimpServerSocket.body(Term -> term, Limit -> limit))
       )
     })
   }
 
-  def alarms = proxiedGetAction(ALARMS)
+  def alarms = proxiedGetAction(AlarmsKey)
 
-  def editAlarm = bodyProxied(ALARMS_EDIT)
+  def editAlarm = bodyProxied(AlarmsEdit)
 
-  def newAlarm = bodyProxied(ALARMS_ADD)
+  def newAlarm = bodyProxied(AlarmsAdd)
 
-  def beam = bodyProxied(BEAM)
+  def beam = bodyProxied(Beam)
 
   /** Relays track `id` to the client from the target.
     *
@@ -149,7 +149,7 @@ class Phones(val cloudAuths: CloudAuthentication, val phoneSockets: PhoneSockets
   private def playlistAction(cmd: String, id: PlaylistID) =
     proxiedJsonAction(cmd)(_ => playlistIdJson(id))
 
-  private def playlistIdJson(id: PlaylistID) = Right(Json.obj(ID -> id.id))
+  private def playlistIdJson(id: PlaylistID) = Right(Json.obj(Id -> id.id))
 
   /**
     * Sends the request body as JSON to the server this phone is connected to, and responds with the JSON the server

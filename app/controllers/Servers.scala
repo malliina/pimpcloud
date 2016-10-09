@@ -31,15 +31,15 @@ abstract class Servers(mat: Materializer)
   val serverPassword = Password("pimp")
 
   implicit val writer = Writes[PimpServerSocket](o => Json.obj(
-    ID -> o.id,
-    ADDRESS -> o.headers.remoteAddress
+    Id -> o.id,
+    Address -> o.headers.remoteAddress
   ))
-  val usersJson = storage.users.map(list => Json.obj(EVENT -> SERVERS, BODY -> list))
+  val usersJson = storage.users.map(list => Json.obj(Event -> ServersKey, Body -> list))
 
   val streamSubject = BehaviorSubject[Seq[StreamData]](Nil)
   val uuidsJson: Observable[JsValue] = streamSubject.map(streams => Json.obj(
-    EVENT -> JsonStrings.REQUESTS,
-    BODY -> streams
+    Event -> JsonStrings.RequestsKey,
+    Body -> streams
   ))
 
   def updateRequestList() = ongoingTransfers.foreach(ts => streamSubject.onNext(ts.toSeq))
@@ -93,7 +93,7 @@ abstract class Servers(mat: Materializer)
 
 
   override def welcomeMessage(client: PimpServerSocket): Option[JsValue] =
-    Some(Json.obj(CMD -> REGISTERED, BODY -> Json.obj(ID -> client.id)))
+    Some(Json.obj(Cmd -> RegisteredKey, Body -> Json.obj(Id -> client.id)))
 
   def isConnected(serverID: Username): Future[Boolean] =
     connectedServers.exists(cs => cs.exists(_.id == serverID))

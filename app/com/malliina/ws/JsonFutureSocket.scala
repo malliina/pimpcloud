@@ -4,7 +4,7 @@ import java.util.UUID
 
 import akka.stream.scaladsl.SourceQueue
 import com.malliina.musicpimp.cloud.UuidFutureMessaging
-import com.malliina.musicpimp.json.JsonStrings.{BODY, REQUEST_ID, SUCCESS}
+import com.malliina.musicpimp.json.JsonStrings.{Body, RequestId, SuccessKey}
 import com.malliina.pimpcloud.models.CloudID
 import com.malliina.play.models.Username
 import com.malliina.util.Utils
@@ -33,12 +33,12 @@ class JsonFutureSocket(val channel: SourceQueue[JsValue], val id: CloudID)
     */
   override def extract(response: JsValue): Option[BodyAndId] =
     for {
-      uuid <- (response \ REQUEST_ID).asOpt[UUID]
-      body <- (response \ BODY).toOption
+      uuid <- (response \ RequestId).asOpt[UUID]
+      body <- (response \ Body).toOption
     } yield BodyAndId(body, uuid)
 
   override def isSuccess(response: JsValue): Boolean =
-    (response \ SUCCESS).validate[Boolean].filter(_ == false).isError
+    (response \ SuccessKey).validate[Boolean].filter(_ == false).isError
 
   //  /** TODO Fix signature; what happens when the channel is closed and this method is called?
   //    *

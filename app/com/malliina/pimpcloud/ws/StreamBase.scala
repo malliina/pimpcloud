@@ -68,8 +68,8 @@ trait StreamBase[T] {
   private def tryConnect(uuid: UUID, track: Track, range: ContentRange): Future[QueueOfferResult] = {
     streamChanged()
     val message =
-      if (range.isAll) UserRequest(TRACK, PimpServerSocket.idBody(track.id), uuid, PimpServerSocket.nobody)
-      else UserRequest(TRACK, PimpServerSocket.body(ID -> track.id, RANGE -> range), uuid, PimpServerSocket.nobody)
+      if (range.isAll) UserRequest(TrackKey, PimpServerSocket.idBody(track.id), uuid, PimpServerSocket.nobody)
+      else UserRequest(TrackKey, PimpServerSocket.body(Id -> track.id, Range -> range), uuid, PimpServerSocket.nobody)
     val payload = Json.toJson(message)
     channel offer payload
   }

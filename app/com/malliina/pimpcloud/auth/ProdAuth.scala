@@ -20,7 +20,7 @@ class ProdAuth(servers: Servers) extends CloudAuthentication {
 
   override def authServer(req: RequestHeader): Future[ServerRequest] = {
     val uuidOpt = for {
-      requestID <- req.headers get JsonStrings.REQUEST_ID
+      requestID <- req.headers get JsonStrings.RequestId
       uuid <- JsonFutureSocket.tryParseUUID(requestID)
     } yield uuid
     for {
@@ -62,7 +62,7 @@ class ProdAuth(servers: Servers) extends CloudAuthentication {
   private def queryAuth(req: RequestHeader, servers: Set[PimpServerSocket]): Future[PhoneConnection] =
     flattenInvalid {
       for {
-        s <- req.queryString get JsonStrings.SERVER_KEY
+        s <- req.queryString get JsonStrings.ServerKey
         server <- s.headOption.map(CloudID.apply)
         creds <- Auth.credentialsFromQuery(req)
       } yield validate(CloudCredentials(server, creds.username, creds.password), servers)

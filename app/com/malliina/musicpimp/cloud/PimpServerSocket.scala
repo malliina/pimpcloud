@@ -24,7 +24,7 @@ object PimpServerSocket {
   val DefaultSearchLimit = 100
   val nobody = Username("nobody")
 
-  def idBody(id: Identifiable): JsObject = body(ID -> id.id)
+  def idBody(id: Identifiable): JsObject = body(Id -> id.id)
 
   /**
     * @return a JSON object with parameter `cmd` in key `cmd` and dictionary `more` in key `body`
@@ -52,11 +52,11 @@ class PimpServerSocket(channel: SourceQueue[JsValue],
   def streamRange(track: Track, contentRange: ContentRange): Future[Option[Result]] =
     fileTransfers.streamRange(track, contentRange)
 
-  def ping = simpleProxy(PING)
+  def ping = simpleProxy(Ping)
 
-  def pingAuth: Future[Version] = proxied[Version](nobody, VERSION)
+  def pingAuth: Future[Version] = proxied[Version](nobody, VersionKey)
 
-  def meta(id: TrackID): Future[Track] = proxyD[Track](nobody, META, idBody(id))
+  def meta(id: TrackID): Future[Track] = proxyD[Track](nobody, Meta, idBody(id))
 
   /**
     * @param user username
@@ -67,26 +67,26 @@ class PimpServerSocket(channel: SourceQueue[JsValue],
     authenticate3(user, pass).map(_ => true).recoverAll(_ => false)
 
   def authenticate3(user: Username, pass: Password): Future[Version] =
-    proxied[Version](nobody, AUTHENTICATE, USERNAME -> user, PASSWORD -> pass)
+    proxied[Version](nobody, Authenticate, UsernameKey -> user, PasswordKey -> pass)
 
-  def rootFolder = proxied[Directory](nobody, ROOT_FOLDER)
+  def rootFolder = proxied[Directory](nobody, RootFolder)
 
-  def folder(id: FolderID) = proxyD[Directory](nobody, FOLDER, idBody(id))
+  def folder(id: FolderID) = proxyD[Directory](nobody, FolderKey, idBody(id))
 
   def search(term: String, limit: Int = PimpServerSocket.DefaultSearchLimit) =
-    proxied[Seq[Track]](nobody, SEARCH, TERM -> term, LIMIT -> limit)
+    proxied[Seq[Track]](nobody, SearchKey, Term -> term, Limit -> limit)
 
-  def playlists(user: Username) = proxied[PlaylistsMeta](nobody, PlaylistsGet, USERNAME -> user.name)
+  def playlists(user: Username) = proxied[PlaylistsMeta](nobody, PlaylistsGet, UsernameKey -> user.name)
 
   def playlist(id: PlaylistID, user: Username) =
-    proxied[PlaylistMeta](user, PlaylistGet, ID -> id.id, USERNAME -> user.name)
+    proxied[PlaylistMeta](user, PlaylistGet, Id -> id.id, UsernameKey -> user.name)
 
   def deletePlaylist(id: PlaylistID, user: Username) =
-    defaultProxy(user, PlaylistDelete, body(ID -> id.id, USERNAME -> user.name))
+    defaultProxy(user, PlaylistDelete, body(Id -> id.id, UsernameKey -> user.name))
 
-  def alarms = simpleProxy(ALARMS)
+  def alarms = simpleProxy(AlarmsKey)
 
-  def status = simpleProxy(STATUS)
+  def status = simpleProxy(StatusKey)
 
   protected def proxied[T: Reads](user: Username, cmd: String, more: (String, Json.JsValueWrapper)*) =
     proxyD[T](user, cmd, body(more: _*))

@@ -22,7 +22,7 @@ class IterateeStore[T]  {
     val uuid = UUID.randomUUID()
     ongoingRequests += (uuid -> IterateeInfo(iteratee, owner))
     updateObservable()
-    val payload = Json.obj(REQUEST_ID -> uuid.toString, BODY -> message)
+    val payload = Json.obj(RequestId -> uuid.toString, Body -> message)
     log debug s"Sending request: $uuid with body: $message"
     val ret = Try(channel push payload)
     ret match {

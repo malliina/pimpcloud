@@ -23,12 +23,12 @@ abstract class PhoneSockets(val storage: RxStmStorage[PhoneClient], val mat: Mat
   override type AuthSuccess = PhoneConnection
 
   implicit val writer = Writes[PhoneClient](o => Json.obj(
-    SERVER_KEY -> o.connectedServer.id,
-    ADDRESS -> o.req.remoteAddress
+    ServerKey -> o.connectedServer.id,
+    Address -> o.req.remoteAddress
   ))
 
   val usersJson: Observable[JsObject] =
-    storage.users.map(phoneClients => Json.obj(EVENT -> PHONES, BODY -> phoneClients))
+    storage.users.map(phoneClients => Json.obj(Event -> PhonesKey, Body -> phoneClients))
 
   def authenticatePhone(req: RequestHeader): Future[AuthSuccess]
 
@@ -44,16 +44,16 @@ abstract class PhoneSockets(val storage: RxStmStorage[PhoneClient], val mat: Mat
     PhoneClient(authResult, channel, request)
 
   override def onMessage(msg: Message, client: PhoneClient): Boolean = {
-    val isStatus = (msg \ CMD).validate[String].filter(_ == STATUS).isSuccess
+    val isStatus = (msg \ Cmd).validate[String].filter(_ == StatusKey).isSuccess
     if (isStatus) {
       client.connectedServer.status
         .flatMap(resp => client.channel offer resp)
         .recoverAll(t => log.warn(s"Status request failed.", t))
     } else {
       val payload = Json.obj(
-        CMD -> JsonStrings.PLAYER,
-        BODY -> msg,
-        USERNAME -> client.phoneUser.name)
+        Cmd -> JsonStrings.Player,
+        Body -> msg,
+        UsernameKey -> client.phoneUser.name)
       client.connectedServer send payload
     }
     true

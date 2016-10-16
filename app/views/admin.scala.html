@@ -13,9 +13,9 @@
 <script src="@routes.Assets.at("js/admin.js")"></script>
 @wsopen(adminWsUrl)
 
-    @tableContainer(header: String, bodyID: String, headers: String*) = {
-        <h2>@header</h2>
+@tableContainer(header: String, bodyID: String, headers: String*) = {
+    <h2>@header</h2>
     @bs.rowColumn("col-md-12") {
         @util.table(bodyID, headers: _*)
     }
-    }
+}

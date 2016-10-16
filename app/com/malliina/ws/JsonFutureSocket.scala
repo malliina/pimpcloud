@@ -5,7 +5,7 @@ import java.util.UUID
 import akka.stream.scaladsl.SourceQueue
 import com.malliina.musicpimp.cloud.UuidFutureMessaging
 import com.malliina.musicpimp.json.JsonStrings.{Body, RequestId, SuccessKey}
-import com.malliina.pimpcloud.models.CloudID
+import com.malliina.pimpcloud.models.{CloudID, PhoneRequest}
 import com.malliina.play.models.Username
 import com.malliina.util.Utils
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
@@ -54,28 +54,28 @@ class JsonFutureSocket(val channel: SourceQueue[JsValue], val id: CloudID)
     * @return the response
     */
   def proxyT[T: Writes, U: Reads](cmd: String, body: T, user: Username): Future[U] =
-    proxyD(user, cmd, Json.toJson(body))
+    proxyD(PhoneRequest(cmd, Json.toJson(body)), user)
 
   /** Sends `body` and deserializes the response to type `T`.
     *
     * TODO check success status first, and any potential error
     *
-    * @param body payload
+    * @param data payload
     * @tparam T type of response
     * @return a deserialized body, or a failed [[Future]] on failure
     */
-  def proxyD[T: Reads](user: Username, cmd: String, body: JsValue): Future[T] =
-    proxyD2[T](user, cmd, body).map(_.get)
+  def proxyD[T: Reads](data: PhoneRequest, user: Username): Future[T] =
+    proxyD2[T](data, user).map(_.get)
 
-  def proxyD2[T: Reads](user: Username, cmd: String, body: JsValue): Future[JsResult[T]] =
-    defaultProxy(user, cmd, body).map(_.validate[T])
+  def proxyD2[T: Reads](data: PhoneRequest, user: Username): Future[JsResult[T]] =
+    defaultProxy(data, user).map(_.validate[T])
 
   /**
-    * @param body payload
+    * @param data payload
     * @return response
     */
-  def defaultProxy(user: Username, cmd: String, body: JsValue): Future[JsValue] =
-    request(cmd, body, user, timeout)
+  def defaultProxy(data: PhoneRequest, user: Username): Future[JsValue] =
+    request(data, user, timeout)
 }
 
 object JsonFutureSocket {

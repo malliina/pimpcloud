@@ -34,7 +34,7 @@ class CloudComponents(context: Context) extends BuiltInComponentsFromContext(con
   lazy val sc = new ServersController(cloudAuths, auth)
   lazy val aa = new AdminAuth(materializer)
   lazy val l = new Logs(aa)
-  lazy val w = new Web(cloudAuths, auth, forms)
+  lazy val w = new Web(cloudAuths, materializer.executionContext, forms)
   lazy val us = new UsageStreaming(s, p, ps, sc, aa)
   lazy val as = new Assets(httpErrorHandler)
   lazy val router = new Routes(httpErrorHandler, p, w, push, ps, sc, s, as, us, l, aa)

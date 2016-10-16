@@ -43,3 +43,6 @@ GET         /admin/eject                       controllers.AdminAuth.eject
 GET         /admin/ws                          controllers.Logs.openSocket
 GET         /admin/usage                       controllers.UsageStreaming.openSocket
 GET         /admin/logout                      controllers.AdminAuth.logout
+# Test endpoints
+#GET         /testfile                          controllers.ServersController.registerListener
+#POST        /testup                            controllers.ServersController.receiveStream

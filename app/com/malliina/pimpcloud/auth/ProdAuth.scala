@@ -71,7 +71,7 @@ class ProdAuth(servers: Servers) extends CloudAuthentication {
   private def sessionAuth(req: RequestHeader, servers: Set[PimpServerSocket]): Option[PhoneConnection] = {
     req.session.get(Security.username)
       .map(Username.apply)
-      .flatMap(user => servers.find(_.id == user).map(server => PhoneConnection(user, server)))
+      .flatMap(user => servers.find(_.id.id == user.name).map(server => PhoneConnection(user, server)))
   }
 
 

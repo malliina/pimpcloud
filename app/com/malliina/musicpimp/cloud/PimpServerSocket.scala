@@ -9,8 +9,8 @@ import com.malliina.musicpimp.cloud.PimpMessages.Version
 import com.malliina.musicpimp.cloud.PimpServerSocket.{body, idBody, nobody}
 import com.malliina.musicpimp.json.JsonStrings._
 import com.malliina.musicpimp.models._
-import com.malliina.pimpcloud.models.{CloudID, FolderID, Identifiable, TrackID}
-import com.malliina.pimpcloud.ws.{CachedByteStreams, NoCacheByteStreams, StreamBase}
+import com.malliina.pimpcloud.models._
+import com.malliina.pimpcloud.ws.{NoCacheByteStreams, StreamBase}
 import com.malliina.play.ContentRange
 import com.malliina.play.models.{Password, Username}
 import com.malliina.ws.JsonFutureSocket
@@ -47,16 +47,16 @@ class PimpServerSocket(channel: SourceQueue[JsValue],
                        onUpdate: () => Unit)
   extends JsonFutureSocket(channel, id) {
 
-  val fileTransfers: StreamBase[ByteString] = new CachedByteStreams(id, channel, mat, onUpdate)
+  val fileTransfers: StreamBase[ByteString] = new NoCacheByteStreams(id, channel, mat, onUpdate)
 
-  def streamRange(track: Track, contentRange: ContentRange): Future[Option[Result]] =
-    fileTransfers.streamRange(track, contentRange)
+  def requestTrack(track: Track, contentRange: ContentRange, req: RequestHeader): Future[Option[Result]] =
+    fileTransfers.requestTrack(track, contentRange, req)
 
   def ping = simpleProxy(Ping)
 
   def pingAuth: Future[Version] = proxied[Version](nobody, VersionKey)
 
-  def meta(id: TrackID): Future[Track] = proxyD[Track](nobody, Meta, idBody(id))
+  def meta(id: TrackID): Future[Track] = proxyD[Track](PhoneRequest(Meta, idBody(id)), nobody)
 
   /**
     * @param user username
@@ -71,7 +71,7 @@ class PimpServerSocket(channel: SourceQueue[JsValue],
 
   def rootFolder = proxied[Directory](nobody, RootFolder)
 
-  def folder(id: FolderID) = proxyD[Directory](nobody, FolderKey, idBody(id))
+  def folder(id: FolderID) = proxyD[Directory](PhoneRequest(FolderKey, idBody(id)), nobody)
 
   def search(term: String, limit: Int = PimpServerSocket.DefaultSearchLimit) =
     proxied[Seq[Track]](nobody, SearchKey, Term -> term, Limit -> limit)
@@ -82,14 +82,14 @@ class PimpServerSocket(channel: SourceQueue[JsValue],
     proxied[PlaylistMeta](user, PlaylistGet, Id -> id.id, UsernameKey -> user.name)
 
   def deletePlaylist(id: PlaylistID, user: Username) =
-    defaultProxy(user, PlaylistDelete, body(Id -> id.id, UsernameKey -> user.name))
+    defaultProxy(PhoneRequest(PlaylistDelete, body(Id -> id.id, UsernameKey -> user.name)), user)
 
   def alarms = simpleProxy(AlarmsKey)
 
   def status = simpleProxy(StatusKey)
 
   protected def proxied[T: Reads](user: Username, cmd: String, more: (String, Json.JsValueWrapper)*) =
-    proxyD[T](user, cmd, body(more: _*))
+    proxyD[T](PhoneRequest(cmd, body(more: _*)), user)
 
-  private def simpleProxy(cmd: String) = defaultProxy(nobody, cmd, Json.obj())
+  private def simpleProxy(cmd: String) = defaultProxy(PhoneRequest(cmd, Json.obj()), nobody)
 }

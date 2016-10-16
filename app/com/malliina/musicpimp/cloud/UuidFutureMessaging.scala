@@ -4,6 +4,7 @@ import java.util.UUID
 
 import com.malliina.concurrent.Observables
 import com.malliina.musicpimp.cloud.UuidFutureMessaging.log
+import com.malliina.pimpcloud.models.PhoneRequest
 import com.malliina.play.models.Username
 import play.api.Logger
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
@@ -20,13 +21,16 @@ trait UuidFutureMessaging extends FutureMessaging[JsValue] {
 
   def isSuccess(response: JsValue): Boolean = true
 
-  override def request(cmd: String, message: JsValue, user: Username, timeout: Duration): Future[JsValue] = {
+  override def request(cmd: String, body: JsValue, user: Username, timeout: Duration): Future[JsValue] =
+    request(PhoneRequest(cmd, body), user, timeout)
+
+  def request(req: PhoneRequest, user: Username, timeout: Duration): Future[JsValue] = {
     // generates UUID for this request-response pair
     val uuid = UUID.randomUUID()
     val responsePromise = Promise[JsValue]()
     ongoing += (uuid -> responsePromise)
     // sends the payload, including a request ID
-    val payload = Json.toJson(UserRequest(cmd, message, uuid, user))
+    val payload = Json.toJson(UserRequest(req, uuid, user))
     //    log info s"Sending: $payload"
     send(payload).recover {
       case t: Throwable =>
@@ -58,8 +62,7 @@ trait UuidFutureMessaging extends FutureMessaging[JsValue] {
       else fail(uuid, body)
     }
 
-  /**
-    * Completes the ongoing [[Promise]] identified by `requestID` with `responseBody`.
+  /** Completes the ongoing [[Promise]] identified by `requestID` with `responseBody`.
     *
     * @param requestID    the request ID
     * @param responseBody the payload of the response, that is, the 'body' JSON value
@@ -68,8 +71,7 @@ trait UuidFutureMessaging extends FutureMessaging[JsValue] {
   def succeed(requestID: UUID, responseBody: JsValue): Boolean =
     baseComplete(requestID)(_.trySuccess(responseBody))
 
-  /**
-    * Fails the ongoing [[Promise]] identified by `requestID` with a [[RequestFailure]] containing `responseBody`.
+  /** Fails the ongoing [[Promise]] identified by `requestID` with a [[RequestFailure]] containing `responseBody`.
     *
     * @param requestID    request ID
     * @param responseBody body of failed response

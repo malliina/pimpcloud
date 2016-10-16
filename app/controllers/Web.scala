@@ -13,9 +13,9 @@ import play.api.data.Forms._
 import play.api.mvc._
 import views.html
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-class Web(authActions: CloudAuthentication, auth: CloudAuth, val forms: AccountForms)
+class Web(authActions: CloudAuthentication, exec: ExecutionContext, val forms: AccountForms)
   extends BaseController
     with Controller {
 
@@ -41,7 +41,7 @@ class Web(authActions: CloudAuthentication, auth: CloudAuth, val forms: AccountF
         fut(BadRequest(html.login(formWithErrors, this, flash)))
       },
       creds => {
-        implicit val ec = auth.mat.executionContext
+        implicit val ec = exec
         authActions.validate(creds).map(_ => {
           val server = creds.cloudID
           val user = creds.username

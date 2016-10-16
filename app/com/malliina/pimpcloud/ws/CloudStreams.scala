@@ -4,14 +4,23 @@ import java.util.UUID
 
 import akka.stream.Materializer
 import akka.stream.scaladsl.SourceQueue
+import akka.util.ByteString
 import com.malliina.musicpimp.audio.Track
 import com.malliina.pimpcloud.models.CloudID
+import com.malliina.pimpcloud.streams.{ChannelInfo, StreamEndpoint}
+import com.malliina.pimpcloud.ws.CloudStreams.log
 import com.malliina.play.{ContentRange, Streaming}
+import play.api.Logger
 import play.api.libs.json.JsValue
-import play.api.mvc.Result
+import play.api.mvc.{RequestHeader, Result}
+import play.mvc.Http.HeaderNames
 
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.Future
+
+object CloudStreams {
+  private val log = Logger(getClass)
+}
 
 /** For each incoming request:
   *
@@ -26,7 +35,8 @@ import scala.concurrent.Future
   */
 abstract class CloudStreams[T](id: CloudID, val channel: SourceQueue[JsValue], mat: Materializer)
   extends StreamBase[T] {
-  private val iteratees = TrieMap.empty[UUID, ChannelInfo[T]]
+
+  private val iteratees = TrieMap.empty[UUID, StreamEndpoint]
 
   def snapshot: Seq[StreamData] = iteratees.map(kv => StreamData(kv._1, id, kv._2.track, kv._2.range)).toSeq
 
@@ -34,12 +44,21 @@ abstract class CloudStreams[T](id: CloudID, val channel: SourceQueue[JsValue], m
     * @return a Result if the server received the upload request, None otherwise
     * @see https://groups.google.com/forum/#!searchin/akka-user/source.queue/akka-user/zzGSuRG4YVA/NEjwAT76CAAJ
     */
-  def streamRange(track: Track, range: ContentRange): Future[Option[Result]] = {
-    val (queue, source) = Streaming.sourceQueue[T](mat)
+  def requestTrack(track: Track, range: ContentRange, req: RequestHeader): Future[Option[Result]] = {
+    val (queue, source) = Streaming.sourceQueue[ByteString](mat)
     val uuid = UUID.randomUUID()
-    iteratees += (uuid -> ChannelInfo(queue, id, track, range))
+    val userAgent = req.headers.get(HeaderNames.USER_AGENT) getOrElse "undefined"
+    log.info(s"Created request $uuid of track ${track.title} with range ${range.description} for user agent $userAgent")
+    iteratees += (uuid -> new ChannelInfo(queue, id, track, range))
     connectSource(uuid, source, track, range)
   }
+
+  //  def requestTrack(track: Track, range: ContentRange): Future[Option[Result]] = {
+  //    val (actor, source) = Streaming.actorSource(mat)
+  //    val uuid = UUID.randomUUID()
+  //    iteratees += (uuid -> new ActorStream(actor, track, range))
+  //    connectSource(uuid, source, track, range)
+  //  }
 
   /** Transfer complete.
     *
@@ -53,14 +72,5 @@ abstract class CloudStreams[T](id: CloudID, val channel: SourceQueue[JsValue], m
 
   def exists(uuid: UUID) = iteratees contains uuid
 
-  def get(uuid: UUID): Option[ChannelInfo[T]] = iteratees get uuid
-}
-
-case class ChannelInfo[T](channel: SourceQueue[Option[T]],
-                          serverID: CloudID,
-                          track: Track,
-                          range: ContentRange) {
-  def send(t: T) = channel.offer(Option(t))
-
-  def close() = channel.offer(None)
+  def get(uuid: UUID): Option[StreamEndpoint] = iteratees get uuid
 }

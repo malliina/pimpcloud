@@ -8,13 +8,12 @@ import akka.util.ByteString
 import com.malliina.musicpimp.audio.Track
 import com.malliina.pimpcloud.models.CloudID
 import com.malliina.pimpcloud.ws.CachedByteStreams.log
-import com.malliina.play.models.Username
 import com.malliina.play.streams.StreamParsers
 import com.malliina.play.{ContentRange, StreamConversions}
 import com.malliina.storage.StorageInt
 import play.api.Logger
 import play.api.libs.json.JsValue
-import play.api.mvc.{BodyParser, MultipartFormData, Result}
+import play.api.mvc.{BodyParser, MultipartFormData, RequestHeader, Result}
 import rx.lang.scala.Observable
 import rx.lang.scala.subjects.ReplaySubject
 
@@ -42,13 +41,13 @@ class CachedByteStreams(id: CloudID,
 
   override def exists(uuid: UUID): Boolean = (cachedStreams contains uuid) || (notCached exists uuid)
 
-  override def parser(uuid: UUID): Option[BodyParser[MultipartFormData[_]]] =
+  override def parser(uuid: UUID): Option[BodyParser[MultipartFormData[Long]]] =
     cachedStreams.get(uuid)
       .map(info => StreamParsers.multiPartByteStreaming(bytes => Future.successful(info.stream.onNext(bytes)), maxUploadSize)(mat))
       .orElse(notCached parser uuid)
 
-  override def streamRange(track: Track, range: ContentRange): Future[Option[Result]] =
-    attachToOngoing(track, range).map(r => Future.successful(Option(r))) getOrElse send(track, range)
+  override def requestTrack(track: Track, range: ContentRange, req: RequestHeader): Future[Option[Result]] =
+    attachToOngoing(track, range).map(r => Future.successful(Option(r))) getOrElse send(track, range, req)
 
   private def attachToOngoing(track: Track, range: ContentRange): Option[Result] = {
     val title = track.title
@@ -58,15 +57,15 @@ class CachedByteStreams(id: CloudID,
     }
   }
 
-  private def send(track: Track, range: ContentRange): Future[Option[Result]] = {
+  private def send(track: Track, range: ContentRange, req: RequestHeader): Future[Option[Result]] = {
     val title = track.title
     val trackSize = track.size
     if (trackSize > cacheThreshold) {
       log info s"Non-cached streaming of $title, as its size $trackSize exceeds the maximum of $cacheThreshold, range $range"
-      notCached.streamRange(track, range)
+      notCached.requestTrack(track, range, req)
     } else {
       log info s"Cached streaming of $title, range $range"
-      val subject = ReplaySubject[ByteString]()
+      val subject = ReplaySubject[ByteString]().toSerialized
       val uuid = UUID.randomUUID()
       cachedStreams += (uuid -> StreamInfo(track, range, subject))
       connectSource(uuid, toSource(subject), track, range)

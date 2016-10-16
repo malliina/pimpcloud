@@ -1,40 +1,69 @@
 package controllers
 
+import akka.util.ByteString
+import com.malliina.concurrent.FutureOps
 import com.malliina.pimpcloud.auth.CloudAuthentication
+import com.malliina.play.Streaming
+import com.malliina.play.streams.StreamParsers
+import com.malliina.storage.StorageLong
+import com.malliina.ws.Streamer
 import controllers.ServersController.log
 import play.api.Logger
-import play.api.mvc.{Action, Controller, EssentialAction}
+import play.api.http.HttpEntity
+import play.api.mvc._
 
-class ServersController(cloudAuth: CloudAuthentication, auth: CloudAuth) extends Controller {
+class ServersController(cloudAuth: CloudAuthentication, auth: CloudAuth) extends StreamReceiver(auth.mat) {
+  val mat = auth.mat
+  implicit val ec = mat.executionContext
 
   def receiveUpload = serverAction(receive)
 
-  def receive(server: ServerRequest) = {
+  def serverAction(f: ServerRequest => EssentialAction): EssentialAction =
+    auth.loggedSecureActionAsync(cloudAuth.authServer)(f)
+
+  def receive(server: ServerRequest): EssentialAction = {
     val requestID = server.request
-    log info s"Processing $requestID..."
+    log debug s"Processing $requestID..."
     val transfers = server.socket.fileTransfers
     val parser = transfers parser requestID
     parser.fold[EssentialAction](Action(NotFound)) { parser =>
-      val maxSize = transfers.maxUploadSize
-      log info s"Streaming at most $maxSize for request $requestID"
-      val composedParser = parse.maxLength(maxSize.toBytes, parser)(auth.mat)
-      Action(composedParser) { httpRequest =>
-        transfers remove requestID
-        httpRequest.body match {
-          case Left(tooMuch) =>
-            log error s"Max size of ${tooMuch.length} exceeded for request $requestID"
-            EntityTooLarge
-          case Right(data) =>
-            val fileCount = data.files.size
-            log info s"Streamed $fileCount file(s) for request $requestID"
-            Ok
-        }
-      }
+      receiveStream(parser, transfers, requestID)
     }
   }
 
-  def serverAction(f: ServerRequest => EssentialAction): EssentialAction =
-    auth.loggedSecureActionAsync(cloudAuth.authServer)(f)
+  val (queue, source) = Streaming.sourceQueue[ByteString](mat)
+  val parser = StreamParsers.multiPartByteStreaming(bytes => {
+    //    println(s"Got ${bytes.length} bytes $bytes")
+    queue
+      .offer(Option(bytes))
+      .map(res => {
+        //        println(res)
+        ()
+      })
+      .recoverAll(onOfferError)
+  }, Streamer.DefaultMaxUploadSize)(mat)
+
+  def registerListener = Action {
+    log info "Registering..."
+    Ok.sendEntity(HttpEntity.Streamed(source, None, None))
+  }
+
+  def receiveStream = receive(parser)
+
+  def receive(parser: BodyParser[MultipartFormData[Long]]) = {
+    Action(parser) { parsed =>
+      val body = parsed.body
+      val streamedSize = body.files.foldLeft(0L)((acc, part) => acc + part.ref).bytes
+      val fileCount = body.files.size
+      val fileDesc = if (fileCount > 1) "files" else "file"
+      log info s"Streamed $streamedSize in $fileCount $fileDesc"
+      Ok
+    }
+  }
+
+  def onOfferError(t: Throwable) = {
+    println(s"Offer failed for request", t)
+  }
 }
 
 object ServersController {

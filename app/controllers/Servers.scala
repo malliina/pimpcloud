@@ -63,14 +63,13 @@ abstract class Servers(mat: Materializer)
         val user = creds.username
         val cloudID: Future[Username] =
           if (user.name.nonEmpty) {
-            val username = user
-            isConnected(username) flatMap { connected =>
+            isConnected(user) flatMap { connected =>
               if (connected) {
                 val msg = s"Unable to register client: $user. Another client with that ID is already connected."
                 log warn msg
                 Future.failed(new NoSuchElementException(msg))
               } else {
-                Future.successful(username)
+                Future.successful(user)
               }
             }
           } else {
@@ -96,7 +95,7 @@ abstract class Servers(mat: Materializer)
     Some(Json.obj(Cmd -> RegisteredKey, Body -> Json.obj(Id -> client.id)))
 
   def isConnected(serverID: Username): Future[Boolean] =
-    connectedServers.exists(cs => cs.exists(_.id == serverID))
+    connectedServers.exists(cs => cs.exists(_.id.id == serverID.name))
 
   def connectedServers: Future[Set[PimpServerSocket]] = Future.successful(storage.clients.toSet)
 

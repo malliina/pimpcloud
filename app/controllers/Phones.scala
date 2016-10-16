@@ -11,7 +11,7 @@ import com.malliina.musicpimp.json.JsonStrings._
 import com.malliina.musicpimp.models.PlaylistID
 import com.malliina.musicpimp.stats.ItemLimits
 import com.malliina.pimpcloud.auth.CloudAuthentication
-import com.malliina.pimpcloud.models.{FolderID, TrackID}
+import com.malliina.pimpcloud.models.{FolderID, PhoneRequest, TrackID}
 import com.malliina.pimpcloud.ws.PhoneSockets
 import com.malliina.pimpcloud.{ErrorMessage, ErrorResponse}
 import com.malliina.play.ContentRange
@@ -23,6 +23,7 @@ import play.api.http.ContentTypes
 import play.api.libs.MimeTypes
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc._
+import play.mvc.Http.HeaderNames
 
 import scala.concurrent.Future
 import scala.util.Try
@@ -52,9 +53,9 @@ class Phones(val cloudAuths: CloudAuthentication, val phoneSockets: PhoneSockets
 
   def pingAuth = proxiedAction((req, socket) => socket.server.pingAuth.map(v => NoCache(Ok(Json toJson v))))
 
-  def rootFolder = folderAction(_.rootFolder, _ => (RootFolder, Json.obj()))
+  def rootFolder = folderAction(_.rootFolder, _ => PhoneRequest(RootFolder, Json.obj()))
 
-  def folder(id: FolderID) = folderAction(_.folder(id), req => (FolderKey, PimpServerSocket.idBody(id)))
+  def folder(id: FolderID) = folderAction(_.folder(id), req => PhoneRequest(FolderKey, PimpServerSocket.idBody(id)))
 
   def status = proxiedGetAction(StatusKey)
 
@@ -65,7 +66,7 @@ class Phones(val cloudAuths: CloudAuthentication, val phoneSockets: PhoneSockets
     termFromQuery.fold[Future[Result]](fut(BadRequest))(term => {
       folderResult(req, socket)(
         _.search(term, limit).map(tracks => Directory(Nil, tracks)),
-        (SearchKey, PimpServerSocket.body(Term -> term, Limit -> limit))
+        PhoneRequest(SearchKey, PimpServerSocket.body(Term -> term, Limit -> limit))
       )
     })
   }
@@ -89,7 +90,8 @@ class Phones(val cloudAuths: CloudAuthentication, val phoneSockets: PhoneSockets
     phoneAction { conn =>
       val socket = conn.server
       Action.async { req =>
-        log info s"Serving $id"
+        val userAgent = req.headers.get(HeaderNames.USER_AGENT) getOrElse "undefined"
+        log info s"Serving track $id to user agent $userAgent"
         Phones.path(id).map { path =>
           val name = path.getFileName.toString
           // resolves track metadata from the server so we can set Content-Length
@@ -99,9 +101,9 @@ class Phones(val cloudAuths: CloudAuthentication, val phoneSockets: PhoneSockets
             val trackSize = track.size
             val rangeTry = ContentRange.fromHeader(req, trackSize)
             val rangeOrAll = rangeTry getOrElse ContentRange.all(trackSize)
-            val resultFuture = socket.streamRange(track, rangeOrAll)
+            val resultFuture = socket.requestTrack(track, rangeOrAll, req)
             resultFuture map { resultOpt =>
-              resultOpt.map { result =>
+              resultOpt map { result =>
                 rangeTry map { range =>
                   result.withHeaders(
                     CONTENT_RANGE -> range.contentRange,
@@ -116,7 +118,9 @@ class Phones(val cloudAuths: CloudAuthentication, val phoneSockets: PhoneSockets
                     CONTENT_TYPE -> HttpConstants.AudioMpeg,
                     CONTENT_DISPOSITION -> s"""attachment; filename="$name"""")
                 }
-              }.getOrElse(BadRequest)
+              } getOrElse {
+                BadRequest
+              }
             } recoverAll { err =>
               log.error(s"Cannot compute result", err)
               serverError(s"The server failed")
@@ -151,8 +155,7 @@ class Phones(val cloudAuths: CloudAuthentication, val phoneSockets: PhoneSockets
 
   private def playlistIdJson(id: PlaylistID) = Right(Json.obj(Id -> id.id))
 
-  /**
-    * Sends the request body as JSON to the server this phone is connected to, and responds with the JSON the server
+  /** Sends the request body as JSON to the server this phone is connected to, and responds with the JSON the server
     * returned.
     *
     * The payload to the connected server will look like: { "cmd": "cmd_here", "body": "request_json_body_here" }
@@ -167,14 +170,14 @@ class Phones(val cloudAuths: CloudAuthentication, val phoneSockets: PhoneSockets
     proxiedParsedJsonAction(parse.json)(cmd, body)
 
   private def folderAction(html: PimpServerSocket => Future[Directory],
-                           json: RequestHeader => (String, JsObject)) =
+                           json: RequestHeader => PhoneRequest) =
     proxiedAction((req, socket) => folderResult(req, socket)(html, json(req)))
 
   private def folderResult(req: RequestHeader, socket: PhoneConnection)(html: PimpServerSocket => Future[Directory],
-                                                                        json: => (String, JsObject)) =
+                                                                        json: => PhoneRequest) =
     pimpResultAsync(req)(
       html(socket.server).map(dir => Ok(views.html.index(dir, phoneSockets.wsUrl(req)))),
-      proxiedJson(json._1, json._2, socket)
+      proxiedJson(json, socket)
     ).recoverAll(_ => BadGateway)
 
   private def proxiedAction(f: (Request[AnyContent], PhoneConnection) => Future[Result]): EssentialAction =
@@ -196,13 +199,13 @@ class Phones(val cloudAuths: CloudAuthentication, val phoneSockets: PhoneSockets
       Action.async(parser) { req =>
         f(req).fold(
           err => fut(badRequest(err)),
-          json => proxiedJson(cmd, json, socket).recoverAll(t => BadGateway))
+          json => proxiedJson(PhoneRequest(cmd, json), socket).recoverAll(t => BadGateway))
       }
     }
   }
 
-  def proxiedJson(cmd: String, body: JsValue, conn: PhoneConnection) =
-    conn.server.defaultProxy(conn.user, cmd, body) map (js => Ok(js))
+  def proxiedJson(req: PhoneRequest, conn: PhoneConnection) =
+    conn.server.defaultProxy(req, conn.user) map (js => Ok(js))
 
   def phoneAction(f: PhoneConnection => EssentialAction) =
     auth.loggedSecureActionAsync(cloudAuths.authPhone)(f)

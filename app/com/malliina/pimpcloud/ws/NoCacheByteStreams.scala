@@ -59,6 +59,8 @@ class NoCacheByteStreams(id: CloudID,
     val userAgent = req.headers.get(HeaderNames.USER_AGENT).map(ua => s"user agent $ua") getOrElse "unknown user agent"
     val describe = s"stream $uuid of track ${track.title} with range ${range.description} for $userAgent from ${req.remoteAddress}"
     val (queue, source) = Streaming.sourceQueue[ByteString](mat, NoCacheByteStreams.ByteStringBufferSize)
+    iteratees += (uuid -> new ChannelInfo(queue, id, track, range))
+    log.info(s"Created $describe")
     // Watches completion and disposes of resources early if the client disconnects mid-request
     val src = source.watchTermination()((_, task) => task.onComplete(res => {
       val prefix = s"Completed $describe"
@@ -68,8 +70,7 @@ class NoCacheByteStreams(id: CloudID,
       }
       remove(uuid)
     }))
-    log.info(s"Created $describe")
-    iteratees += (uuid -> new ChannelInfo(queue, id, track, range))
+
     connectSource(uuid, src, track, range)
   }
 
@@ -102,6 +103,9 @@ class NoCacheByteStreams(id: CloudID,
   }
 
   /** Transfer complete.
+    *
+    * TODO Since the transfer may have been cancelled prematurely by the recipient,
+    * inform the server that it should stop uploading, to save network bandwidth.
     *
     * @param uuid the transfer ID
     */

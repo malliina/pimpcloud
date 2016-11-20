@@ -47,4 +47,6 @@ object JsonStrings {
 
   val Recent = "recent"
   val Popular = "popular"
+
+  val Cancel = "cancel"
 }

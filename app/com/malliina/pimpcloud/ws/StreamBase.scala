@@ -13,7 +13,7 @@ import com.malliina.pimpcloud.ws.StreamBase.log
 import com.malliina.play.ContentRange
 import com.malliina.ws.Streamer
 import play.api.Logger
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{JsValue, Json, Writes}
 import play.api.mvc.{RequestHeader, Result}
 
 import scala.concurrent.Future
@@ -40,9 +40,13 @@ trait StreamBase[T] extends Streamer {
   protected def disposeUUID(uuid: UUID): Future[Unit]
 
   override def remove(uuid: UUID): Future[Unit] = {
-    disposeUUID(uuid)
-      .recoverAll(_ => ())
-      .map(_ => streamChanged())
+    val op = for {
+      disposal <- disposeUUID(uuid)
+      cancellation <- sendMessage(cancelMessage(uuid))
+    } yield {
+      ()
+    }
+    op.recoverAll(_ => ()).map(_ => streamChanged())
   }
 
   protected def connectSource(uuid: UUID, source: Source[ByteString, _], track: Track, range: ContentRange): Future[Option[Result]] = {
@@ -70,12 +74,16 @@ trait StreamBase[T] extends Streamer {
 
   private def tryConnect(uuid: UUID, track: Track, range: ContentRange): Future[QueueOfferResult] = {
     streamChanged()
-    val message =
-      if (range.isAll) UserRequest(TrackKey, PimpServerSocket.idBody(track.id), uuid, PimpServerSocket.nobody)
-      else UserRequest(TrackKey, PimpServerSocket.body(Id -> track.id, Range -> range), uuid, PimpServerSocket.nobody)
-    val payload = Json.toJson(message)
-    channel offer payload
+    def trackRequest(body: JsValue) = UserRequest(TrackKey, body, uuid, PimpServerSocket.nobody)
+    val body =
+      if (range.isAll) PimpServerSocket.idBody(track.id)
+      else PimpServerSocket.body(Id -> track.id, Range -> range)
+    sendMessage(trackRequest(body))
   }
+
+  def sendMessage[M: Writes](msg: M) = channel offer Json.toJson(msg)
+
+  def cancelMessage(uuid: UUID) = UserRequest(Cancel, Json.obj(), uuid, PimpServerSocket.nobody)
 
   protected def streamChanged(): Unit = onUpdate()
 }

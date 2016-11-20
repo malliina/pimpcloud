@@ -25,6 +25,7 @@ import scala.util.Success
 object NoCacheByteStreams {
   private val log = Logger(getClass)
 
+  // backpressures automatically, seems to work fine, and does not consume RAM
   val ByteStringBufferSize = 0
 }
 
@@ -55,18 +56,19 @@ class NoCacheByteStreams(id: CloudID,
     */
   def requestTrack(track: Track, range: ContentRange, req: RequestHeader): Future[Option[Result]] = {
     val uuid = UUID.randomUUID()
+    val userAgent = req.headers.get(HeaderNames.USER_AGENT).map(ua => s"user agent $ua") getOrElse "unknown user agent"
+    val describe = s"stream $uuid of track ${track.title} with range ${range.description} for $userAgent from ${req.remoteAddress}"
     val (queue, source) = Streaming.sourceQueue[ByteString](mat, NoCacheByteStreams.ByteStringBufferSize)
     // Watches completion and disposes of resources early if the client disconnects mid-request
     val src = source.watchTermination()((_, task) => task.onComplete(res => {
-      val prefix = s"Completed stream $uuid of track ${track.id}"
+      val prefix = s"Completed $describe"
       res match {
         case Success(_) => log.info(prefix)
         case scala.util.Failure(t) => log.error(s"$prefix with failure", t)
       }
-      disposeUUID(uuid)
+      remove(uuid)
     }))
-    val userAgent = req.headers.get(HeaderNames.USER_AGENT) getOrElse "undefined"
-    log.info(s"Created stream $uuid of track ${track.title} with range ${range.description} for user agent $userAgent from ${req.remoteAddress}")
+    log.info(s"Created $describe")
     iteratees += (uuid -> new ChannelInfo(queue, id, track, range))
     connectSource(uuid, src, track, range)
   }

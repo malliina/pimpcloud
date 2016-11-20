@@ -37,10 +37,10 @@ trait StreamBase[T] extends Streamer {
 
   def exists(uuid: UUID): Boolean
 
-  protected def removeUUID(uuid: UUID): Future[Unit]
+  protected def disposeUUID(uuid: UUID): Future[Unit]
 
   override def remove(uuid: UUID): Future[Unit] = {
-    removeUUID(uuid)
+    disposeUUID(uuid)
       .recoverAll(_ => ())
       .map(_ => streamChanged())
   }

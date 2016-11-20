@@ -32,6 +32,7 @@ class UploadTests extends BaseSuite {
   val testFile = Paths get filePath
 
   test("can multipart") {
+    // this test is broken
     val req = multipartRequest(testFile)
     val r = await(ctrl.up.apply(req))
     val bodyAsString = await(r.body.consumeData.map(_.utf8String))
@@ -69,6 +70,7 @@ class UploadTests extends BaseSuite {
         Right(data)
       }
     val result = await(action.apply(request))
+    println(await(result.body.consumeData.map(_.utf8String)))
     assert(result.header.status === 200)
     source.to(Sink.foreach(e => println(e.utf8String))).run()
   }

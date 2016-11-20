@@ -20,6 +20,13 @@ import play.mvc.Http.HeaderNames
 
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.Future
+import scala.util.Success
+
+object NoCacheByteStreams {
+  private val log = Logger(getClass)
+
+  val ByteStringBufferSize = 0
+}
 
 /** For each incoming request:
   *
@@ -47,16 +54,26 @@ class NoCacheByteStreams(id: CloudID,
     * @see https://groups.google.com/forum/#!searchin/akka-user/source.queue/akka-user/zzGSuRG4YVA/NEjwAT76CAAJ
     */
   def requestTrack(track: Track, range: ContentRange, req: RequestHeader): Future[Option[Result]] = {
-    val (queue, source) = Streaming.sourceQueue[ByteString](mat)
     val uuid = UUID.randomUUID()
+    val (queue, source) = Streaming.sourceQueue[ByteString](mat, NoCacheByteStreams.ByteStringBufferSize)
+    // Watches completion and disposes of resources early if the client disconnects mid-request
+    val src = source.watchTermination()((_, task) => task.onComplete(res => {
+      val prefix = s"Completed stream $uuid of track ${track.id}"
+      res match {
+        case Success(_) => log.info(prefix)
+        case scala.util.Failure(t) => log.error(s"$prefix with failure", t)
+      }
+      disposeUUID(uuid)
+    }))
     val userAgent = req.headers.get(HeaderNames.USER_AGENT) getOrElse "undefined"
-    log.info(s"Created request $uuid of track ${track.title} with range ${range.description} for user agent $userAgent")
+    log.info(s"Created stream $uuid of track ${track.title} with range ${range.description} for user agent $userAgent from ${req.remoteAddress}")
     iteratees += (uuid -> new ChannelInfo(queue, id, track, range))
-    connectSource(uuid, source, track, range)
+    connectSource(uuid, src, track, range)
   }
 
   override def parser(uuid: UUID): Option[BodyParser[MultipartFormData[Long]]] = {
     get(uuid) map { info =>
+      // info.send is called sequentially, i.e. the next send call occurs only after the previous call has completed
       StreamParsers.multiPartByteStreaming(bytes => info.send(bytes)
         .map(analyzeResult(info, bytes, _))
         .recoverAll(onOfferError(uuid, info, bytes, _)), maxUploadSize)(mat)
@@ -84,9 +101,9 @@ class NoCacheByteStreams(id: CloudID,
 
   /** Transfer complete.
     *
-    * @param uuid
+    * @param uuid the transfer ID
     */
-  def removeUUID(uuid: UUID): Future[Unit] = {
+  def disposeUUID(uuid: UUID): Future[Unit] = {
     (iteratees remove uuid)
       .map(_.close().map(_ => ()))
       .getOrElse(Future.successful(()))
@@ -95,15 +112,4 @@ class NoCacheByteStreams(id: CloudID,
   def exists(uuid: UUID) = iteratees contains uuid
 
   def get(uuid: UUID): Option[StreamEndpoint] = iteratees get uuid
-
-  //  def requestTrack(track: Track, range: ContentRange): Future[Option[Result]] = {
-  //    val (actor, source) = Streaming.actorSource(mat)
-  //    val uuid = UUID.randomUUID()
-  //    iteratees += (uuid -> new ActorStream(actor, track, range))
-  //    connectSource(uuid, source, track, range)
-  //  }
-}
-
-object NoCacheByteStreams {
-  private val log = Logger(getClass)
 }

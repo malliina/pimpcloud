@@ -24,7 +24,7 @@ import play.api.mvc.Controller
 import play.api.test.FakeRequest
 
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, Future, Promise}
 
 class StreamingTests extends BaseSuite with OneAppPerSuite2[CloudComponents] with WithAppComponents {
   implicit val mat = app.materializer
@@ -33,6 +33,18 @@ class StreamingTests extends BaseSuite with OneAppPerSuite2[CloudComponents] wit
   val fileName = "01 Atb - Ecstacy (Intro Edit).mp3"
   val file = s"E:\\musik\\Elektroniskt\\A State Of Trance 600 Expedition\\CD 2 - ATB\\$fileName"
   val filePath = Paths get file
+
+  test("buffers") {
+    val p = Promise[Boolean]()
+    val (queue, source) = Streaming.sourceQueue[ByteString](app.materializer, bufferSize = 0)
+    // starts accepting events
+    val handler = source.runWith(Sink.ignore)
+    def send(s: String) = await(queue.offer(Option(ByteString(s))))
+    send("abc")
+    // closes queue: source terminates
+    queue.offer(None)
+    await(handler)
+  }
 
   test("file to source") {
     val (queue, source) = Streaming.sourceQueue[ByteString](app.materializer)

@@ -74,7 +74,7 @@ class CachedByteStreams(id: CloudID,
 
   def toSource[T](obs: Observable[T]) = StreamConversions.observableToSource(obs, mat)
 
-  def removeUUID(uuid: UUID): Future[Unit] = {
+  def disposeUUID(uuid: UUID): Future[Unit] = {
     (cachedStreams remove uuid).foreach(si => si.stream.onCompleted())
     notCached remove uuid
   }

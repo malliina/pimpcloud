@@ -39,14 +39,19 @@ trait StreamBase[T] extends Streamer {
 
   protected def disposeUUID(uuid: UUID): Future[Unit]
 
-  override def remove(uuid: UUID): Future[Unit] = {
+  override def remove(uuid: UUID, isCanceled: Boolean): Future[Unit] = {
+    val disposal = disposeUUID(uuid)
+    val cancellation = if (isCanceled) sendMessage(cancelMessage(uuid)) else Future.successful(())
     val op = for {
-      disposal <- disposeUUID(uuid)
-      cancellation <- sendMessage(cancelMessage(uuid))
+      d <- disposal
+      c <- cancellation
     } yield {
       ()
     }
-    op.recoverAll(_ => ()).map(_ => streamChanged())
+    op.recoverAll(t => log.error(s"Disposal failed for request $uuid", t)) map { _ =>
+      log info s"Notifying listeners of changed streams due to removal of $uuid"
+      streamChanged()
+    }
   }
 
   protected def connectSource(uuid: UUID, source: Source[ByteString, _], track: Track, range: ContentRange): Future[Option[Result]] = {
@@ -67,7 +72,7 @@ trait StreamBase[T] extends Streamer {
     } recover {
       case t =>
         log.warn(s"Unable to connect $uuid for ${track.title} with range $range", t)
-        remove(uuid)
+        remove(uuid, isCanceled = true)
         false
     }
   }

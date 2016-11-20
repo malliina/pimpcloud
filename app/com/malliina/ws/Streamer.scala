@@ -16,5 +16,5 @@ trait Streamer {
 
   def parser(uuid: UUID): Option[BodyParser[MultipartFormData[Long]]]
 
-  def remove(uuid: UUID): Future[Unit]
+  def remove(uuid: UUID, isCanceled: Boolean): Future[Unit]
 }

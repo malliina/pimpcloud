@@ -20,7 +20,7 @@ object PlayBuild {
   val malliinaGroup = "com.malliina"
 
   val commonSettings = jenkinsSettings ++ linuxSettings ++ Seq(
-    version := "1.5.3",
+    version := "1.5.4",
     scalaVersion := "2.11.8",
     retrieveManaged := false,
     fork in Test := true,

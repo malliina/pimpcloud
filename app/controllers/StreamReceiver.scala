@@ -18,7 +18,7 @@ class StreamReceiver(mat: Materializer) extends Controller {
     log debug s"Streaming at most $maxSize for request $requestID"
     val composedParser = parse.maxLength(maxSize.toBytes, parser)(mat)
     Action(composedParser) { parsedRequest =>
-      transfers remove requestID
+      transfers.remove(requestID, isCanceled = false)
       parsedRequest.body.fold(
         tooMuch => {
           log error s"Max size of ${tooMuch.length} exceeded for request $requestID"

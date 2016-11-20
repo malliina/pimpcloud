@@ -76,7 +76,7 @@ class CachedByteStreams(id: CloudID,
 
   def disposeUUID(uuid: UUID): Future[Unit] = {
     (cachedStreams remove uuid).foreach(si => si.stream.onCompleted())
-    notCached remove uuid
+    notCached.remove(uuid, isCanceled = false)
   }
 }
 

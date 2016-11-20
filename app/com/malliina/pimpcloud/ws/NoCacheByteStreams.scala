@@ -68,7 +68,7 @@ class NoCacheByteStreams(id: CloudID,
         case Success(_) => log.info(prefix)
         case scala.util.Failure(t) => log.error(s"$prefix with failure", t)
       }
-      remove(uuid)
+      remove(uuid, isCanceled = true)
     }))
 
     connectSource(uuid, src, track, range)
@@ -96,10 +96,10 @@ class NoCacheByteStreams(id: CloudID,
   def onOfferError(uuid: UUID, dest: StreamEndpoint, bytes: ByteString, t: Throwable): PartialFunction[Throwable, Future[Unit]] = {
     case iae: IllegalArgumentException if Option(iae.getMessage).contains("Stream is terminated. SourceQueue is detached") =>
       log.info(s"Client disconnected $uuid")
-      remove(uuid)
+      remove(uuid, isCanceled = true)
     case other: Throwable =>
       log.error(s"Offer of ${bytes.length} bytes failed for request $uuid", t)
-      remove(uuid)
+      remove(uuid, isCanceled = true)
   }
 
   /** Transfer complete.

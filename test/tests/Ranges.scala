@@ -7,8 +7,8 @@ import org.scalatest.FunSuite
 class Ranges extends FunSuite {
   test("ContentRange.all") {
     val size = 5.megs
-    val asBytes = 5.megs.toBytes
-    val all = ContentRange.all(5.megs)
+    val asBytes = size.toBytes
+    val all = ContentRange.all(size)
     assert(all.endExclusive - all.start === asBytes)
   }
 }

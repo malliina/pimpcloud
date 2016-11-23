@@ -34,7 +34,6 @@ object PlayBuild {
       "org.java-websocket" % "Java-WebSocket" % "1.3.0",
       PlayImport.filters,
       PlayImport.cache,
-//      "org.scalatest" %% "scalatest" % "3.0.0" % Test,
       "org.scalatestplus.play" %% "scalatestplus-play" % "1.5.1" % Test
     ),
     javacOptions ++= Seq(

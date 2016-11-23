@@ -33,13 +33,9 @@ class ServersController(cloudAuth: CloudAuthentication, auth: CloudAuth) extends
 
   val (queue, source) = Streaming.sourceQueue[ByteString](mat)
   val parser = StreamParsers.multiPartByteStreaming(bytes => {
-    //    println(s"Got ${bytes.length} bytes $bytes")
     queue
       .offer(Option(bytes))
-      .map(res => {
-        //        println(res)
-        ()
-      })
+      .map(res => ())
       .recoverAll(onOfferError)
   }, Streamer.DefaultMaxUploadSize)(mat)
 

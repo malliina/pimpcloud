@@ -61,7 +61,7 @@ class NoCacheByteStreams(id: CloudID,
     val (queue, source) = Streaming.sourceQueue[ByteString](mat, NoCacheByteStreams.ByteStringBufferSize)
     iteratees += (uuid -> new ChannelInfo(queue, id, track, range))
     log.info(s"Created $describe")
-    // Watches completion and disposes of resources early if the client disconnects mid-request
+    // Watches completion and disposes of resources early if the client (= mobile device) disconnects mid-request
     val src = source.watchTermination()((_, task) => task.onComplete(res => {
       val prefix = s"Completed $describe"
       res match {
@@ -79,7 +79,7 @@ class NoCacheByteStreams(id: CloudID,
       // info.send is called sequentially, i.e. the next send call occurs only after the previous call has completed
       StreamParsers.multiPartByteStreaming(bytes => info.send(bytes)
         .map(analyzeResult(info, bytes, _))
-        .recoverAll(onOfferError(uuid, info, bytes, _)), maxUploadSize)(mat)
+        .recoverWith(onOfferError(uuid, info, bytes)), maxUploadSize)(mat)
     }
   }
 
@@ -93,12 +93,12 @@ class NoCacheByteStreams(id: CloudID,
     }
   }
 
-  def onOfferError(uuid: UUID, dest: StreamEndpoint, bytes: ByteString, t: Throwable): PartialFunction[Throwable, Future[Unit]] = {
+  def onOfferError(uuid: UUID, dest: StreamEndpoint, bytes: ByteString): PartialFunction[Throwable, Future[Unit]] = {
     case iae: IllegalArgumentException if Option(iae.getMessage).contains("Stream is terminated. SourceQueue is detached") =>
       log.info(s"Client disconnected $uuid")
       remove(uuid, isCanceled = true)
     case other: Throwable =>
-      log.error(s"Offer of ${bytes.length} bytes failed for request $uuid", t)
+      log.error(s"Offer of ${bytes.length} bytes failed for request $uuid", other)
       remove(uuid, isCanceled = true)
   }
 

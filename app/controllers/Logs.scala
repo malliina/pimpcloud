@@ -2,6 +2,7 @@ package controllers
 
 import com.malliina.logbackrx.RxLogback.EventMapping
 import com.malliina.logbackrx.{BasicBoundedReplayRxAppender, LogEvent, LogbackUtils}
+import play.api.Logger
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.Call
 import rx.lang.scala.Observable
@@ -19,5 +20,11 @@ class Logs(admin: AdminAuth) extends AdminStreaming(admin) {
 
   override def openSocketCall: Call = routes.Logs.openSocket()
 
-  def logs = admin.navigate(req => views.html.logs(wsUrl(req)))
+  def logs = admin.navigate { req =>
+    views.html.logs(wsUrl(req))
+  }
+}
+
+object Logs {
+  private val log = Logger(getClass)
 }

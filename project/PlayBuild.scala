@@ -1,4 +1,4 @@
-import com.malliina.jenkinsctrl.models.{JobName, BuildOrder}
+import com.malliina.jenkinsctrl.models.{BuildOrder, JobName}
 import com.malliina.sbt.GenericKeys._
 import com.malliina.sbt.jenkinsctrl.{JenkinsKeys, JenkinsPlugin}
 import com.malliina.sbt.unix.LinuxKeys.{httpPort, httpsPort}
@@ -6,21 +6,36 @@ import com.malliina.sbt.unix.LinuxPlugin
 import com.malliina.sbtplay.PlayProject
 import com.typesafe.sbt.SbtNativePackager._
 import com.typesafe.sbt.packager.{Keys => PackagerKeys}
-import play.routes.compiler.InjectedRoutesGenerator
+import com.typesafe.sbt.web.Import.{Assets, pipelineStages}
+import org.scalajs.sbtplugin.ScalaJSPlugin
+import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
 import play.sbt.PlayImport
 import play.sbt.PlayImport.PlayKeys
-import play.sbt.routes.RoutesKeys
 import sbt.Keys._
 import sbt._
+import webscalajs.ScalaJSWeb
+import webscalajs.WebScalaJS.autoImport.{scalaJSPipeline, scalaJSProjects}
 
 object PlayBuild {
 
-  lazy val p = PlayProject("pimpcloud").settings(commonSettings: _*)
+  lazy val frontend = Project("frontend", file("frontend"))
+    .enablePlugins(ScalaJSPlugin, ScalaJSWeb)
+    .settings(
+      persistLauncher := true,
+      libraryDependencies ++= Seq(
+        "com.lihaoyi" %%% "scalatags" % "0.6.2",
+        "be.doeraene" %%% "scalajs-jquery" % "0.9.1"
+//        "org.scala-js" %%% "scalajs-dom" % "0.9.1"
+      )
+    )
+
+  lazy val pimpcloud = PlayProject("pimpcloud")
+    .settings(pimpcloudSettings: _*)
 
   val malliinaGroup = "com.malliina"
 
-  val commonSettings = jenkinsSettings ++ linuxSettings ++ Seq(
-    version := "1.5.5",
+  val pimpcloudSettings = jenkinsSettings ++ linuxSettings ++ scalaJSSettings ++ Seq(
+    version := "1.5.6",
     scalaVersion := "2.11.8",
     retrieveManaged := false,
     fork in Test := true,
@@ -32,6 +47,7 @@ object PlayBuild {
       malliinaGroup %% "play-base" % "3.2.1",
       malliinaGroup %% "mobile-push" % "1.6.1",
       "org.java-websocket" % "Java-WebSocket" % "1.3.0",
+      "com.lihaoyi" %% "scalatags" % "0.6.2",
       PlayImport.filters,
       PlayImport.cache,
       "org.scalatestplus.play" %% "scalatestplus-play" % "1.5.1" % Test
@@ -42,6 +58,11 @@ object PlayBuild {
       "-Xlint:-options"
     ),
     PlayKeys.externalizeResources := false
+  )
+
+  def scalaJSSettings = Seq(
+    scalaJSProjects := Seq(frontend),
+    pipelineStages in Assets := Seq(scalaJSPipeline)
   )
 
   def jenkinsSettings = JenkinsPlugin.settings ++ Seq(

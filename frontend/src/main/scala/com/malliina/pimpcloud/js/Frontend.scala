@@ -1,9 +1,11 @@
 package com.malliina.pimpcloud.js
 
+import java.util.UUID
+
 import org.scalajs.dom
 import org.scalajs.dom.CloseEvent
 import org.scalajs.dom.raw.{ErrorEvent, Event, MessageEvent}
-import org.scalajs.jquery.jQuery
+import org.scalajs.jquery.{JQueryEventObject, jQuery}
 
 import scala.scalajs.js
 import scala.scalajs.js.JSApp
@@ -35,9 +37,6 @@ trait LogEntry extends js.Object {
 }
 
 class LogsFrontend {
-  // TODO fix this
-  var rowCounter = 0
-
   val tableContent = elem("logTableBody")
   val statusElem = elem("status")
 
@@ -84,14 +83,16 @@ class LogsFrontend {
       case "WARN" => "warning"
       case _ => ""
     }
-    rowCounter += 1
     val level = entry.level
+    val entryId = UUID.randomUUID().toString take 5
+    val rowId = s"row-$entryId"
+    val linkId = s"link-$entryId"
     val levelContent: Modifier = entry.stackTrace.toOption
-      .map(_ => a(href := "#", onclick := s"return toggle($rowCounter)")(level))
+      .map(_ => a(href := "#", id := linkId)(level))
       .getOrElse(level)
 
     entry.stackTrace.toOption foreach { stackTrace =>
-      val errorRow = tr(style := "display: none", id := s"row$rowCounter")(
+      val errorRow = tr(style := "display: none", id := s"$rowId")(
         td(colspan := "5")(pre(stackTrace))
       )
       tableContent prepend errorRow.toString()
@@ -104,10 +105,11 @@ class LogsFrontend {
       td(levelContent)
     )
     tableContent prepend row.toString()
+    elem(linkId).click((_: JQueryEventObject) => toggle(rowId))
   }
 
-  def toggle(row: Int) = {
-    global.jQuery(s"row$row").toggle()
+  def toggle(row: String) = {
+    global.jQuery(s"#$row").toggle()
     false
   }
 

@@ -24,6 +24,7 @@ object PlayBuild {
       persistLauncher := true,
       libraryDependencies ++= Seq(
         "com.lihaoyi" %%% "scalatags" % "0.6.2",
+        "com.lihaoyi" %%% "upickle" % "0.4.3",
         "be.doeraene" %%% "scalajs-jquery" % "0.9.1"
 //        "org.scala-js" %%% "scalajs-dom" % "0.9.1"
       )

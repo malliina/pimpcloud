@@ -6,10 +6,11 @@ import org.scalajs.dom
 import org.scalajs.dom.CloseEvent
 import org.scalajs.dom.raw.{ErrorEvent, Event, MessageEvent}
 import org.scalajs.jquery.{JQueryEventObject, jQuery}
+import upickle.Invalid
 
 import scala.scalajs.js
-import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport
+import scala.scalajs.js.{JSApp, JSON}
 import scalatags.Text.all._
 
 object Frontend extends JSApp {
@@ -21,19 +22,17 @@ object Frontend extends JSApp {
   }
 }
 
-@js.native
-trait LogEntry extends js.Object {
-  def level: String = js.native
+case class JVMLogEntry(level: String,
+                       message: String,
+                       loggerName: String,
+                       threadName: String,
+                       timeFormatted: String,
+                       stackTrace: Option[String] = None)
 
-  def message: String = js.native
+case class Command(cmd: String)
 
-  def loggerName: String = js.native
-
-  def threadName: String = js.native
-
-  def timeFormatted: String = js.native
-
-  def stackTrace: js.UndefOr[String] = js.native
+object Command {
+  val Subscribe = apply("subscribe")
 }
 
 class LogsFrontend {
@@ -46,8 +45,8 @@ class LogsFrontend {
     val pathAndQuery = "/admin/ws?f=json"
     val wsUrl = s"$wsBaseUrl$pathAndQuery"
     val socket = new dom.WebSocket(wsUrl)
-    socket.onopen = (event: Event) => {
-      socket.send("""{"cmd":"subscribe"}""")
+    socket.onopen = (_: Event) => {
+      socket.send(PimpJSON.write(Command.Subscribe))
       setFeedback("Connected.")
     }
     socket.onmessage = (event: MessageEvent) => {
@@ -65,19 +64,21 @@ class LogsFrontend {
   }
 
   def onMessage(msg: MessageEvent) = {
-    val event = jQuery parseJSON msg.data.toString
+    val event = JSON.parse(msg.data.toString)
     if (event.event.toString == "ping") {
     } else {
-      prependAll(event)
+      handlePayload(JSON.stringify(event))
     }
   }
 
-  def prependAll(msg: js.Dynamic) = {
-    val entries = msg.asInstanceOf[js.Array[LogEntry]]
-    entries foreach prepend
+  def handlePayload(payload: String) = {
+    PimpJSON.validate[Seq[JVMLogEntry]](payload).fold(
+      invalid => onInvalidData(invalid),
+      entries => entries foreach prepend
+    )
   }
 
-  def prepend(entry: LogEntry) = {
+  def prepend(entry: JVMLogEntry) = {
     val trc = entry.level match {
       case "ERROR" => "danger"
       case "WARN" => "warning"
@@ -87,11 +88,11 @@ class LogsFrontend {
     val entryId = UUID.randomUUID().toString take 5
     val rowId = s"row-$entryId"
     val linkId = s"link-$entryId"
-    val levelContent: Modifier = entry.stackTrace.toOption
+    val levelCell: Modifier = entry.stackTrace
       .map(_ => a(href := "#", id := linkId)(level))
       .getOrElse(level)
 
-    entry.stackTrace.toOption foreach { stackTrace =>
+    entry.stackTrace foreach { stackTrace =>
       val errorRow = tr(style := "display: none", id := s"$rowId")(
         td(colspan := "5")(pre(stackTrace))
       )
@@ -102,10 +103,17 @@ class LogsFrontend {
       td(entry.message),
       td(entry.loggerName),
       td(entry.threadName),
-      td(levelContent)
+      td(levelCell)
     )
     tableContent prepend row.toString()
     elem(linkId).click((_: JQueryEventObject) => toggle(rowId))
+  }
+
+  def onInvalidData(invalid: Invalid): PartialFunction[Invalid, Unit] = {
+    case Invalid.Data(jsValue, errorMessage) =>
+      println(s"JSON failed to parse: '$errorMessage' in value '$jsValue'")
+    case Invalid.Json(errorMessage, in) =>
+      println(s"Not JSON, '$errorMessage' in value '$in'")
   }
 
   def toggle(row: String) = {

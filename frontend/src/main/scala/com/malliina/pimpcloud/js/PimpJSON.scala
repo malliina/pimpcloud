@@ -14,16 +14,17 @@ object PimpJSON extends upickle.AttributeTagged {
   }
 
   def validate[T: Reader](expr: String): Either[Invalid, T] =
-    try {
-      val jsValue = PimpJSON.read[Js.Value](expr)
-      validateJs[T](jsValue)
-    } catch {
-      case e: Invalid => Left(e)
+    toEither[T] {
+      val jsValue = read[Js.Value](expr)
+      readJs[T](jsValue)
     }
 
   def validateJs[T: Reader](v: Js.Value): Either[Invalid, T] =
+    toEither(readJs[T](v))
+
+  def toEither[T](code: => T): Either[Invalid, T] =
     try {
-      Right(readJs[T](v))
+      Right(code)
     } catch {
       case e: Invalid => Left(e)
     }

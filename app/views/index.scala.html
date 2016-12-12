@@ -24,7 +24,7 @@
                 }
             </ul>
         }
-        @util.script2("json.js", "playerws.js")
-        @wsopen(phoneSocketsWsUrl)
+        <script src="@routes.Assets.at("frontend-fastopt.js")"></script>
+        <script src="@routes.Assets.at("frontend-launcher.js")"></script>
     }
 }

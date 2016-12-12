@@ -11,13 +11,12 @@ object Frontend extends JSApp {
   @JSExport
   override def main() = {
     val path = dom.window.location.pathname
-    app = path match {
-      case "/admin/logs" =>
-        Option(new LogsJS)
-      case "/admin" =>
-        Option(new AdminJS)
-      case _ =>
-        None
+    val jsImpl: PartialFunction[String, SocketJS] = {
+      case "/admin/logs" => new LogsJS
+      case "/admin" => new AdminJS
+      case "/mobile/ws" => new PlayerJS
     }
+
+    app = jsImpl.lift(path)
   }
 }

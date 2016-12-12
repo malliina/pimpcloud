@@ -12,7 +12,7 @@
             <form class="form-signin" name="loginForm" action="@routes.Web.formAuthenticate()" method="POST">
                 <h2 class="form-signin-heading">Please sign in</h2>
                 <input type="text" class="form-control" name="@web.serverFormKey" id="@web.serverFormKey" placeholder="Server" autofocus>
-                <input type="text" class="form-control" name="@web.forms.userFormKey" id="@web.forms.userFormKey" placeholder="Username" autofocus>
+                <input type="text" class="form-control" name="@web.forms.userFormKey" id="@web.forms.userFormKey" placeholder="Username">
                 <input type="password" class="form-control" name="@web.forms.passFormKey" id="@web.forms.passFormKey" placeholder="Password">
                 <button type="submit" id="loginbutton" class="btn btn-lg btn-primary btn-block">Sign in</button>
             </form>
@@ -28,7 +28,5 @@
             }
         }
     }
-    <script type="text/javascript" charset="utf-8">
-    $ ( function () { document.loginForm.username.focus(); } ) ;
-    </script>
+
 }

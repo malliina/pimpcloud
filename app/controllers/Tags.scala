@@ -1,5 +1,0 @@
-package controllers
-
-object Tags {
-
-}

@@ -14,12 +14,13 @@ import scalatags.Text.all._
 object CloudTags {
   implicit val callAttr = new GenericAttr[Call]
   val empty: Modifier = ""
+  val download = attr("download").empty
   val titleTag = tag("title")
   val section = tag("section")
   val nav = tag("nav")
 
   val logs = baseIndex("logs")(
-    headerRow()("Logs ", small(`class` := "pull-right", id := "status")("Initializing...")),
+    headerRow()("Logs ", small(`class` := PullRight, id := "status")("Initializing...")),
     fullRow(
       defaultTable("logTableBody", "Time", "Message", "Logger", "Thread", "Level")
     )
@@ -32,10 +33,10 @@ object CloudTags {
       li(aHref(routes.Phones.folder(folder.id), folder.title))
 
     def trackHtml(track: Track) =
-      li(trackActions(track.id), " ", aHref(routes.Phones.track(track.id), track.title))
+      li(trackActions(track.id), " ", a(href := routes.Phones.track(track.id), download)(track.title))
 
     basePage("Home")(
-      div(Container)(
+      divClass(Container)(
         headerRow()("Library"),
         fullRow(
           searchForm()
@@ -56,11 +57,11 @@ object CloudTags {
 
   def trackActions(track: TrackID) =
     divClass(BtnGroup)(
-      a(`class` := s"$BtnDefault $BtnXs", href := "#", onclick := s"return play('$track');")(glyphIcon("play"), " Play"),
+      a(`class` := s"$BtnDefault $BtnXs play-link", href := "#", id := track.id)(glyphIcon("play"), " Play"),
       a(`class` := s"$BtnDefault $BtnXs dropdown-toggle", attr("data-toggle") := "dropdown", href := "#")(spanClass("caret")),
       ulClass("dropdown-menu")(
-        li(a(href := "#", onclick := s"return add('$track');")(glyphIcon("plus"), " Add to playlist")),
-        li(aHref(routes.Phones.track(track), glyphIcon("download"), " Download"))
+        li(a(href := "#", `class` := "playlist-link", id := track.id)(glyphIcon("plus"), " Add to playlist")),
+        li(a(href := routes.Phones.track(track), download)(glyphIcon("download"), " Download"))
       )
     )
 
@@ -108,13 +109,13 @@ object CloudTags {
     }
 
     basePage("pimpcloud")(
-      div(s"$Navbar $NavbarDefault")(
-        div(Container)(
-          div(NavbarHeader)(
+      divClass(s"$Navbar $NavbarDefault")(
+        divClass(Container)(
+          divClass(NavbarHeader)(
             hamburgerButton,
             a(`class` := NavbarBrand, href := routes.UsageStreaming.index())("MusicPimp")
           ),
-          div(s"$NavbarCollapse $Collapse")(
+          divClass(s"$NavbarCollapse $Collapse")(
             ulClass(s"$Nav $NavbarNav")(
               navItem("Home", "home", routes.UsageStreaming.index(), "home"),
               navItem("Logs", "logs", routes.Logs.logs(), "list")
@@ -125,7 +126,7 @@ object CloudTags {
           )
         )
       ),
-      div(Container)(inner)
+      divClass(Container)(inner)
     )
   }
 

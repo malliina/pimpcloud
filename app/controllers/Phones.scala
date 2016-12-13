@@ -176,7 +176,7 @@ class Phones(val cloudAuths: CloudAuthentication, val phoneSockets: PhoneSockets
   private def folderResult(req: RequestHeader, socket: PhoneConnection)(html: PimpServerSocket => Future[Directory],
                                                                         json: => PhoneRequest) =
     pimpResultAsync(req)(
-      html(socket.server).map(dir => Ok(views.html.index(dir, phoneSockets.wsUrl(req)))),
+      html(socket.server).map(dir => Ok(CloudTags.index(dir, None))),
       proxiedJson(json, socket)
     ).recoverAll(_ => BadGateway)
 

@@ -1,5 +1,8 @@
 package com.malliina.pimpcloud.js
 
+import org.scalajs.dom.document
+import org.scalajs.dom.raw.Event
+
 case class PlayerCommand(cmd: String, track: String)
 
 object PlayerCommand {
@@ -9,13 +12,23 @@ object PlayerCommand {
 }
 
 class PlayerJS extends SocketJS("/mobile/ws") {
-  override def handlePayload(payload: String) = {
-    setFeedback(payload)
-  }
+  installHandlers("play-link", play)
+  installHandlers("playlist-link", add)
 
-  def add(id: String) = send(PlayerCommand.add(id))
+  override def handlePayload(payload: String) =
+    setFeedback(payload)
 
   def play(id: String) = send(PlayerCommand.play(id))
 
+  def add(id: String) = send(PlayerCommand.add(id))
+
   def send(cmd: PlayerCommand) = socket send PimpJSON.write(cmd)
+
+  def installHandlers(className: String, id: String => Unit) =
+    elems(className) foreach { elem =>
+      val trackId = elem.attributes.getNamedItem("id").value
+      elem.addEventListener("click", (_: Event) => id(trackId), useCapture = false)
+    }
+
+  def elems(className: String) = document getElementsByClassName className
 }

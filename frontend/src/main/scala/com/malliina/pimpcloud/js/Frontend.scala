@@ -14,7 +14,7 @@ object Frontend extends JSApp {
     val jsImpl: PartialFunction[String, SocketJS] = {
       case "/admin/logs" => new LogsJS
       case "/admin" => new AdminJS
-      case "/mobile/ws" => new PlayerJS
+      case p if p.isEmpty || p == "/" || p.startsWith("/folders") => new PlayerJS
     }
 
     app = jsImpl.lift(path)

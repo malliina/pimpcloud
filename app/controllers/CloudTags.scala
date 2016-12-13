@@ -19,6 +19,20 @@ object CloudTags {
   val section = tag("section")
   val nav = tag("nav")
 
+  def eject(message: Option[String]) =
+    basePage("Goodbye!", cssLink(at("css/custom.css")))(
+      divClass(Container)(
+        rowColumn(s"$ColMd6 top-padding")(
+          message.fold(empty) { msg =>
+            div(`class` := "lead alert alert-success", role := "alert")(msg)
+          }
+        ),
+        rowColumn(ColMd6)(
+          leadPara("Try to ", aHref(routes.UsageStreaming.index(), "sign in"), " again.")
+        )
+      )
+    )
+
   def login(error: Option[String],
             feedback: Option[String],
             web: Web,

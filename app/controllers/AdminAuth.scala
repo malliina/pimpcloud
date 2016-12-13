@@ -5,7 +5,6 @@ import com.malliina.play.controllers.{OAuthControl, OAuthSecured}
 import play.api.http.Writeable
 import play.api.mvc.Results.Ok
 import play.api.mvc.{Action, EssentialAction, RequestHeader}
-import views.html
 
 class AdminAuth(oauth: OAuthControl, mat: Materializer) extends OAuthSecured(oauth, mat) {
   def this(mat: Materializer) = this(new AdminOAuth(mat), mat)
@@ -17,7 +16,7 @@ class AdminAuth(oauth: OAuthControl, mat: Materializer) extends OAuthSecured(oau
   // HTML
   def logout = authAction(_ => oauth.ejectWith(oauth.logoutMessage).withNewSession)
 
-  def eject = logged(Action(req => Ok(html.eject(oauth.messageKey)(req.flash))))
+  def eject = logged(Action(req => Ok(CloudTags.eject(req.flash.get(oauth.messageKey)))))
 
   def navigate[C: Writeable](f: RequestHeader => C): EssentialAction =
     authAction(req => Ok(f(req)))

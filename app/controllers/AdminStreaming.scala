@@ -5,6 +5,7 @@ import com.malliina.play.controllers.Streaming
 import com.malliina.play.http.AuthedRequest
 import com.malliina.play.models.Username
 import com.malliina.play.ws.JsonSocketClient
+import play.api.http.Writeable
 import play.api.mvc.{EssentialAction, RequestHeader}
 import play.twirl.api.Html
 import rx.lang.scala.Subscription
@@ -23,7 +24,7 @@ abstract class AdminStreaming(admin: AdminAuth)
   def navigate(page: => Html): EssentialAction =
     navigate(_ => page)
 
-  def navigate(f: RequestHeader => Html): EssentialAction =
+  def navigate[C: Writeable](f: RequestHeader => C): EssentialAction =
     admin.navigate(f)
 
   private def getOrFail[T](f: Future[Option[T]]): Future[T] =

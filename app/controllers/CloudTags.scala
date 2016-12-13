@@ -19,6 +19,41 @@ object CloudTags {
   val section = tag("section")
   val nav = tag("nav")
 
+  def login(error: Option[String],
+            feedback: Option[String],
+            web: Web,
+            motd: Option[String]) = {
+    basePage("Welcome", cssLink(at("css/login.css")))(
+      divClass(Container)(
+        rowColumn(ColMd4)(
+          feedback.fold(empty)(f => leadPara(f))
+        ),
+        rowColumn(ColMd3)(
+          form(`class` := "form-signin", name := "loginForm", action := routes.Web.formAuthenticate(), method := "POST")(
+            h2(`class` := "form-signin-heading")("Please sign in"),
+            textInput("text", web.serverFormKey, "Server", autofocus),
+            textInput("text", web.forms.userFormKey, "Username"),
+            textInput("password", web.forms.passFormKey, "Password"),
+            button(`type` := "submit", id := "loginbutton", `class` := s"$BtnPrimary $BtnLg $BtnBlock")("Sign in")
+          )
+        ),
+        error.fold(empty) { err =>
+          rowColumn(ColMd3)(
+            div(`class` := "alert alert-warning form-signin", role := "alert")(err)
+          )
+        },
+        motd.fold(empty) { message =>
+          rowColumn(s"$ColMd3 form-signin")(
+            motd.fold(empty)(m => p(m))
+          )
+        }
+      )
+    )
+  }
+
+  def textInput(inType: String, idAndName: String, placeHolder: String, more: Modifier*) =
+    input(`type` := inType, `class` := "form-control", name := idAndName, id := idAndName, placeholder := placeHolder, more)
+
   val logs = baseIndex("logs")(
     headerRow()("Logs ", small(`class` := PullRight, id := "status")("Initializing...")),
     fullRow(
@@ -57,10 +92,10 @@ object CloudTags {
 
   def trackActions(track: TrackID) =
     divClass(BtnGroup)(
-      a(`class` := s"$BtnDefault $BtnXs play-link", href := "#", id := track.id)(glyphIcon("play"), " Play"),
+      a(`class` := s"$BtnDefault $BtnXs play-link", href := "#", id := s"play-$track")(glyphIcon("play"), " Play"),
       a(`class` := s"$BtnDefault $BtnXs dropdown-toggle", attr("data-toggle") := "dropdown", href := "#")(spanClass("caret")),
       ulClass("dropdown-menu")(
-        li(a(href := "#", `class` := "playlist-link", id := track.id)(glyphIcon("plus"), " Add to playlist")),
+        li(a(href := "#", `class` := "playlist-link", id := s"add-$track")(glyphIcon("plus"), " Add to playlist")),
         li(a(href := routes.Phones.track(track), download)(glyphIcon("download"), " Download"))
       )
     )
@@ -130,7 +165,7 @@ object CloudTags {
     )
   }
 
-  def basePage(title: String)(inner: Modifier*) = TagPage(
+  def basePage(title: String, extraHeader: Modifier*)(inner: Modifier*) = TagPage(
     html(lang := "en")(
       head(
         titleTag(title),
@@ -139,6 +174,7 @@ object CloudTags {
         cssLink("//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css"),
         cssLink("//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/themes/smoothness/jquery-ui.css"),
         cssLink(at("css/custom.css")),
+        extraHeader,
         js("//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"),
         js("//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"),
         js("//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js")

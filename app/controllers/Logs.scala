@@ -21,7 +21,7 @@ class Logs(admin: AdminAuth) extends AdminStreaming(admin) {
   override def openSocketCall: Call = routes.Logs.openSocket()
 
   def logs = admin.navigate { req =>
-    views.html.logs(wsUrl(req))
+    CloudTags.logs
   }
 }
 

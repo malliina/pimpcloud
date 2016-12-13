@@ -11,7 +11,6 @@ import play.api.Logger
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.mvc._
-import views.html
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -29,7 +28,9 @@ class Web(authActions: CloudAuthentication, exec: ExecutionContext, val forms: A
 
   def ping = Action(NoCache(Ok))
 
-  def login = Action(req => Ok(views.html.login(cloudForm, this, req.flash)))
+  def login = Action { req =>
+    Ok(loginPage(cloudForm, req.flash))
+  }
 
   def formAuthenticate = Action.async { request =>
     val flash = request.flash
@@ -38,7 +39,7 @@ class Web(authActions: CloudAuthentication, exec: ExecutionContext, val forms: A
       formWithErrors => {
         val user = formWithErrors.data.getOrElse(forms.userFormKey, "")
         log warn s"Authentication failed for user: $user from: $remoteAddress"
-        fut(BadRequest(html.login(formWithErrors, this, flash)))
+        fut(BadRequest(loginPage(formWithErrors, flash)))
       },
       creds => {
         implicit val ec = exec
@@ -49,10 +50,13 @@ class Web(authActions: CloudAuthentication, exec: ExecutionContext, val forms: A
           log info s"Authentication succeeded to: $who from: $remoteAddress"
           val intendedUrl = request.session.get(forms.intendedUri) getOrElse defaultLoginSuccessPage.url
           Redirect(intendedUrl).withSession(Security.username -> server.id)
-        }).recoverAll(t => BadRequest(html.login(cloudForm.withGlobalError("Invalid credentials."), this, flash)))
+        }).recoverAll(t => BadRequest(loginPage(cloudForm.withGlobalError("Invalid credentials."), flash)))
       }
     )
   }
+
+  def loginPage(form: Form[CloudCredentials], flash: Flash) =
+    CloudTags.login(form.globalError.map(_.message), flash.get(forms.feedback), this, None)
 
   def defaultLoginSuccessPage: Call = routes.Phones.rootFolder()
 

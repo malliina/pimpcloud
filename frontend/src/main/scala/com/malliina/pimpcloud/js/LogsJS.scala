@@ -20,6 +20,7 @@ object Command {
 }
 
 class LogsJS extends SocketJS("/admin/ws?f=json") {
+  val Hidden = "hidden"
   val tableContent = elem("logTableBody")
 
   def handlePayload(payload: String) = {
@@ -44,7 +45,7 @@ class LogsJS extends SocketJS("/admin/ws?f=json") {
       .getOrElse(level)
 
     entry.stackTrace foreach { stackTrace =>
-      val errorRow = tr(`class` := "hidden", id := s"$rowId")(
+      val errorRow = tr(`class` := Hidden, id := s"$rowId")(
         td(colspan := "5")(pre(stackTrace))
       )
       tableContent prepend errorRow.toString()
@@ -61,7 +62,8 @@ class LogsJS extends SocketJS("/admin/ws?f=json") {
   }
 
   def toggle(row: String) = {
-    global.jQuery(s"#$row").toggle()
+    val rowElem = global.jQuery(s"#$row")
+    rowElem.toggleClass(Hidden)
     false
   }
 }

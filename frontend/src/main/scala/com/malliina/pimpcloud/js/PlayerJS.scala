@@ -12,8 +12,8 @@ object PlayerCommand {
 }
 
 class PlayerJS extends SocketJS("/mobile/ws") {
-  installHandlers("play-link", play)
-  installHandlers("playlist-link", add)
+  installHandlers("play-link", "play-", play)
+  installHandlers("playlist-link", "add-", add)
 
   override def handlePayload(payload: String) =
     setFeedback(payload)
@@ -24,9 +24,9 @@ class PlayerJS extends SocketJS("/mobile/ws") {
 
   def send(cmd: PlayerCommand) = socket send PimpJSON.write(cmd)
 
-  def installHandlers(className: String, id: String => Unit) =
+  def installHandlers(className: String, prefix: String, id: String => Unit) =
     elems(className) foreach { elem =>
-      val trackId = elem.attributes.getNamedItem("id").value
+      val trackId = elem.attributes.getNamedItem("id").value.drop(prefix.length)
       elem.addEventListener("click", (_: Event) => id(trackId), useCapture = false)
     }
 

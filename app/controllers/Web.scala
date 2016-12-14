@@ -14,7 +14,7 @@ import play.api.mvc._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class Web(authActions: CloudAuthentication, exec: ExecutionContext, val forms: AccountForms)
+class Web(tags: CloudTags, authActions: CloudAuthentication, exec: ExecutionContext, val forms: AccountForms)
   extends BaseController
     with Controller {
 
@@ -56,7 +56,7 @@ class Web(authActions: CloudAuthentication, exec: ExecutionContext, val forms: A
   }
 
   def loginPage(form: Form[CloudCredentials], flash: Flash) =
-    CloudTags.login(form.globalError.map(_.message), flash.get(forms.feedback), this, None)
+    tags.login(form.globalError.map(_.message), flash.get(forms.feedback), this, None)
 
   def defaultLoginSuccessPage: Call = routes.Phones.rootFolder()
 

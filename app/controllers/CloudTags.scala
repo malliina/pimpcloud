@@ -5,6 +5,7 @@ import com.malliina.pimpcloud.models.TrackID
 import com.malliina.pimpcloud.tags.Bootstrap._
 import com.malliina.pimpcloud.tags.TagPage
 import com.malliina.pimpcloud.tags.Tags._
+import controllers.CloudTags.callAttr
 import controllers.routes.Assets.at
 import play.api.mvc.Call
 
@@ -13,6 +14,25 @@ import scalatags.Text.all._
 
 object CloudTags {
   implicit val callAttr = new GenericAttr[Call]
+
+  /**
+    * @param appName typically the name of the Scala.js module
+    * @param isProd  true if the app runs in production, false otherwise
+    * @return HTML templates with either prod or dev javascripts
+    */
+  def forApp(appName: String, isProd: Boolean): CloudTags = {
+    val lowerName = appName.toLowerCase
+    val suffix = if (isProd) "opt" else "fastopt"
+    val optimizedName = s"$lowerName-$suffix.js"
+    val launcherName = s"$lowerName-launcher.js"
+    withLauncher(optimizedName, launcherName)
+  }
+
+  def withLauncher(jsFiles: String*) =
+    new CloudTags(jsFiles.map(file => js(at(file))): _*)
+}
+
+class CloudTags(scripts: Modifier*) {
 
   def eject(message: Option[String]) =
     basePage("Goodbye!", cssLink(at("css/custom.css")))(
@@ -193,8 +213,7 @@ object CloudTags {
       body(
         section(
           inner,
-          js(at("frontend-fastopt.js")),
-          js(at("frontend-launcher.js"))
+          scripts
         )
       )
     )

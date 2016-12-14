@@ -5,7 +5,8 @@ import play.api.libs.json.JsValue
 import play.api.mvc.Call
 import rx.lang.scala.Observable
 
-class UsageStreaming(servers: Servers,
+class UsageStreaming(tags: CloudTags,
+                     servers: Servers,
                      phones: Phones,
                      phoneSockets: PhoneSockets,
                      serversController: ServersController,
@@ -16,6 +17,6 @@ class UsageStreaming(servers: Servers,
 
   def index = navigate { req =>
 //    views.html.admin(wsUrl(req))
-    CloudTags.admin
+    tags.admin
   }
 }

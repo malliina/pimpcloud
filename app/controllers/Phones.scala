@@ -44,7 +44,7 @@ object Phones {
   def encode(id: String) = URLEncoder.encode(id, EncodingUTF8)
 }
 
-class Phones(val cloudAuths: CloudAuthentication, val phoneSockets: PhoneSockets, val auth: CloudAuth)
+class Phones(tags: CloudTags, val cloudAuths: CloudAuthentication, val phoneSockets: PhoneSockets, val auth: CloudAuth)
   extends BaseController
     with PimpContentController
     with Controller {
@@ -176,7 +176,7 @@ class Phones(val cloudAuths: CloudAuthentication, val phoneSockets: PhoneSockets
   private def folderResult(req: RequestHeader, socket: PhoneConnection)(html: PimpServerSocket => Future[Directory],
                                                                         json: => PhoneRequest) =
     pimpResultAsync(req)(
-      html(socket.server).map(dir => Ok(CloudTags.index(dir, None))),
+      html(socket.server).map(dir => Ok(tags.index(dir, None))),
       proxiedJson(json, socket)
     ).recoverAll(_ => BadGateway)
 

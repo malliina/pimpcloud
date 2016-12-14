@@ -9,7 +9,7 @@ import rx.lang.scala.Observable
 
 import scala.concurrent.duration.DurationInt
 
-class Logs(admin: AdminAuth) extends AdminStreaming(admin) {
+class Logs(tags: CloudTags, admin: AdminAuth) extends AdminStreaming(admin) {
   def logEvents: Observable[LogEvent] = appender.logEvents
 
   override lazy val jsonEvents: Observable[JsValue] =
@@ -21,7 +21,7 @@ class Logs(admin: AdminAuth) extends AdminStreaming(admin) {
   override def openSocketCall: Call = routes.Logs.openSocket()
 
   def logs = admin.navigate { req =>
-    CloudTags.logs
+    tags.logs
   }
 }
 

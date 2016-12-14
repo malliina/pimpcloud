@@ -3,8 +3,8 @@ package controllers
 import com.malliina.musicpimp.audio.{Directory, Folder, Track}
 import com.malliina.pimpcloud.models.TrackID
 import com.malliina.pimpcloud.tags.Bootstrap._
-import com.malliina.pimpcloud.tags.TagPage
 import com.malliina.pimpcloud.tags.Tags._
+import com.malliina.pimpcloud.tags.{ScalaScripts, TagPage}
 import controllers.CloudTags.callAttr
 import controllers.routes.Assets.at
 import play.api.mvc.Call
@@ -21,11 +21,8 @@ object CloudTags {
     * @return HTML templates with either prod or dev javascripts
     */
   def forApp(appName: String, isProd: Boolean): CloudTags = {
-    val lowerName = appName.toLowerCase
-    val suffix = if (isProd) "opt" else "fastopt"
-    val optimizedName = s"$lowerName-$suffix.js"
-    val launcherName = s"$lowerName-launcher.js"
-    withLauncher(optimizedName, launcherName)
+    val scripts = ScalaScripts.forApp(appName, isProd)
+    withLauncher(scripts.optimized, scripts.launcher)
   }
 
   def withLauncher(jsFiles: String*) =

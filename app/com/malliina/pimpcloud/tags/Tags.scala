@@ -6,13 +6,19 @@ import scalatags.Text.all._
 object Tags extends Tags
 
 trait Tags {
+  val Lead = "lead"
+  val Password = "password"
+  val Submit = "submit"
+  val Stylesheet = "stylesheet"
+  val Text = "text"
+
   def divClass(clazz: String) = div(`class` := clazz)
 
   def spanClass(clazz: String) = span(`class` := clazz)
 
   def iClass(clazz: String) = i(`class` := clazz)
 
-  def leadPara = pClass("lead")
+  def leadPara = pClass(Lead)
 
   def pClass(clazz: String) = p(`class` := clazz)
 
@@ -26,5 +32,5 @@ trait Tags {
 
   def js[V: AttrValue](url: V) = script(src := url)
 
-  def cssLink[V: AttrValue](url: V) = link(rel := "stylesheet", href := url)
+  def cssLink[V: AttrValue](url: V) = link(rel := Stylesheet, href := url)
 }

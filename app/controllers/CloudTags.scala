@@ -18,13 +18,15 @@ object CloudTags {
   val titleTag = tag("title")
   val section = tag("section")
   val nav = tag("nav")
+  val FormControl = "form-control"
+  val FormSignin = "form-signin"
 
   def eject(message: Option[String]) =
     basePage("Goodbye!", cssLink(at("css/custom.css")))(
       divClass(Container)(
         rowColumn(s"$ColMd6 top-padding")(
           message.fold(empty) { msg =>
-            div(`class` := "lead alert alert-success", role := "alert")(msg)
+            div(`class` := s"$Lead $AlertSuccess", role := Alert)(msg)
           }
         ),
         rowColumn(ColMd6)(
@@ -38,35 +40,37 @@ object CloudTags {
             web: Web,
             motd: Option[String]) = {
     basePage("Welcome", cssLink(at("css/login.css")))(
-      divClass(Container)(
-        rowColumn(ColMd4)(
-          feedback.fold(empty)(f => leadPara(f))
-        ),
-        rowColumn(ColMd3)(
-          form(`class` := "form-signin", name := "loginForm", action := routes.Web.formAuthenticate(), method := "POST")(
-            h2(`class` := "form-signin-heading")("Please sign in"),
-            textInput("text", web.serverFormKey, "Server", autofocus),
-            textInput("text", web.forms.userFormKey, "Username"),
-            textInput("password", web.forms.passFormKey, "Password"),
-            button(`type` := "submit", id := "loginbutton", `class` := s"$BtnPrimary $BtnLg $BtnBlock")("Sign in")
-          )
-        ),
-        error.fold(empty) { err =>
-          rowColumn(ColMd3)(
-            div(`class` := "alert alert-warning form-signin", role := "alert")(err)
-          )
-        },
-        motd.fold(empty) { message =>
-          rowColumn(s"$ColMd3 form-signin")(
-            motd.fold(empty)(m => p(m))
-          )
-        }
+      divClass(s"$Container")(
+        divClass(s"$ColMd4 wrapper")(
+          row(
+            feedback.fold(empty)(f => leadPara(f))
+          ),
+          row(
+            form(`class` := FormSignin, name := "loginForm", action := routes.Web.formAuthenticate(), method := "POST")(
+              h2(`class` := "form-signin-heading")("Please sign in"),
+              textInput(Text, FormControl, web.serverFormKey, "Server", autofocus),
+              textInput(Text, FormControl, web.forms.userFormKey, "Username"),
+              textInput(Password, s"$FormControl last-field", web.forms.passFormKey, "Password"),
+              button(`type` := Submit, id := "loginbutton", `class` := s"$BtnPrimary $BtnLg $BtnBlock")("Sign in")
+            )
+          ),
+          error.fold(empty) { err =>
+            row(
+              div(`class` := s"$AlertWarning $FormSignin", role := Alert)(err)
+            )
+          },
+          motd.fold(empty) { message =>
+            divClass(s"$Row $FormSignin")(
+              p(message)
+            )
+          }
+        )
       )
     )
   }
 
-  def textInput(inType: String, idAndName: String, placeHolder: String, more: Modifier*) =
-    input(`type` := inType, `class` := "form-control", name := idAndName, id := idAndName, placeholder := placeHolder, more)
+  def textInput(inType: String, clazz: String, idAndName: String, placeHolder: String, more: Modifier*) =
+    input(`type` := inType, `class` := clazz, name := idAndName, id := idAndName, placeholder := placeHolder, more)
 
   val logs = baseIndex("logs")(
     headerRow()("Logs ", small(`class` := PullRight, id := "status")("Initializing...")),
@@ -107,8 +111,8 @@ object CloudTags {
   def trackActions(track: TrackID) =
     divClass(BtnGroup)(
       a(`class` := s"$BtnDefault $BtnXs play-link", href := "#", id := s"play-$track")(glyphIcon("play"), " Play"),
-      a(`class` := s"$BtnDefault $BtnXs dropdown-toggle", attr("data-toggle") := "dropdown", href := "#")(spanClass("caret")),
-      ulClass("dropdown-menu")(
+      a(`class` := s"$BtnDefault $BtnXs $DropdownToggle", attr("data-toggle") := Dropdown, href := "#")(spanClass("caret")),
+      ulClass(DropdownMenu)(
         li(a(href := "#", `class` := "playlist-link", id := s"add-$track")(glyphIcon("plus"), " Add to playlist")),
         li(a(href := routes.Phones.track(track), download)(glyphIcon("download"), " Download"))
       )
@@ -117,9 +121,9 @@ object CloudTags {
   def searchForm(query: Option[String] = None, size: String = "input-group-lg") = {
     form(action := routes.Phones.search())(
       divClass(s"input-group $size")(
-        input(`type` := "text", `class` := "form-control", placeholder := query.getOrElse("Artist, album or track..."), name := "term", id := "term"),
+        input(`type` := "text", `class` := FormControl, placeholder := query.getOrElse("Artist, album or track..."), name := "term", id := "term"),
         divClass("input-group-btn")(
-          button(`class` := BtnDefault, `type` := "submit")(glyphIcon("search"))
+          button(`class` := BtnDefault, `type` := Submit)(glyphIcon("search"))
         )
       )
     )
@@ -127,7 +131,7 @@ object CloudTags {
 
   val admin = baseIndex("home")(
     headerRow()(
-      "Admin", small(`class` := "pull-right", id := "status")("Initializing...")
+      "Admin", small(`class` := PullRight, id := "status")("Initializing...")
     ),
     tableContainer("Streams", "requestsTable", "Cloud ID", "Request ID", "Track", "Artist", "Bytes"),
     tableContainer("Phones", "phonesTable", "Cloud ID", "Phone Address"),

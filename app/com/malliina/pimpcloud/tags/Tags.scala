@@ -6,11 +6,22 @@ import scalatags.Text.all._
 object Tags extends Tags
 
 trait Tags {
+  val Download = "download"
+  val En = "en"
   val Lead = "lead"
   val Password = "password"
+  val Section = "section"
   val Submit = "submit"
   val Stylesheet = "stylesheet"
   val Text = "text"
+  val Title = "title"
+
+  val download = attr(Download).empty
+
+  val empty: Modifier = ""
+
+  val section = tag(Section)
+  val titleTag = tag(Title)
 
   def divClass(clazz: String) = div(`class` := clazz)
 

@@ -13,17 +13,10 @@ import scalatags.Text.all._
 
 object CloudTags {
   implicit val callAttr = new GenericAttr[Call]
-  val empty: Modifier = ""
-  val download = attr("download").empty
-  val titleTag = tag("title")
-  val section = tag("section")
-  val nav = tag("nav")
-  val FormControl = "form-control"
-  val FormSignin = "form-signin"
 
   def eject(message: Option[String]) =
     basePage("Goodbye!", cssLink(at("css/custom.css")))(
-      divClass(Container)(
+      divContainer(
         rowColumn(s"$ColMd6 top-padding")(
           message.fold(empty) { msg =>
             div(`class` := s"$Lead $AlertSuccess", role := Alert)(msg)
@@ -40,14 +33,14 @@ object CloudTags {
             web: Web,
             motd: Option[String]) = {
     basePage("Welcome", cssLink(at("css/login.css")))(
-      divClass(s"$Container")(
+      divContainer(
         divClass(s"$ColMd4 wrapper")(
           row(
             feedback.fold(empty)(f => leadPara(f))
           ),
           row(
             form(`class` := FormSignin, name := "loginForm", action := routes.Web.formAuthenticate(), method := "POST")(
-              h2(`class` := "form-signin-heading")("Please sign in"),
+              h2(`class` := FormSigninHeading)("Please sign in"),
               textInput(Text, FormControl, web.serverFormKey, "Server", autofocus),
               textInput(Text, FormControl, web.forms.userFormKey, "Username"),
               textInput(Password, s"$FormControl last-field", web.forms.passFormKey, "Password"),
@@ -89,7 +82,7 @@ object CloudTags {
       li(trackActions(track.id), " ", a(href := routes.Phones.track(track.id), download)(track.title))
 
     basePage("Home")(
-      divClass(Container)(
+      divContainer(
         headerRow()("Library"),
         fullRow(
           searchForm()
@@ -99,7 +92,7 @@ object CloudTags {
         ),
         feedbackHtml,
         fullRow(
-          ulClass("list-unstyled")(
+          ulClass(ListUnstyled)(
             dir.folders map folderHtml,
             dir.tracks map trackHtml
           )
@@ -111,18 +104,18 @@ object CloudTags {
   def trackActions(track: TrackID) =
     divClass(BtnGroup)(
       a(`class` := s"$BtnDefault $BtnXs play-link", href := "#", id := s"play-$track")(glyphIcon("play"), " Play"),
-      a(`class` := s"$BtnDefault $BtnXs $DropdownToggle", attr("data-toggle") := Dropdown, href := "#")(spanClass("caret")),
+      a(`class` := s"$BtnDefault $BtnXs $DropdownToggle", dataToggle := Dropdown, href := "#")(spanClass(Caret)),
       ulClass(DropdownMenu)(
         li(a(href := "#", `class` := "playlist-link", id := s"add-$track")(glyphIcon("plus"), " Add to playlist")),
         li(a(href := routes.Phones.track(track), download)(glyphIcon("download"), " Download"))
       )
     )
 
-  def searchForm(query: Option[String] = None, size: String = "input-group-lg") = {
+  def searchForm(query: Option[String] = None, size: String = InputGroupLg) = {
     form(action := routes.Phones.search())(
-      divClass(s"input-group $size")(
-        input(`type` := "text", `class` := FormControl, placeholder := query.getOrElse("Artist, album or track..."), name := "term", id := "term"),
-        divClass("input-group-btn")(
+      divClass(s"$InputGroup $size")(
+        input(`type` := Text, `class` := FormControl, placeholder := query.getOrElse("Artist, album or track..."), name := "term", id := "term"),
+        divClass(InputGroupBtn)(
           button(`class` := BtnDefault, `type` := Submit)(glyphIcon("search"))
         )
       )
@@ -146,7 +139,7 @@ object CloudTags {
   )
 
   def defaultTable(bodyId: String, headers: String*) =
-    table(`class` := "table table-striped table-hover")(
+    table(`class` := TableStripedHover)(
       thead(
         tr(
           headers map { header => th(header) }
@@ -163,7 +156,7 @@ object CloudTags {
 
     basePage("pimpcloud")(
       divClass(s"$Navbar $NavbarDefault")(
-        divClass(Container)(
+        divContainer(
           divClass(NavbarHeader)(
             hamburgerButton,
             a(`class` := NavbarBrand, href := routes.UsageStreaming.index())("MusicPimp")
@@ -184,7 +177,7 @@ object CloudTags {
   }
 
   def basePage(title: String, extraHeader: Modifier*)(inner: Modifier*) = TagPage(
-    html(lang := "en")(
+    html(lang := En)(
       head(
         titleTag(title),
         meta(name := "viewport", content := "width=device-width, initial-scale=1.0"),
@@ -206,11 +199,4 @@ object CloudTags {
       )
     )
   )
-
-  def hamburgerButton =
-    button(`class` := NavbarToggle, attr("data-toggle") := Collapse, attr("data-target") := s".$NavbarCollapse")(
-      spanClass("icon-bar"),
-      spanClass("icon-bar"),
-      spanClass("icon-bar")
-    )
 }

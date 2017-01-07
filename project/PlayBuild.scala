@@ -30,7 +30,7 @@ object PlayBuild {
       )
     )
 
-  lazy val pimpcloud = PlayProject("pimpcloud")
+  lazy val pimpcloud = PlayProject.default("pimpcloud")
     .settings(pimpcloudSettings: _*)
 
   val malliinaGroup = "com.malliina"
@@ -38,14 +38,9 @@ object PlayBuild {
   val pimpcloudSettings = jenkinsSettings ++ linuxSettings ++ scalaJSSettings ++ Seq(
     version := "1.5.6",
     scalaVersion := "2.11.8",
-    retrieveManaged := false,
-    fork in Test := true,
-    parallelExecution in Test := false,
-    resolvers ++= Seq(
-      Resolver.bintrayRepo("malliina", "maven")
-    ),
+    resolvers += Resolver.bintrayRepo("malliina", "maven"),
     libraryDependencies ++= Seq(
-      malliinaGroup %% "play-base" % "3.2.1",
+      malliinaGroup %% "util-play" % "3.3.3",
       malliinaGroup %% "mobile-push" % "1.6.1",
       "org.java-websocket" % "Java-WebSocket" % "1.3.0",
       "com.lihaoyi" %% "scalatags" % "0.6.2",
@@ -58,7 +53,8 @@ object PlayBuild {
       "-target", "1.8",
       "-Xlint:-options"
     ),
-    PlayKeys.externalizeResources := false
+    PlayKeys.externalizeResources := false,
+    libs += (packageBin in Assets).value.toPath
   )
 
   def scalaJSSettings = Seq(

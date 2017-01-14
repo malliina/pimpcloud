@@ -36,7 +36,7 @@ object PlayBuild {
   val malliinaGroup = "com.malliina"
 
   val pimpcloudSettings = jenkinsSettings ++ linuxSettings ++ scalaJSSettings ++ Seq(
-    version := "1.5.6",
+    version := "1.6.0",
     scalaVersion := "2.11.8",
     resolvers += Resolver.bintrayRepo("malliina", "maven"),
     libraryDependencies ++= Seq(

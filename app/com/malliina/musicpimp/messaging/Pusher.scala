@@ -1,11 +1,11 @@
 package com.malliina.musicpimp.messaging
 
+import com.malliina.concurrent.ExecutionContexts.cached
 import com.malliina.push.adm.ADMClient
 import com.malliina.push.apns.APNSClient
 import com.malliina.push.gcm.GCMClient
 import com.malliina.push.mpns.MPNSClient
 import com.malliina.push.wns.{WNSClient, WNSCredentials}
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
 import scala.concurrent.Future
 

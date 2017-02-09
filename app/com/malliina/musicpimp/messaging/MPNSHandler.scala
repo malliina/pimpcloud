@@ -1,7 +1,7 @@
 package com.malliina.musicpimp.messaging
 
+import com.malliina.concurrent.ExecutionContexts.cached
 import com.malliina.push.mpns.MPNSClient
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
 import scala.concurrent.Future
 

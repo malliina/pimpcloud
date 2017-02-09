@@ -10,7 +10,7 @@ import scala.concurrent.Future
 
 class ActorStream(target: ActorRef, val track: Track, val range: ContentRange) extends StreamEndpoint {
   override def send(bytes: ByteString): Future[QueueOfferResult] = {
-    target ! ByteString
+    target ! bytes
     Future.successful(QueueOfferResult.Enqueued)
   }
 

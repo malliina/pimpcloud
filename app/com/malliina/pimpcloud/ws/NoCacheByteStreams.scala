@@ -3,19 +3,23 @@ package com.malliina.pimpcloud.ws
 import java.util.UUID
 
 import akka.stream.QueueOfferResult.{Dropped, Enqueued, Failure, QueueClosed}
-import akka.stream.scaladsl.SourceQueue
+import akka.stream.scaladsl.{Source, SourceQueue}
 import akka.stream.{Materializer, QueueOfferResult}
 import akka.util.ByteString
 import com.malliina.concurrent.FutureOps
 import com.malliina.musicpimp.audio.Track
+import com.malliina.musicpimp.cloud.{PimpServerSocket, UserRequest}
+import com.malliina.musicpimp.json.JsonStrings.{Cancel, Id, Range, TrackKey}
 import com.malliina.pimpcloud.models.CloudID
 import com.malliina.pimpcloud.streams.{ChannelInfo, StreamEndpoint}
 import com.malliina.pimpcloud.ws.NoCacheByteStreams.log
 import com.malliina.play.streams.StreamParsers
 import com.malliina.play.{ContentRange, Streaming}
+import com.malliina.ws.Streamer
 import play.api.Logger
-import play.api.libs.json.JsValue
-import play.api.mvc.{BodyParser, MultipartFormData, RequestHeader, Result}
+import play.api.http.HttpEntity
+import play.api.libs.json.{JsValue, Json, Writes}
+import play.api.mvc._
 import play.mvc.Http.HeaderNames
 
 import scala.collection.concurrent.TrieMap
@@ -42,7 +46,8 @@ class NoCacheByteStreams(id: CloudID,
                          val channel: SourceQueue[JsValue],
                          val mat: Materializer,
                          val onUpdate: () => Unit)
-  extends ByteStreamBase {
+  extends Streamer {
+  implicit val ec = mat.executionContext
 
   private val iteratees = TrieMap.empty[UUID, StreamEndpoint]
 
@@ -74,6 +79,42 @@ class NoCacheByteStreams(id: CloudID,
     connectSource(uuid, src, track, range)
   }
 
+  protected def connectSource(uuid: UUID, source: Source[ByteString, _], track: Track, range: ContentRange): Future[Option[Result]] = {
+    val result = resultify(source, range)
+    val connectSuccess = connect(uuid, track, range)
+    connectSuccess.map(isSuccess => if (isSuccess) Option(result) else None)
+  }
+
+  /**
+    * @return true if the server received the upload request, false otherwise
+    */
+  private def connect(uuid: UUID, track: Track, range: ContentRange): Future[Boolean] = {
+    tryConnect(uuid, track, range) map { result =>
+      log debug s"Connected $uuid for ${track.title} with range $range"
+      true
+    } recover {
+      case t =>
+        log.warn(s"Unable to connect $uuid for ${track.title} with range $range", t)
+        remove(uuid, isCanceled = true)
+        false
+    }
+  }
+
+  private def tryConnect(uuid: UUID, track: Track, range: ContentRange): Future[QueueOfferResult] = {
+    streamChanged()
+    def trackRequest(body: JsValue) = UserRequest(TrackKey, body, uuid, PimpServerSocket.nobody)
+    val body =
+      if (range.isAll) PimpServerSocket.idBody(track.id)
+      else PimpServerSocket.body(Id -> track.id, Range -> range)
+    sendMessage(trackRequest(body))
+  }
+
+  def sendMessage[M: Writes](msg: M) = channel offer Json.toJson(msg)
+
+  def cancelMessage(uuid: UUID) = UserRequest(Cancel, Json.obj(), uuid, PimpServerSocket.nobody)
+
+  protected def streamChanged(): Unit = onUpdate()
+
   override def parser(uuid: UUID): Option[BodyParser[MultipartFormData[Long]]] = {
     get(uuid) map { info =>
       // info.send is called sequentially, i.e. the next send call occurs only after the previous call has completed
@@ -83,7 +124,12 @@ class NoCacheByteStreams(id: CloudID,
     }
   }
 
-  def analyzeResult(dest: StreamEndpoint, bytes: ByteString, result: QueueOfferResult) = {
+  protected def resultify(source: Source[ByteString, _], range: ContentRange): Result = {
+    val status = if (range.isAll) Results.Ok else Results.PartialContent
+    status.sendEntity(HttpEntity.Streamed(source, Option(range.contentLength.toLong), None))
+  }
+
+  protected def analyzeResult(dest: StreamEndpoint, bytes: ByteString, result: QueueOfferResult) = {
     val suffix = s" for ${bytes.length} bytes after offers"
     result match {
       case Enqueued => ()
@@ -93,7 +139,23 @@ class NoCacheByteStreams(id: CloudID,
     }
   }
 
-  def onOfferError(uuid: UUID, dest: StreamEndpoint, bytes: ByteString): PartialFunction[Throwable, Future[Unit]] = {
+  override def remove(uuid: UUID, isCanceled: Boolean): Future[Unit] = {
+    val cancellation =
+      if (isCanceled) sendMessage(cancelMessage(uuid))
+      else Future.successful(())
+    val op = for {
+      _ <- disposeUUID(uuid)
+      _ <- cancellation
+    } yield {
+      ()
+    }
+    op.recoverAll(t => log.error(s"Disposal failed for request $uuid", t)) map { _ =>
+      log info s"Notifying listeners of changed streams due to removal of $uuid"
+      streamChanged()
+    }
+  }
+
+  protected def onOfferError(uuid: UUID, dest: StreamEndpoint, bytes: ByteString): PartialFunction[Throwable, Future[Unit]] = {
     case iae: IllegalArgumentException if Option(iae.getMessage).contains("Stream is terminated. SourceQueue is detached") =>
       log.info(s"Client disconnected $uuid")
       remove(uuid, isCanceled = true)
@@ -115,7 +177,7 @@ class NoCacheByteStreams(id: CloudID,
       .getOrElse(Future.successful(()))
   }
 
-  def exists(uuid: UUID) = iteratees contains uuid
+  def exists(uuid: UUID): Boolean = iteratees contains uuid
 
   def get(uuid: UUID): Option[StreamEndpoint] = iteratees get uuid
 }

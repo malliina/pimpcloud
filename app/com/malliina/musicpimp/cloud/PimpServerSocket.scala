@@ -2,7 +2,7 @@ package com.malliina.musicpimp.cloud
 
 import akka.stream.Materializer
 import akka.stream.scaladsl.SourceQueue
-import akka.util.ByteString
+import com.malliina.concurrent.ExecutionContexts.cached
 import com.malliina.concurrent.FutureOps
 import com.malliina.musicpimp.audio.{Directory, Track}
 import com.malliina.musicpimp.cloud.PimpMessages.Version
@@ -10,11 +10,10 @@ import com.malliina.musicpimp.cloud.PimpServerSocket.{body, idBody, nobody}
 import com.malliina.musicpimp.json.JsonStrings._
 import com.malliina.musicpimp.models._
 import com.malliina.pimpcloud.models._
-import com.malliina.pimpcloud.ws.{NoCacheByteStreams, StreamBase}
+import com.malliina.pimpcloud.ws.NoCacheByteStreams
 import com.malliina.play.ContentRange
 import com.malliina.play.models.{Password, Username}
-import com.malliina.ws.JsonFutureSocket
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import com.malliina.ws.{JsonFutureSocket, Streamer}
 import play.api.libs.json._
 import play.api.mvc.{RequestHeader, Result}
 
@@ -47,7 +46,7 @@ class PimpServerSocket(channel: SourceQueue[JsValue],
                        onUpdate: () => Unit)
   extends JsonFutureSocket(channel, id) {
 
-  val fileTransfers: StreamBase[ByteString] = new NoCacheByteStreams(id, channel, mat, onUpdate)
+  val fileTransfers: Streamer = new NoCacheByteStreams(id, channel, mat, onUpdate)
 
   def requestTrack(track: Track, contentRange: ContentRange, req: RequestHeader): Future[Option[Result]] =
     fileTransfers.requestTrack(track, contentRange, req)

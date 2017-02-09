@@ -22,7 +22,7 @@ class StreamReceiver(mat: Materializer) extends Controller {
     log debug s"Streaming at most $maxSize for request $requestId"
     val composedParser = recoveringParser(parse.maxLength(maxSize.toBytes, parser)(mat), transfers, requestId)
     Action(composedParser) { parsedRequest =>
-      transfers.remove(requestId, isCanceled = false)
+      transfers.remove(requestId, shouldAbort = false)
       parsedRequest.body.fold(
         tooMuch => {
           log error s"Max size of ${tooMuch.length} exceeded for request $requestId"
@@ -46,7 +46,7 @@ class StreamReceiver(mat: Materializer) extends Controller {
       val clientClosedMessage = "An existing connection was forcibly closed by the remote host"
 
       // this is redundant since the request is cleaned up elsewhere as well
-      def cleanup() = transfers.remove(requestId, isCanceled = false)
+      def cleanup() = transfers.remove(requestId, shouldAbort = false)
 
       // if the client disconnects while an upload is in progress, a BodyParser throws
       // java.io.IOException: An existing connection was forcibly closed by the remote host

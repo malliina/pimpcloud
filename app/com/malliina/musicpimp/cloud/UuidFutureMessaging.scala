@@ -2,12 +2,12 @@ package com.malliina.musicpimp.cloud
 
 import java.util.UUID
 
+import com.malliina.concurrent.ExecutionContexts.cached
 import com.malliina.concurrent.Observables
 import com.malliina.musicpimp.cloud.UuidFutureMessaging.log
 import com.malliina.pimpcloud.models.PhoneRequest
 import com.malliina.play.models.Username
 import play.api.Logger
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json.{JsValue, Json}
 
 import scala.collection.concurrent.TrieMap

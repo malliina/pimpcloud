@@ -1,7 +1,7 @@
 package com.malliina.pimpcloud
 
+import com.malliina.concurrent.ExecutionContexts.cached
 import com.malliina.play.ws.{SocketClient, WebSocketBase}
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
 import scala.concurrent.Future
 

@@ -1,9 +1,9 @@
 package controllers
 
+import com.malliina.concurrent.ExecutionContexts.cached
 import com.malliina.musicpimp.messaging.{PushTask, Pusher}
 import com.malliina.pimpcloud.ErrorResponse
 import controllers.Push.{Body, Cmd, PushValue, ResultKey}
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json.{JsError, JsResult, JsValue, Json}
 import play.api.mvc.{Action, Controller}
 

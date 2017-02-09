@@ -3,10 +3,10 @@ package com.malliina.pimpcloud.actors
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.pattern.ask
 import akka.util.Timeout
+import com.malliina.concurrent.ExecutionContexts.cached
 import com.malliina.musicpimp.cloud.PimpServerSocket
 import com.malliina.pimpcloud.AsyncClientHandler
 import com.malliina.pimpcloud.ws.PhoneClient
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.libs.json.JsValue
 import rx.lang.scala.subjects.BehaviorSubject
 

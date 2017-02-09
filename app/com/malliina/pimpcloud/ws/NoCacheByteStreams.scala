@@ -167,7 +167,7 @@ class NoCacheByteStreams(id: CloudID,
   }
 
   protected def onOfferError(uuid: UUID, dest: StreamEndpoint, bytes: ByteString): PartialFunction[Throwable, Future[Unit]] = {
-    case iae: IllegalArgumentException if Option(iae.getMessage).contains("Stream is terminated. SourceQueue is detached") =>
+    case iae: IllegalStateException if Option(iae.getMessage).contains("Stream is terminated. SourceQueue is detached") =>
       log.info(s"Client disconnected $uuid")
       remove(uuid, isCanceled = true)
     case other: Throwable =>

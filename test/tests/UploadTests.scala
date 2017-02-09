@@ -8,13 +8,14 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import akka.util.ByteString
 import com.malliina.concurrent.FutureOps
-import com.malliina.play.Streaming
+import com.malliina.musicpimp.audio.Track
+import com.malliina.play.{ContentRange, Streaming}
 import com.malliina.storage.StorageLong
 import com.malliina.ws.Streamer
 import controllers.{StreamReceiver, Uploads}
 import play.api.libs.Files.TemporaryFile
 import play.api.mvc.MultipartFormData.FilePart
-import play.api.mvc.{BodyParser, MaxSizeExceeded, MultipartFormData, Request}
+import play.api.mvc._
 import play.api.test.{FakeHeaders, FakeRequest}
 import play.core.parsers.Multipart
 
@@ -53,6 +54,13 @@ class UploadTests extends BaseSuite {
     }, Streamer.DefaultMaxUploadSize)(mat)
     val receiver = new StreamReceiver(mat)
     val streamer = new Streamer {
+      override def snapshot = Nil
+
+      override def exists(uuid: UUID) = false
+
+      override def requestTrack(track: Track, range: ContentRange, req: RequestHeader) =
+        Future.successful(None)
+
       override def parser(uuid: UUID): Option[BodyParser[MultipartFormData[Long]]] = {
         println("Not here")
         None

@@ -47,8 +47,8 @@ class NoCacheByteStreams(id: CloudID,
                          val mat: Materializer,
                          val onUpdate: () => Unit)
   extends Streamer {
-  implicit val ec = mat.executionContext
 
+  implicit val ec = mat.executionContext
   private val iteratees = TrieMap.empty[UUID, StreamEndpoint]
 
   def snapshot: Seq[StreamData] = iteratees.map {
@@ -85,28 +85,44 @@ class NoCacheByteStreams(id: CloudID,
     connectSuccess.map(isSuccess => if (isSuccess) Option(result) else None)
   }
 
+  protected def resultify(source: Source[ByteString, _], range: ContentRange): Result = {
+    val status = if (range.isAll) Results.Ok else Results.PartialContent
+    status.sendEntity(HttpEntity.Streamed(source, Option(range.contentLength.toLong), None))
+  }
+
   /**
     * @return true if the server received the upload request, false otherwise
     */
   private def connect(uuid: UUID, track: Track, range: ContentRange): Future[Boolean] = {
-    tryConnect(uuid, track, range) map { result =>
-      log debug s"Connected $uuid for ${track.title} with range $range"
-      true
+    val suffix = s"$uuid for ${track.title} with range $range"
+
+    def fail(): Boolean = {
+      remove(uuid, isCanceled = true)
+      false
+    }
+
+    sendMessage(buildTrackRequest(uuid, track, range)) map {
+      case Enqueued =>
+        log debug s"Connected $suffix"
+        true
+      case other =>
+        log error s"Encountered $other for $suffix"
+        fail()
     } recover {
       case t =>
-        log.warn(s"Unable to connect $uuid for ${track.title} with range $range", t)
-        remove(uuid, isCanceled = true)
-        false
+        log.error(s"Failed to connect $suffix", t)
+        fail()
     }
   }
 
-  private def tryConnect(uuid: UUID, track: Track, range: ContentRange): Future[QueueOfferResult] = {
-    streamChanged()
+  private def buildTrackRequest(uuid: UUID, track: Track, range: ContentRange) = {
     def trackRequest(body: JsValue) = UserRequest(TrackKey, body, uuid, PimpServerSocket.nobody)
+
+    streamChanged()
     val body =
       if (range.isAll) PimpServerSocket.idBody(track.id)
       else PimpServerSocket.body(Id -> track.id, Range -> range)
-    sendMessage(trackRequest(body))
+    trackRequest(body)
   }
 
   def sendMessage[M: Writes](msg: M) = channel offer Json.toJson(msg)
@@ -124,13 +140,8 @@ class NoCacheByteStreams(id: CloudID,
     }
   }
 
-  protected def resultify(source: Source[ByteString, _], range: ContentRange): Result = {
-    val status = if (range.isAll) Results.Ok else Results.PartialContent
-    status.sendEntity(HttpEntity.Streamed(source, Option(range.contentLength.toLong), None))
-  }
-
   protected def analyzeResult(dest: StreamEndpoint, bytes: ByteString, result: QueueOfferResult) = {
-    val suffix = s" for ${bytes.length} bytes after offers"
+    val suffix = s" for ${bytes.length} bytes of ${dest.describe}"
     result match {
       case Enqueued => ()
       case Dropped => log.warn(s"Offer dropped$suffix")

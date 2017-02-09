@@ -36,17 +36,15 @@ object PlayBuild {
   val malliinaGroup = "com.malliina"
 
   val pimpcloudSettings = jenkinsSettings ++ linuxSettings ++ scalaJSSettings ++ Seq(
-    version := "1.6.1",
+    version := "1.6.2",
     scalaVersion := "2.11.8",
     resolvers += Resolver.bintrayRepo("malliina", "maven"),
     libraryDependencies ++= Seq(
-      malliinaGroup %% "util-play" % "3.3.3",
-      malliinaGroup %% "mobile-push" % "1.6.1",
+      malliinaGroup %% "util-play" % "3.5.2",
+      malliinaGroup %% "mobile-push" % "1.7.0",
       "org.java-websocket" % "Java-WebSocket" % "1.3.0",
-      "com.lihaoyi" %% "scalatags" % "0.6.2",
       PlayImport.filters,
-      PlayImport.cache,
-      "org.scalatestplus.play" %% "scalatestplus-play" % "1.5.1" % Test
+      PlayImport.cache
     ),
     javacOptions ++= Seq(
       "-source", "1.8",

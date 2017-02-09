@@ -15,4 +15,6 @@ trait StreamEndpoint {
   def send(bytes: ByteString): Future[QueueOfferResult]
 
   def close(): Future[QueueOfferResult]
+
+  def describe: String = s"${track.title} with range $range"
 }

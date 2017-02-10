@@ -10,6 +10,7 @@ case class PushResult(apns: Seq[APNSResult],
                       wns: Seq[WNSResult])
 
 object PushResult {
+  val empty = PushResult(Nil, Nil, Nil, Nil, Nil)
   // TODO add these to mobile-push
   implicit val gcmResponseJson = Json.writes[GCMResponse]
   implicit val mappedGcmResponseJson = Json.writes[MappedGCMResponse]

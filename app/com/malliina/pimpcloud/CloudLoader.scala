@@ -1,28 +1,22 @@
 package com.malliina.pimpcloud
 
-import com.malliina.musicpimp.messaging.Pusher
+import com.malliina.musicpimp.messaging.{ProdPusher, Pusher}
+import com.malliina.play.app.DefaultApp
 import com.malliina.play.controllers.AccountForms
 import controllers._
 import play.api.ApplicationLoader.Context
 import play.api.mvc.EssentialFilter
-import play.api.{ApplicationLoader, BuiltInComponentsFromContext, LoggerConfigurator, Mode}
+import play.api.{BuiltInComponentsFromContext, Mode}
 import play.filters.gzip.GzipFilter
 import router.Routes
 
-class CloudLoader extends ApplicationLoader {
-  def load(context: Context) = {
-    LoggerConfigurator(context.environment.classLoader)
-      .foreach(_.configure(context.environment))
-    new CloudComponents(context).application
-  }
-}
+class CloudLoader extends DefaultApp(new CloudComponents(_, ProdPusher.fromConf))
 
-class CloudComponents(context: Context) extends BuiltInComponentsFromContext(context) {
+class CloudComponents(context: Context, val pusher: Pusher) extends BuiltInComponentsFromContext(context) {
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(new GzipFilter())
 
   // Components
   lazy val auth = new CloudAuth(materializer)
-  lazy val pusher = Pusher.fromConf
   val forms = new AccountForms
   lazy val joined = new JoinedSockets(materializer)
   lazy val s = joined.servers

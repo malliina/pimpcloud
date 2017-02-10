@@ -26,7 +26,7 @@ object PlayBuild {
         "com.lihaoyi" %%% "scalatags" % "0.6.2",
         "com.lihaoyi" %%% "upickle" % "0.4.3",
         "be.doeraene" %%% "scalajs-jquery" % "0.9.1"
-//        "org.scala-js" %%% "scalajs-dom" % "0.9.1"
+        //        "org.scala-js" %%% "scalajs-dom" % "0.9.1"
       )
     )
 
@@ -34,13 +34,15 @@ object PlayBuild {
     .settings(pimpcloudSettings: _*)
 
   val malliinaGroup = "com.malliina"
+  val utilPlayDep = malliinaGroup %% "util-play" % "3.5.2"
 
   val pimpcloudSettings = jenkinsSettings ++ linuxSettings ++ scalaJSSettings ++ Seq(
     version := "1.6.2",
     scalaVersion := "2.11.8",
     resolvers += Resolver.bintrayRepo("malliina", "maven"),
     libraryDependencies ++= Seq(
-      malliinaGroup %% "util-play" % "3.5.2",
+      utilPlayDep,
+      utilPlayDep % Test classifier "tests",
       malliinaGroup %% "mobile-push" % "1.7.0",
       "org.java-websocket" % "Java-WebSocket" % "1.3.0",
       PlayImport.filters,

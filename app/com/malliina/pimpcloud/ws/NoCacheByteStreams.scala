@@ -101,7 +101,8 @@ class NoCacheByteStreams(id: CloudID,
       false
     }
 
-    sendMessage(buildTrackRequest(uuid, track, range)) map {
+    val request = buildTrackRequest(uuid, track, range)
+    sendMessage(request) map {
       case Enqueued =>
         log debug s"Connected $suffix"
         true

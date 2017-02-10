@@ -13,6 +13,7 @@ import com.malliina.play.{ContentRange, Streaming}
 import com.malliina.storage.StorageLong
 import com.malliina.ws.Streamer
 import controllers.{StreamReceiver, Uploads}
+import org.scalatest.FunSuite
 import play.api.libs.Files.TemporaryFile
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.mvc._
@@ -21,7 +22,7 @@ import play.core.parsers.Multipart
 
 import scala.concurrent.Future
 
-class UploadTests extends BaseSuite {
+class UploadTests extends FunSuite with BaseSuite {
 
   val as = ActorSystem("test")
   implicit val mat = ActorMaterializer()(as)
@@ -32,7 +33,7 @@ class UploadTests extends BaseSuite {
   val filePath = s"E:\\musik\\Elektroniskt\\A State Of Trance 600 Expedition\\CD 2 - ATB\\$fileName"
   val testFile = Paths get filePath
 
-  test("can multipart") {
+  ignore("can multipart") {
     // this test is broken
     val req = multipartRequest(testFile)
     val r = await(ctrl.up.apply(req))
@@ -40,7 +41,7 @@ class UploadTests extends BaseSuite {
     assert(r.header.status === 200)
   }
 
-  test("can do it") {
+  ignore("can do it") {
     val (queue, source) = Streaming.sourceQueue[ByteString](mat)
     val parser = TestParsers.multiPartByteStreaming(bytes => {
       println(s"Got bytes $bytes")
@@ -102,16 +103,14 @@ class UploadTests extends BaseSuite {
     FakeRequest("POST", "/test", FakeHeaders(Seq("boundary" -> "123456789", "k" -> "v")), multiDataLengths)
   }
 
-  /**
-    * Parse the content as multipart/form-data
+  /** Parse the content as multipart/form-data
     */
   def multipartFormData: BodyParser[MultipartFormData[TemporaryFile]] =
-  multipartFormData(Multipart.handleFilePartAsTemporaryFile)
+    multipartFormData(Multipart.handleFilePartAsTemporaryFile)
 
   val defaultLengths: Int = 512 * 1024 * 1024
 
-  /**
-    * Parse the content as multipart/form-data
+  /** Parse the content as multipart/form-data
     *
     * @param filePartHandler Handles file parts.
     */

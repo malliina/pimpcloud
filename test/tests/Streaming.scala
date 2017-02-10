@@ -3,13 +3,12 @@ package tests
 import java.nio.file.{Files, Path, Paths}
 import java.util.UUID
 
+import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{FileIO, Flow, Keep, Sink, Source}
-import akka.stream.{Materializer, OverflowStrategy}
 import akka.util.ByteString
 import com.malliina.http.{MultipartRequest, TrustAllMultipartRequest}
 import com.malliina.musicpimp.audio.Track
 import com.malliina.musicpimp.cloud.PimpServerSocket
-import com.malliina.pimpcloud.CloudComponents
 import com.malliina.pimpcloud.auth.FakeAuth
 import com.malliina.pimpcloud.models.{CloudID, TrackID}
 import com.malliina.play.{ContentRange, Streaming}
@@ -20,13 +19,12 @@ import org.apache.commons.io.FileUtils
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.impl.client.HttpClientBuilder
 import play.api.libs.json.JsValue
-import play.api.mvc.Controller
 import play.api.test.FakeRequest
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future, Promise}
 
-class StreamingTests extends BaseSuite with OneAppPerSuite2[CloudComponents] with WithAppComponents {
+class StreamingTests extends TestSuite with BaseSuite {
   implicit val mat = app.materializer
   implicit val ec = mat.executionContext
 
@@ -46,7 +44,7 @@ class StreamingTests extends BaseSuite with OneAppPerSuite2[CloudComponents] wit
     await(handler)
   }
 
-  test("file to source") {
+  ignore("file to source") {
     val (queue, source) = Streaming.sourceQueue[ByteString](app.materializer)
     val byteCalculator: Sink[ByteString, Future[Long]] = Sink.fold[Long, ByteString](0)((acc, bytes) => acc + bytes.length)
     val asyncSink = Flow[ByteString].mapAsync(1)(bytes => queue.offer(Option(bytes)).map(_ => bytes)).toMat(byteCalculator)(Keep.right)
@@ -56,7 +54,7 @@ class StreamingTests extends BaseSuite with OneAppPerSuite2[CloudComponents] wit
     println(bytes)
   }
 
-  test("upload") {
+  ignore("upload") {
     // Register file listener
     val listenUri = "http://localhost:9000/testfile"
     val client = HttpClientBuilder.create().build()
@@ -108,19 +106,4 @@ class StreamingTests extends BaseSuite with OneAppPerSuite2[CloudComponents] wit
     socket.requestTrack(Track(TrackID(""), "", "", "", 1.second, 1.megs), ContentRange.all(1.megs), FakeRequest())
     socket.fileTransfers.parser(UUID.fromString("123"))
   }
-}
-
-class TestCtrl(mat: Materializer) extends Controller {
-  implicit val ec = mat.executionContext
-
-
-  //  def hm() = EssentialAction {
-  //
-  //    val parser = TestParsers.multiPartByteStreaming(bytes => queue.offer(Option(bytes)).map(_ => ()), 1024.megs)(mat)
-  //    Action(parser) { req =>
-  //      queue.offer(None)
-  //      Ok
-  //    }
-  //    //    Ok.sendEntity(HttpEntity.Streamed(source, None, None))
-  //  }
 }

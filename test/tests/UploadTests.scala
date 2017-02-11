@@ -67,7 +67,7 @@ class UploadTests extends FunSuite with BaseSuite {
         None
       }
 
-      override def remove(uuid: UUID, isCanceled: Boolean): Future[Boolean] =
+      override def remove(uuid: UUID, isCanceled: Boolean, wasSuccess: Boolean): Future[Boolean] =
         Future.successful(false)
     }
     val tempFile = Files.copy(testFile, Files.createTempFile("temp", null), StandardCopyOption.REPLACE_EXISTING)

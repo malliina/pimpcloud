@@ -24,7 +24,7 @@ import play.mvc.Http.HeaderNames
 
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.Future
-import scala.util.{Success, Try}
+import scala.util.Try
 
 object NoCacheByteStreams {
   private val log = Logger(getClass)
@@ -74,37 +74,36 @@ class NoCacheByteStreams(id: CloudID,
   def requestTrack(track: Track, range: ContentRange, req: RequestHeader): Future[Option[Result]] = {
     val uuid = UUID.randomUUID()
     val userAgent = req.headers.get(HeaderNames.USER_AGENT).map(ua => s"user agent $ua") getOrElse "unknown user agent"
-    val describe = s"stream $uuid of track ${track.title} with range ${range.description} for $userAgent from ${req.remoteAddress}"
-    //    val (ref, src) = Source.actorRef[ByteString](0, OverflowStrategy.fail)
-    //      .toMat(Sink.asPublisher(fanout = false))((ref, pub) => (ref, Source.fromPublisher(pub))).run()
     val (queue, source) = Streaming.sourceQueue[ByteString](mat, NoCacheByteStreams.ByteStringBufferSize)
     iteratees += (uuid -> new ChannelInfo(queue, id, track, range))
-    log.info(s"Created $describe")
+    log.info(s"Created stream $uuid of track ${track.title} with range ${range.description} for $userAgent from ${req.remoteAddress}")
     // Watches completion and disposes of resources early if the client (= mobile device) disconnects mid-request
     val src = source.watchTermination()((_, task) => task.onComplete(res => {
-      val prefix = s"Completed $describe"
-      res match {
-        case Success(_) =>
-          log.info(prefix)
-        case scala.util.Failure(t) =>
-          log.error(s"$prefix with failure", t)
-      }
-      remove(uuid, shouldAbort = true)
+      remove(uuid, shouldAbort = true, wasSuccess = res.isSuccess)
     }))
-
     connectSource(uuid, src, track, range)
   }
 
   def exists(uuid: UUID): Boolean = iteratees contains uuid
 
-  override def remove(uuid: UUID, shouldAbort: Boolean): Future[Boolean] = {
-    val disposal = disposeUUID(uuid)
-      .map(fut => fut.recoverAll(t => log.error(s"Disposal failed for $uuid", t)).map(_ => true))
-      .getOrElse(Future.successful(false))
+  override def remove(uuid: UUID, shouldAbort: Boolean, wasSuccess: Boolean): Future[Boolean] = {
+    val desc = if (wasSuccess) "successful" else "failed"
+    val description = s"$desc request $uuid"
+    val detachedMessage = "Stream is terminated. SourceQueue is detached"
+    val disposal = disposeUUID(uuid) map { fut =>
+      fut.map(_ => log.info(s"Removed $description")).recover {
+        case ist: IllegalStateException if Option(ist.getMessage).contains(detachedMessage) =>
+          log.info(s"Removed $description")
+        case t =>
+          log.error(s"Removed but failed to dispose $description", t)
+      }.map(_ => true)
+    } getOrElse {
+      Future.successful(false)
+    }
     val cancellation =
       if (shouldAbort) {
         sendMessage(cancelMessage(uuid))
-          .recoverAll(t => log.error(s"Cancellation failed for $uuid", t))
+          .recoverAll(t => log.error(s"Cancellation of $description failed", t))
       } else {
         Future.successful(())
       }
@@ -135,7 +134,7 @@ class NoCacheByteStreams(id: CloudID,
     */
   private def connect(uuid: UUID, track: Track, range: ContentRange): Future[Boolean] = {
     def fail(): Boolean = {
-      remove(uuid, shouldAbort = true)
+      remove(uuid, shouldAbort = true, wasSuccess = false)
       false
     }
 
@@ -163,9 +162,8 @@ class NoCacheByteStreams(id: CloudID,
     * @param uuid the transfer ID
     */
   private def disposeUUID(uuid: UUID): Option[Future[StreamEndpoint]] = {
-    (iteratees remove uuid).map { e =>
-      log info s"Removed $uuid"
-      Try(streamChanged()).recover {
+    (iteratees remove uuid) map { e =>
+      Try(streamChanged()) recover {
         case t => log.error(s"Unable to notify of changed streams", t)
       }
       e.close().map(_ => e)
@@ -198,10 +196,10 @@ class NoCacheByteStreams(id: CloudID,
   protected def onOfferError(uuid: UUID, dest: StreamEndpoint, bytes: ByteString): PartialFunction[Throwable, Future[Boolean]] = {
     case iae: IllegalStateException if Option(iae.getMessage).contains("Stream is terminated. SourceQueue is detached") =>
       log.info(s"Client disconnected $uuid")
-      remove(uuid, shouldAbort = true)
+      remove(uuid, shouldAbort = true, wasSuccess = false)
     case other: Throwable =>
       log.error(s"Offer of ${bytes.length} bytes failed for request $uuid", other)
-      remove(uuid, shouldAbort = true)
+      remove(uuid, shouldAbort = true, wasSuccess = false)
   }
 
   private def get(uuid: UUID): Option[StreamEndpoint] = iteratees get uuid

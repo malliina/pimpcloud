@@ -30,5 +30,5 @@ trait Streamer {
     * @param shouldAbort if true, the server is informed that it should cancel the request
     * @return true if `uuid` was found, false otherwise
     */
-  def remove(uuid: UUID, shouldAbort: Boolean): Future[Boolean]
+  def remove(uuid: UUID, shouldAbort: Boolean, wasSuccess: Boolean): Future[Boolean]
 }

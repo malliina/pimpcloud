@@ -112,10 +112,6 @@ class NoCacheByteStreams(id: CloudID,
       didDispose <- disposal
       _ <- cancellation
     } yield {
-      if (didDispose) {
-        log info s"Notifying listeners of changed streams due to removal of $uuid"
-        streamChanged()
-      }
       didDispose
     }
   }
@@ -169,7 +165,9 @@ class NoCacheByteStreams(id: CloudID,
   private def disposeUUID(uuid: UUID): Option[Future[StreamEndpoint]] = {
     (iteratees remove uuid).map { e =>
       log info s"Removed $uuid"
-      Try(streamChanged())
+      Try(streamChanged()).recover {
+        case t => log.error(s"Unable to notify of changed streams", t)
+      }
       e.close().map(_ => e)
     }
   }

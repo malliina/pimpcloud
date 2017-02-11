@@ -24,7 +24,7 @@ import play.mvc.Http.HeaderNames
 
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.Future
-import scala.util.Success
+import scala.util.{Success, Try}
 
 object NoCacheByteStreams {
   private val log = Logger(getClass)
@@ -167,18 +167,18 @@ class NoCacheByteStreams(id: CloudID,
     * @param uuid the transfer ID
     */
   private def disposeUUID(uuid: UUID): Option[Future[StreamEndpoint]] = {
-    (iteratees remove uuid)
-      .map(e => e.close().map(_ => e))
+    (iteratees remove uuid).map { e =>
+      log info s"Removed $uuid"
+      Try(streamChanged())
+      e.close().map(_ => e)
+    }
   }
 
   private def buildTrackRequest(uuid: UUID, track: Track, range: ContentRange) = {
-    def trackRequest(body: JsValue) = UserRequest(TrackKey, body, uuid, PimpServerSocket.nobody)
-
-    streamChanged()
     val body =
       if (range.isAll) PimpServerSocket.idBody(track.id)
       else PimpServerSocket.body(Id -> track.id, Range -> range)
-    trackRequest(body)
+    UserRequest(TrackKey, body, uuid, PimpServerSocket.nobody)
   }
 
   protected def sendMessage[M: Writes](msg: M) = channel offer Json.toJson(msg)

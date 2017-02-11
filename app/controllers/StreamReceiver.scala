@@ -43,7 +43,9 @@ class StreamReceiver(mat: Materializer) extends Controller {
     */
   def recoveringParser[T](p: BodyParser[T], transfers: Streamer, requestId: UUID): BodyParser[T] =
     new BodyParser[T] {
+
       val clientClosedMessage = "An existing connection was forcibly closed by the remote host"
+      val ioMessage = "Connection reset by peer"
 
       // this is redundant since the request is cleaned up elsewhere as well
       def cleanup() = transfers.remove(requestId, shouldAbort = false)
@@ -51,8 +53,8 @@ class StreamReceiver(mat: Materializer) extends Controller {
       // if the client disconnects while an upload is in progress, a BodyParser throws
       // java.io.IOException: An existing connection was forcibly closed by the remote host
       override def apply(req: RequestHeader) = p(req) recoverWith {
-        case t: IOException if Option(t.getMessage) contains clientClosedMessage =>
-          log info s"Client cancelled upload for request $requestId"
+        case t: IOException if Option(t.getMessage) exists (msg => Seq(clientClosedMessage, ioMessage).contains(msg)) =>
+          log info s"Server cancelled upload for request $requestId"
           cleanup()
           Future.successful(Left(PartialContent))
         case t: Throwable =>

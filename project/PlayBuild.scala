@@ -37,7 +37,7 @@ object PlayBuild {
     .settings(pimpcloudSettings: _*)
 
   val malliinaGroup = "com.malliina"
-  val utilPlayDep = malliinaGroup %% "util-play" % "3.5.3-SNAPSHOT"
+  val utilPlayDep = malliinaGroup %% "util-play" % "3.5.3"
 
   val pimpcloudSettings = jenkinsSettings ++ linuxSettings ++ scalaJSSettings ++ Seq(
     buildInfoKeys += BuildInfoKey("frontName" -> (name in frontend).value),
@@ -51,11 +51,6 @@ object PlayBuild {
       "org.java-websocket" % "Java-WebSocket" % "1.3.0",
       PlayImport.filters,
       PlayImport.cache
-    ),
-    javacOptions ++= Seq(
-      "-source", "1.8",
-      "-target", "1.8",
-      "-Xlint:-options"
     ),
     PlayKeys.externalizeResources := false,
     libs += (packageBin in Assets).value.toPath

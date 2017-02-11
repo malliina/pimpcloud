@@ -43,6 +43,4 @@ class AdminOAuth(creds: GoogleOAuthCredentials, val mat: Materializer) extends O
   override def onOAuthSuccess: Call = routes.Logs.index()
 
   override def ejectCall: Call = routes.AdminAuth.eject()
-
-  def eject: Result = ejectWith(logoutMessage)
 }

@@ -4,7 +4,7 @@ import com.malliina.concurrent.FutureOps
 import com.malliina.pimpcloud.CloudCredentials
 import com.malliina.pimpcloud.auth.CloudAuthentication
 import com.malliina.pimpcloud.models.CloudID
-import com.malliina.play.controllers.{AccountForms, BaseController}
+import com.malliina.play.controllers.{AccountForms, Caching}
 import com.malliina.play.models.{Password, Username}
 import controllers.Web.log
 import play.api.Logger
@@ -28,7 +28,9 @@ class Web(tags: CloudTags,
     forms.passFormKey -> Password.mapping
   )(CloudCredentials.apply)(CloudCredentials.unapply))
 
-  def ping = Action { BaseController.NoCache(Ok) }
+  def ping = Action {
+    Caching.NoCache(Ok)
+  }
 
   def login = Action { req =>
     Ok(loginPage(cloudForm, req.flash))

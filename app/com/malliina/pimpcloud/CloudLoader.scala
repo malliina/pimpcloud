@@ -19,7 +19,7 @@ class ProdComponents(context: Context) extends CloudComponents(context, ProdPush
 }
 
 abstract class CloudComponents(context: Context,
-                      pusher: Pusher,
+                               pusher: Pusher,
                                oauthCreds: GoogleOAuthCredentials) extends BuiltInComponentsFromContext(context) {
   val adminAuth = new AdminOAuth(oauthCreds, materializer)
 
@@ -33,7 +33,6 @@ abstract class CloudComponents(context: Context,
   lazy val s = joined.servers
   lazy val cloudAuths = joined.auths
   lazy val ps = joined.phones
-  // TODO get sbt-buildinfo to provide the app name for us
   lazy val tags = CloudTags.forApp(BuildInfo.frontName, environment.mode == Mode.Prod)
 
   // Controllers

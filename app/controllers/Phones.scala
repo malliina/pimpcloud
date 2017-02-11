@@ -15,7 +15,7 @@ import com.malliina.pimpcloud.models.{FolderID, PhoneRequest, TrackID}
 import com.malliina.pimpcloud.ws.PhoneSockets
 import com.malliina.pimpcloud.{ErrorMessage, ErrorResponse}
 import com.malliina.play.ContentRange
-import com.malliina.play.controllers.BaseController
+import com.malliina.play.controllers.{Caching}
 import com.malliina.play.http.HttpConstants
 import controllers.Phones.log
 import play.api.Logger
@@ -44,31 +44,42 @@ object Phones {
   def encode(id: String) = URLEncoder.encode(id, EncodingUTF8)
 }
 
-class Phones(tags: CloudTags, val cloudAuths: CloudAuthentication, val phoneSockets: PhoneSockets, val auth: CloudAuth)
-  extends BaseController
-    with PimpContentController
+class Phones(tags: CloudTags,
+             val cloudAuths: CloudAuthentication,
+             val phoneSockets: PhoneSockets,
+             val auth: CloudAuth)
+  extends PimpContentController
     with Controller {
 
   def ping = proxiedGetAction(Ping)
 
-  def pingAuth = proxiedAction((req, socket) => socket.server.pingAuth.map(v => NoCache(Ok(Json toJson v))))
+  def pingAuth = proxiedAction { (req, socket) =>
+    socket.server.pingAuth.map(v => Caching.NoCacheOk(Json toJson v))
+  }
 
-  def rootFolder = folderAction(_.rootFolder, _ => PhoneRequest(RootFolder, Json.obj()))
+  def rootFolder = folderAction(
+    _.rootFolder,
+    _ => PhoneRequest(RootFolder, Json.obj())
+  )
 
-  def folder(id: FolderID) = folderAction(_.folder(id), req => PhoneRequest(FolderKey, PimpServerSocket.idBody(id)))
+  def folder(id: FolderID) = folderAction(
+    _.folder(id),
+    req => PhoneRequest(FolderKey, PimpServerSocket.idBody(id))
+  )
 
   def status = proxiedGetAction(StatusKey)
 
   def search = proxiedAction { (req, socket) =>
     def query(key: String) = (req getQueryString key) map (_.trim) filter (_.nonEmpty)
+
     val termFromQuery = query(Term)
     val limit = query(Limit).filter(i => Try(i.toInt).isSuccess).map(_.toInt) getOrElse Phones.DefaultSearchLimit
-    termFromQuery.fold[Future[Result]](fut(BadRequest))(term => {
+    termFromQuery.fold[Future[Result]](fut(BadRequest)) { term =>
       folderResult(req, socket)(
         _.search(term, limit).map(tracks => Directory(Nil, tracks)),
         PhoneRequest(SearchKey, PimpServerSocket.body(Term -> term, Limit -> limit))
       )
-    })
+    }
   }
 
   def alarms = proxiedGetAction(AlarmsKey)
@@ -166,7 +177,7 @@ class Phones(tags: CloudTags, val cloudAuths: CloudAuthentication, val phoneSock
     * @return an action that responds as JSON with whatever the connected server returned in its `body` field
     */
   def bodyProxied(cmd: String) =
-  customProxied(cmd)(req => req.body.asOpt[JsObject].toRight(s"Body is not JSON"))
+    customProxied(cmd)(req => req.body.asOpt[JsObject].toRight(s"Body is not JSON"))
 
   protected def customProxied(cmd: String)(body: Request[JsValue] => Either[String, JsObject]) =
     proxiedParsedJsonAction(parse.json)(cmd, body)

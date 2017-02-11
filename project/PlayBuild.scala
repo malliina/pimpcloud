@@ -13,6 +13,8 @@ import play.sbt.PlayImport
 import play.sbt.PlayImport.PlayKeys
 import sbt.Keys._
 import sbt._
+import sbtbuildinfo.{BuildInfoKey, BuildInfoPlugin}
+import sbtbuildinfo.BuildInfoKeys.buildInfoKeys
 import webscalajs.ScalaJSWeb
 import webscalajs.WebScalaJS.autoImport.{scalaJSPipeline, scalaJSProjects}
 
@@ -31,12 +33,14 @@ object PlayBuild {
     )
 
   lazy val pimpcloud = PlayProject.default("pimpcloud")
+    .enablePlugins(BuildInfoPlugin)
     .settings(pimpcloudSettings: _*)
 
   val malliinaGroup = "com.malliina"
   val utilPlayDep = malliinaGroup %% "util-play" % "3.5.2"
 
   val pimpcloudSettings = jenkinsSettings ++ linuxSettings ++ scalaJSSettings ++ Seq(
+    buildInfoKeys += BuildInfoKey("frontName" -> (name in frontend).value),
     version := "1.6.2",
     scalaVersion := "2.11.8",
     resolvers += Resolver.bintrayRepo("malliina", "maven"),

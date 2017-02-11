@@ -1,5 +1,6 @@
 package com.malliina.pimpcloud
 
+import akka.stream.Materializer
 import com.malliina.musicpimp.messaging.{ProdPusher, Pusher}
 import com.malliina.play.app.DefaultApp
 import com.malliina.play.controllers.AccountForms
@@ -10,15 +11,22 @@ import play.api.{BuiltInComponentsFromContext, Mode}
 import play.filters.gzip.GzipFilter
 import router.Routes
 
-class CloudLoader extends DefaultApp(new CloudComponents(_, ProdPusher.fromConf))
+class CloudLoader extends DefaultApp(new ProdComponents(_))
 
-class CloudComponents(context: Context, val pusher: Pusher) extends BuiltInComponentsFromContext(context) {
-  override lazy val httpFilters: Seq[EssentialFilter] = Seq(new GzipFilter())
-
+class ProdComponents(context: Context) extends CloudComponents(context, ProdPusher.fromConf) {
   val adminAuth = new AdminOAuth(materializer)
-  val oauthRoutes: OAuthRoutes = new WebOAuthRoutes(adminAuth)
-  val prodAuth: PimpAuth = new ProdAuth(new OAuthCtrl(adminAuth))
+  override lazy val oauthRoutes: OAuthRoutes = new WebOAuthRoutes(adminAuth)
+  override lazy val prodAuth: PimpAuth = new ProdAuth(new OAuthCtrl(adminAuth))
+}
+
+abstract class CloudComponents(context: Context,
+                      pusher: Pusher) extends BuiltInComponentsFromContext(context) {
+  def oauthRoutes: OAuthRoutes
+
+  def prodAuth: PimpAuth
+
   // Components
+  override lazy val httpFilters: Seq[EssentialFilter] = Seq(new GzipFilter())
   lazy val auth = new CloudAuth(materializer)
   val forms = new AccountForms
   lazy val joined = new JoinedSockets(materializer)

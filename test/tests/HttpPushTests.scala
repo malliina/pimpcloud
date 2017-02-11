@@ -2,20 +2,59 @@ package tests
 
 import com.malliina.musicpimp.messaging.{APNSRequest, PushResult, PushTask, Pusher}
 import com.malliina.pimpcloud.CloudComponents
+import com.malliina.play.http.{AuthedRequest, FullRequest}
+import com.malliina.play.models.Username
 import com.malliina.push.apns.{APNSMessage, APNSToken}
-import controllers.Push
+import controllers.{OAuthRoutes, PimpAuth, Push}
+import play.api.ApplicationLoader.Context
 import play.api.libs.json.Json
+import play.api.mvc._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 
 import scala.concurrent.Future
 
-class TestPusher extends Pusher {
+class TestComponents(context: Context) extends CloudComponents(context, TestPusher) {
+  override lazy val oauthRoutes = TestOAuthRoutes
+  override lazy val prodAuth = TestAuth
+
+  def ok = Action(Results.Ok)
+}
+
+object TestAuth extends PimpAuth {
+  val testUser = Username("test")
+
+  override def logged(action: EssentialAction) = action
+
+  override def authenticate(request: RequestHeader): Future[Option[AuthedRequest]] =
+    Future.successful(Option(AuthedRequest(testUser, request)))
+
+  override def authAction(f: FullRequest => Result) = Action { req =>
+    val fakeRequest = new FullRequest(testUser, req, None)
+    f(fakeRequest)
+  }
+
+  override def eject = Results.Ok
+
+  override def messageKey = "message"
+
+  def ok = Action(Results.Ok)
+}
+
+object TestOAuthRoutes extends OAuthRoutes {
+  override def initiate = ok
+
+  override def redirResponse = ok
+
+  def ok = Action(Results.Ok)
+}
+
+object TestPusher extends Pusher {
   override def push(pushTask: PushTask): Future[PushResult] =
     Future.successful(PushResult.empty)
 }
 
-class TestSuite extends AppSuite(new CloudComponents(_, new TestPusher))
+class TestSuite extends AppSuite(new TestComponents(_))
 
 class HttpPushTests extends TestSuite {
   //  val tokenString = "193942675140b3d429311de140bd08ff423712ec9c3ea365b12e61b84609afa9"

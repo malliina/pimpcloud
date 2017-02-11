@@ -34,11 +34,11 @@ GET         /servers/ws                        controllers.Servers.openSocket
 GET         /servers/ws2                       controllers.Servers.openSocket
 GET         /assets/*file                      controllers.Assets.at(path = "/public", file)
 # Admin
-GET         /admin                             controllers.UsageStreaming.index
+GET         /admin                             controllers.Logs.index
 GET         /admin/logs                        controllers.Logs.logs
-GET         /oauth                             controllers.AdminAuth.initiate
+GET         /oauth                             controllers.OAuthRoutes.initiate
 # Must match a callback defined in the Google OAuth developer console
-GET         /oauthcb                           controllers.AdminAuth.redirResponse
+GET         /oauthcb                           controllers.OAuthRoutes.redirResponse
 GET         /admin/eject                       controllers.AdminAuth.eject
 GET         /admin/ws                          controllers.Logs.openSocket
 GET         /admin/usage                       controllers.UsageStreaming.openSocket

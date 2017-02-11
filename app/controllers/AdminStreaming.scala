@@ -1,31 +1,26 @@
 package controllers
 
+import akka.stream.Materializer
 import com.malliina.maps.{ItemMap, StmItemMap}
 import com.malliina.play.controllers.Streaming
 import com.malliina.play.http.AuthedRequest
 import com.malliina.play.models.Username
 import com.malliina.play.ws.JsonSocketClient
-import play.api.http.Writeable
-import play.api.mvc.{EssentialAction, RequestHeader}
-import play.twirl.api.Html
+import play.api.mvc.RequestHeader
 import rx.lang.scala.Subscription
 
 import scala.concurrent.Future
 
-abstract class AdminStreaming(admin: AdminAuth)
-  extends Streaming(admin.mat) {
-
+/** Base class that streams JSON to web clients.
+  *
+  * Check subclasses [[Logs]] and [[UsageStreaming]] for more info.
+  */
+abstract class AdminStreaming(oauth: PimpAuth, mat: Materializer) extends Streaming(mat) {
   override val subscriptions: ItemMap[JsonSocketClient[Username], Subscription] =
     StmItemMap.empty[JsonSocketClient[Username], Subscription]
 
   override def authenticateAsync(req: RequestHeader): Future[AuthedRequest] =
-    getOrFail(admin.authenticate(req))
-
-  def navigate(page: => Html): EssentialAction =
-    navigate(_ => page)
-
-  def navigate[C: Writeable](f: RequestHeader => C): EssentialAction =
-    admin.navigate(f)
+    getOrFail(oauth.authenticate(req))
 
   private def getOrFail[T](f: Future[Option[T]]): Future[T] =
     f.flatMap(_.map(Future.successful).getOrElse(Future.failed(new NoSuchElementException)))

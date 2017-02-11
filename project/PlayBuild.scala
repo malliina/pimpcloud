@@ -5,7 +5,7 @@ import com.malliina.sbt.unix.LinuxKeys.{httpPort, httpsPort}
 import com.malliina.sbt.unix.LinuxPlugin
 import com.malliina.sbtplay.PlayProject
 import com.typesafe.sbt.SbtNativePackager._
-import com.typesafe.sbt.packager.{Keys => PackagerKeys}
+import com.typesafe.sbt.packager.Keys.{maintainer, packageSummary, rpmVendor}
 import com.typesafe.sbt.web.Import.{Assets, pipelineStages}
 import org.scalajs.sbtplugin.ScalaJSPlugin
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
@@ -69,7 +69,7 @@ object PlayBuild {
   def linuxSettings = LinuxPlugin.playSettings ++ Seq(
     httpPort in Linux := Option("disabled"),
     httpsPort in Linux := Option("8457"),
-    PackagerKeys.maintainer := "Michael Skogberg <malliina123@gmail.com>",
+    maintainer := "Michael Skogberg <malliina123@gmail.com>",
     manufacturer := "Skogberg Labs",
     mainClass := Some("com.malliina.pimpcloud.Starter"),
     javaOptions in Universal ++= {
@@ -83,7 +83,7 @@ object PlayBuild {
         "-Dsun.jnu.encoding=UTF-8"
       )
     },
-    PackagerKeys.packageSummary in Linux := "This is the pimpcloud summary.",
-    PackagerKeys.rpmVendor := "Skogberg Labs"
+    packageSummary in Linux := "This is the pimpcloud summary.",
+    rpmVendor := "Skogberg Labs"
   )
 }

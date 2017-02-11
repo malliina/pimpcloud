@@ -14,9 +14,11 @@ import play.api.mvc._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class Web(tags: CloudTags, authActions: CloudAuthentication, exec: ExecutionContext, val forms: AccountForms)
-  extends BaseController
-    with Controller {
+class Web(tags: CloudTags,
+          authActions: CloudAuthentication,
+          exec: ExecutionContext,
+          val forms: AccountForms)
+  extends Controller {
 
   val serverFormKey = "server"
 
@@ -26,7 +28,7 @@ class Web(tags: CloudTags, authActions: CloudAuthentication, exec: ExecutionCont
     forms.passFormKey -> Password.mapping
   )(CloudCredentials.apply)(CloudCredentials.unapply))
 
-  def ping = Action(NoCache(Ok))
+  def ping = Action { BaseController.NoCache(Ok) }
 
   def login = Action { req =>
     Ok(loginPage(cloudForm, req.flash))

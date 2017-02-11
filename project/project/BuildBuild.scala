@@ -20,6 +20,7 @@ object BuildBuild {
     "com.malliina" %% "sbt-packager" % "2.1.0",
     "com.malliina" %% "sbt-jenkins-control" % "0.3.1",
     "org.scala-js" % "sbt-scalajs" % "0.6.13",
-    "com.vmunier" % "sbt-web-scalajs" % "1.0.3"
+    "com.vmunier" % "sbt-web-scalajs" % "1.0.3",
+    "com.eed3si9n" % "sbt-buildinfo" % "0.4.0"
   ) map addSbtPlugin
 }

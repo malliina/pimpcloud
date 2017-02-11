@@ -21,8 +21,6 @@ class HttpPushTests extends TestSuite {
   //  val tokenString = "193942675140b3d429311de140bd08ff423712ec9c3ea365b12e61b84609afa9"
   val tokenString = "81bae54a590a3ae871408bd565d7e441aa952744770783209b2fd54219e3d9fe"
   val testToken = APNSToken.build(tokenString).get
-  //  val testToken = APNSToken.build("6c9969eee832f6ed2a11d04d6daa404db13cc3d97f7298f0c042616fc2a5cc34").get
-  //  val testToken = APNSToken.build("9f3c2f830256954ada78bf56894fa7586307f0eedb7763117c84e0c1eee8347a").get
   val testTask = PushTask(
     Option(
       APNSRequest(
@@ -45,6 +43,7 @@ class HttpPushTests extends TestSuite {
     val result = (contentAsJson(response) \ Push.ResultKey).as[PushResult]
     assert(result.apns.size === 2)
   }
+
   //    "get inactive devices" in {
   //      val conf = PushConfReader.load.apns
   //      val client = new APNSClient(conf.keyStore, conf.keyStorePass)

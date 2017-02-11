@@ -5,18 +5,10 @@ import play.api.libs.json.JsValue
 import play.api.mvc.Call
 import rx.lang.scala.Observable
 
-class UsageStreaming(tags: CloudTags,
-                     servers: Servers,
-                     phones: Phones,
+class UsageStreaming(servers: Servers,
                      phoneSockets: PhoneSockets,
-                     serversController: ServersController,
-                     adminAuth: AdminAuth) extends AdminStreaming(adminAuth) {
+                     auth: PimpAuth) extends AdminStreaming(auth, servers.mat) {
   override def jsonEvents: Observable[JsValue] = servers.usersJson merge phoneSockets.usersJson merge servers.uuidsJson
 
   override def openSocketCall: Call = routes.UsageStreaming.openSocket()
-
-  def index = navigate { req =>
-//    views.html.admin(wsUrl(req))
-    tags.admin
-  }
 }

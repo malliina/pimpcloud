@@ -40,7 +40,7 @@ class CloudTags(scripts: Modifier*) {
           }
         ),
         rowColumn(ColMd6)(
-          leadPara("Try to ", aHref(routes.UsageStreaming.index(), "sign in"), " again.")
+          leadPara("Try to ", aHref(routes.Logs.index(), "sign in"), " again.")
         )
       )
     )
@@ -176,11 +176,11 @@ class CloudTags(scripts: Modifier*) {
         divContainer(
           divClass(NavbarHeader)(
             hamburgerButton,
-            a(`class` := NavbarBrand, href := routes.UsageStreaming.index())("MusicPimp")
+            a(`class` := NavbarBrand, href := routes.Logs.index())("MusicPimp")
           ),
           divClass(s"$NavbarCollapse $Collapse")(
             ulClass(s"$Nav $NavbarNav")(
-              navItem("Home", "home", routes.UsageStreaming.index(), "home"),
+              navItem("Home", "home", routes.Logs.index(), "home"),
               navItem("Logs", "logs", routes.Logs.logs(), "list")
             ),
             ulClass(s"$Nav $NavbarNav $NavbarRight")(

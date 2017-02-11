@@ -79,16 +79,16 @@ class Phones(tags: CloudTags, val cloudAuths: CloudAuthentication, val phoneSock
 
   def beam = bodyProxied(Beam)
 
-  /** Relays track `id` to the client from the target.
+  /** Proxies track `id` from the desired target server to the requesting client.
     *
-    * Sends a message over WebSocket to the target that it should send `id` to this server. This server then forwards the
-    * response of the target to the client.
+    * Sends a message over WebSocket to the target server that it should send `id` to this server.
+    * This server then forwards the response of the target server to the client.
     *
     * @param id id of the requested track
     */
   def track(id: TrackID): EssentialAction = {
     phoneAction { conn =>
-      val socket = conn.server
+      val sourceServer = conn.server
       Action.async { req =>
         val userAgent = req.headers.get(HeaderNames.USER_AGENT) getOrElse "undefined"
         log info s"Serving track $id to user agent $userAgent"
@@ -96,14 +96,15 @@ class Phones(tags: CloudTags, val cloudAuths: CloudAuthentication, val phoneSock
           val name = path.getFileName.toString
           // resolves track metadata from the server so we can set Content-Length
           log debug s"Looking up meta..."
-          socket.meta(id).flatMap { track =>
+          sourceServer.meta(id).flatMap { track =>
             // proxies request
             val trackSize = track.size
             val rangeTry = ContentRange.fromHeader(req, trackSize)
             val rangeOrAll = rangeTry getOrElse ContentRange.all(trackSize)
-            val resultFuture = socket.requestTrack(track, rangeOrAll, req)
+            val resultFuture = sourceServer.requestTrack(track, rangeOrAll, req)
             resultFuture map { resultOpt =>
               resultOpt map { result =>
+                // ranged request support
                 rangeTry map { range =>
                   result.withHeaders(
                     CONTENT_RANGE -> range.contentRange,
@@ -116,7 +117,8 @@ class Phones(tags: CloudTags, val cloudAuths: CloudAuthentication, val phoneSock
                     CONTENT_LENGTH -> trackSize.toBytes.toString,
                     CACHE_CONTROL -> HttpConstants.NoCache,
                     CONTENT_TYPE -> HttpConstants.AudioMpeg,
-                    CONTENT_DISPOSITION -> s"""attachment; filename="$name"""")
+                    CONTENT_DISPOSITION -> s"""attachment; filename="$name""""
+                  )
                 }
               } getOrElse {
                 BadRequest

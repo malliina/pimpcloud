@@ -15,6 +15,9 @@ class CloudLoader extends DefaultApp(new CloudComponents(_, ProdPusher.fromConf)
 class CloudComponents(context: Context, val pusher: Pusher) extends BuiltInComponentsFromContext(context) {
   override lazy val httpFilters: Seq[EssentialFilter] = Seq(new GzipFilter())
 
+  val adminAuth = new AdminOAuth(materializer)
+  val oauthRoutes: OAuthRoutes = new WebOAuthRoutes(adminAuth)
+  val prodAuth: PimpAuth = new ProdAuth(new OAuthCtrl(adminAuth))
   // Components
   lazy val auth = new CloudAuth(materializer)
   val forms = new AccountForms
@@ -24,14 +27,15 @@ class CloudComponents(context: Context, val pusher: Pusher) extends BuiltInCompo
   lazy val ps = joined.phones
   // TODO get sbt-buildinfo to provide the app name for us
   lazy val tags = CloudTags.forApp("frontend", environment.mode == Mode.Prod)
+
   // Controllers
   lazy val push = new Push(pusher)
   lazy val p = new Phones(tags, cloudAuths, ps, auth)
   lazy val sc = new ServersController(cloudAuths, auth)
-  lazy val aa = new AdminAuth(tags, materializer)
-  lazy val l = new Logs(tags, aa)
+  lazy val aa = new AdminAuth(prodAuth, tags, materializer)
+  lazy val l = new Logs(tags, prodAuth, materializer)
   lazy val w = new Web(tags, cloudAuths, materializer.executionContext, forms)
-  lazy val us = new UsageStreaming(tags, s, p, ps, sc, aa)
+  lazy val us = new UsageStreaming(s, ps, prodAuth)
   lazy val as = new Assets(httpErrorHandler)
-  lazy val router = new Routes(httpErrorHandler, p, w, push, ps, sc, s, as, us, l, aa)
+  lazy val router = new Routes(httpErrorHandler, p, w, push, ps, sc, s, as, l, oauthRoutes, aa, us)
 }

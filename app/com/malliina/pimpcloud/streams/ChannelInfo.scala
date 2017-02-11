@@ -27,6 +27,8 @@ class ChannelInfo(channel: SourceQueue[Option[ByteString]],
     }
   }
 
+  // This won't work if the previous offer has not yet completed.
+  // Is failure of this method call a memory leak?
   def close(): Future[QueueOfferResult] = {
     isClosed.set(true)
     channel.offer(None)

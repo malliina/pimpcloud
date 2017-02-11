@@ -51,6 +51,17 @@ class NoCacheByteStreams(id: CloudID,
   implicit val ec = mat.executionContext
   private val iteratees = TrieMap.empty[UUID, StreamEndpoint]
 
+  override def parser(uuid: UUID): Option[BodyParser[MultipartFormData[Long]]] = {
+    get(uuid) map { info =>
+      // info.send is called sequentially, i.e. the next send call occurs only after the previous call has completed
+      StreamParsers.multiPartByteStreaming(
+        bytes => info.send(bytes)
+          .map(analyzeResult(info, bytes, _))
+          .recoverWith(onOfferError(uuid, info, bytes)),
+        maxUploadSize)(mat)
+    }
+  }
+
   def snapshot: Seq[StreamData] = iteratees.map {
     case (uuid, stream) => StreamData(uuid, id, stream.track, stream.range)
   }.toSeq
@@ -63,6 +74,8 @@ class NoCacheByteStreams(id: CloudID,
     val uuid = UUID.randomUUID()
     val userAgent = req.headers.get(HeaderNames.USER_AGENT).map(ua => s"user agent $ua") getOrElse "unknown user agent"
     val describe = s"stream $uuid of track ${track.title} with range ${range.description} for $userAgent from ${req.remoteAddress}"
+    //    val (ref, src) = Source.actorRef[ByteString](0, OverflowStrategy.fail)
+    //      .toMat(Sink.asPublisher(fanout = false))((ref, pub) => (ref, Source.fromPublisher(pub))).run()
     val (queue, source) = Streaming.sourceQueue[ByteString](mat, NoCacheByteStreams.ByteStringBufferSize)
     iteratees += (uuid -> new ChannelInfo(queue, id, track, range))
     log.info(s"Created $describe")
@@ -70,16 +83,46 @@ class NoCacheByteStreams(id: CloudID,
     val src = source.watchTermination()((_, task) => task.onComplete(res => {
       val prefix = s"Completed $describe"
       res match {
-        case Success(_) => log.info(prefix)
-        case scala.util.Failure(t) => log.error(s"$prefix with failure", t)
+        case Success(_) =>
+          log.info(prefix)
+        case scala.util.Failure(t) =>
+          log.error(s"$prefix with failure", t)
       }
-      remove(uuid, isCanceled = true)
+      remove(uuid, shouldAbort = true)
     }))
 
     connectSource(uuid, src, track, range)
   }
 
-  protected def connectSource(uuid: UUID, source: Source[ByteString, _], track: Track, range: ContentRange): Future[Option[Result]] = {
+  def exists(uuid: UUID): Boolean = iteratees contains uuid
+
+  override def remove(uuid: UUID, shouldAbort: Boolean): Future[Boolean] = {
+    val disposal = disposeUUID(uuid)
+      .map(fut => fut.recoverAll(t => log.error(s"Disposal failed for $uuid", t)).map(_ => true))
+      .getOrElse(Future.successful(false))
+    val cancellation =
+      if (shouldAbort) {
+        sendMessage(cancelMessage(uuid))
+          .recoverAll(t => log.error(s"Cancellation failed for $uuid", t))
+      } else {
+        Future.successful(())
+      }
+    for {
+      didDispose <- disposal
+      _ <- cancellation
+    } yield {
+      if (didDispose) {
+        log info s"Notifying listeners of changed streams due to removal of $uuid"
+        streamChanged()
+      }
+      didDispose
+    }
+  }
+
+  protected def connectSource(uuid: UUID,
+                              source: Source[ByteString, _],
+                              track: Track,
+                              range: ContentRange): Future[Option[Result]] = {
     val result = resultify(source, range)
     val connectSuccess = connect(uuid, track, range)
     connectSuccess.map(isSuccess => if (isSuccess) Option(result) else None)
@@ -94,13 +137,12 @@ class NoCacheByteStreams(id: CloudID,
     * @return true if the server received the upload request, false otherwise
     */
   private def connect(uuid: UUID, track: Track, range: ContentRange): Future[Boolean] = {
-    val suffix = s"$uuid for ${track.title} with range $range"
-
     def fail(): Boolean = {
-      remove(uuid, isCanceled = true)
+      remove(uuid, shouldAbort = true)
       false
     }
 
+    val suffix = s"$uuid for ${track.title} with range $range"
     val request = buildTrackRequest(uuid, track, range)
     sendMessage(request) map {
       case Enqueued =>
@@ -116,6 +158,18 @@ class NoCacheByteStreams(id: CloudID,
     }
   }
 
+  /** Transfer complete.
+    *
+    * TODO Since the transfer may have been cancelled prematurely by the recipient,
+    * inform the server that it should stop uploading, to save network bandwidth.
+    *
+    * @param uuid the transfer ID
+    */
+  private def disposeUUID(uuid: UUID): Option[Future[StreamEndpoint]] = {
+    (iteratees remove uuid)
+      .map(e => e.close().map(_ => e))
+  }
+
   private def buildTrackRequest(uuid: UUID, track: Track, range: ContentRange) = {
     def trackRequest(body: JsValue) = UserRequest(TrackKey, body, uuid, PimpServerSocket.nobody)
 
@@ -126,20 +180,11 @@ class NoCacheByteStreams(id: CloudID,
     trackRequest(body)
   }
 
-  def sendMessage[M: Writes](msg: M) = channel offer Json.toJson(msg)
+  protected def sendMessage[M: Writes](msg: M) = channel offer Json.toJson(msg)
 
-  def cancelMessage(uuid: UUID) = UserRequest(Cancel, Json.obj(), uuid, PimpServerSocket.nobody)
+  protected def cancelMessage(uuid: UUID) = UserRequest(Cancel, Json.obj(), uuid, PimpServerSocket.nobody)
 
   protected def streamChanged(): Unit = onUpdate()
-
-  override def parser(uuid: UUID): Option[BodyParser[MultipartFormData[Long]]] = {
-    get(uuid) map { info =>
-      // info.send is called sequentially, i.e. the next send call occurs only after the previous call has completed
-      StreamParsers.multiPartByteStreaming(bytes => info.send(bytes)
-        .map(analyzeResult(info, bytes, _))
-        .recoverWith(onOfferError(uuid, info, bytes)), maxUploadSize)(mat)
-    }
-  }
 
   protected def analyzeResult(dest: StreamEndpoint, bytes: ByteString, result: QueueOfferResult) = {
     val suffix = s" for ${bytes.length} bytes of ${dest.describe}"
@@ -151,45 +196,14 @@ class NoCacheByteStreams(id: CloudID,
     }
   }
 
-  override def remove(uuid: UUID, isCanceled: Boolean): Future[Unit] = {
-    val cancellation =
-      if (isCanceled) sendMessage(cancelMessage(uuid))
-      else Future.successful(())
-    val op = for {
-      _ <- disposeUUID(uuid)
-      _ <- cancellation
-    } yield {
-      ()
-    }
-    op.recoverAll(t => log.error(s"Disposal failed for request $uuid", t)) map { _ =>
-      log info s"Notifying listeners of changed streams due to removal of $uuid"
-      streamChanged()
-    }
-  }
-
   protected def onOfferError(uuid: UUID, dest: StreamEndpoint, bytes: ByteString): PartialFunction[Throwable, Future[Unit]] = {
     case iae: IllegalStateException if Option(iae.getMessage).contains("Stream is terminated. SourceQueue is detached") =>
       log.info(s"Client disconnected $uuid")
-      remove(uuid, isCanceled = true)
+      remove(uuid, shouldAbort = true)
     case other: Throwable =>
       log.error(s"Offer of ${bytes.length} bytes failed for request $uuid", other)
-      remove(uuid, isCanceled = true)
+      remove(uuid, shouldAbort = true)
   }
 
-  /** Transfer complete.
-    *
-    * TODO Since the transfer may have been cancelled prematurely by the recipient,
-    * inform the server that it should stop uploading, to save network bandwidth.
-    *
-    * @param uuid the transfer ID
-    */
-  def disposeUUID(uuid: UUID): Future[Unit] = {
-    (iteratees remove uuid)
-      .map(_.close().map(_ => ()))
-      .getOrElse(Future.successful(()))
-  }
-
-  def exists(uuid: UUID): Boolean = iteratees contains uuid
-
-  def get(uuid: UUID): Option[StreamEndpoint] = iteratees get uuid
+  private def get(uuid: UUID): Option[StreamEndpoint] = iteratees get uuid
 }

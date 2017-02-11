@@ -26,10 +26,9 @@ trait Streamer {
   def parser(uuid: UUID): Option[BodyParser[MultipartFormData[Long]]]
 
   /**
-    *
     * @param uuid        request ID
     * @param shouldAbort if true, the server is informed that it should cancel the request
-    * @return
+    * @return true if `uuid` was found, false otherwise
     */
-  def remove(uuid: UUID, shouldAbort: Boolean): Future[Unit]
+  def remove(uuid: UUID, shouldAbort: Boolean): Future[Boolean]
 }

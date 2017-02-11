@@ -87,17 +87,19 @@ class NoCacheByteStreams(id: CloudID,
   def exists(uuid: UUID): Boolean = iteratees contains uuid
 
   override def remove(uuid: UUID, shouldAbort: Boolean, wasSuccess: Boolean): Future[Boolean] = {
+    log info s"Removing $uuid..."
     val desc = if (wasSuccess) "successful" else "failed"
     val description = s"$desc request $uuid"
     val detachedMessage = "Stream is terminated. SourceQueue is detached"
     val disposal = disposeUUID(uuid) map { fut =>
       fut.map(_ => log.info(s"Removed $description")).recover {
         case ist: IllegalStateException if Option(ist.getMessage).contains(detachedMessage) =>
-          log.info(s"Removed $description")
+          log info s"Removed $description"
         case t =>
           log.error(s"Removed but failed to dispose $description", t)
       }.map(_ => true)
     } getOrElse {
+      log info s"Unable to find $uuid"
       Future.successful(false)
     }
     val cancellation =
@@ -163,6 +165,7 @@ class NoCacheByteStreams(id: CloudID,
     */
   private def disposeUUID(uuid: UUID): Option[Future[StreamEndpoint]] = {
     (iteratees remove uuid) map { e =>
+      log info s"Disposed $uuid"
       Try(streamChanged()) recover {
         case t => log.error(s"Unable to notify of changed streams", t)
       }

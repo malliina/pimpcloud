@@ -1,6 +1,6 @@
 package com.malliina.pimpcloud
 
-import akka.stream.Materializer
+import buildinfo.BuildInfo
 import com.malliina.musicpimp.messaging.{ProdPusher, Pusher}
 import com.malliina.play.app.DefaultApp
 import com.malliina.play.controllers.AccountForms
@@ -34,7 +34,7 @@ abstract class CloudComponents(context: Context,
   lazy val cloudAuths = joined.auths
   lazy val ps = joined.phones
   // TODO get sbt-buildinfo to provide the app name for us
-  lazy val tags = CloudTags.forApp("frontend", environment.mode == Mode.Prod)
+  lazy val tags = CloudTags.forApp(BuildInfo.frontName, environment.mode == Mode.Prod)
 
   // Controllers
   lazy val push = new Push(pusher)

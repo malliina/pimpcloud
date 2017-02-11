@@ -12,7 +12,7 @@ import play.api.Logger
 
 import scala.concurrent.Future
 
-class ChannelInfo(channel: SourceQueue[Option[ByteString]],
+class ChannelInfo(val channel: SourceQueue[Option[ByteString]],
                   serverID: CloudID,
                   val track: Track,
                   val range: ContentRange) extends StreamEndpoint {

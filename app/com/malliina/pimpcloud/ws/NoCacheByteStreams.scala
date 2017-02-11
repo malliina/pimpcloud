@@ -76,6 +76,7 @@ class NoCacheByteStreams(id: CloudID,
     val userAgent = req.headers.get(HeaderNames.USER_AGENT).map(ua => s"user agent $ua") getOrElse "unknown user agent"
     val (queue, source) = Streaming.sourceQueue[ByteString](mat, NoCacheByteStreams.ByteStringBufferSize)
     iteratees += (uuid -> new ChannelInfo(queue, id, track, range))
+    streamChanged()
     log.info(s"Created stream $uuid of track ${track.title} with range ${range.description} for $userAgent from ${req.remoteAddress}")
     // Watches completion and disposes of resources early if the client (= mobile device) disconnects mid-request
     val src = source.watchTermination()((_, task) => task.onComplete(res => {
@@ -87,7 +88,6 @@ class NoCacheByteStreams(id: CloudID,
   def exists(uuid: UUID): Boolean = iteratees contains uuid
 
   override def remove(uuid: UUID, shouldAbort: Boolean, wasSuccess: Boolean): Future[Boolean] = {
-    log info s"Removing $uuid..."
     val desc = if (wasSuccess) "successful" else "failed"
     val description = s"$desc request $uuid"
     val detachedMessage = "Stream is terminated. SourceQueue is detached"
@@ -99,7 +99,6 @@ class NoCacheByteStreams(id: CloudID,
           log.error(s"Removed but failed to dispose $description", t)
       }.map(_ => true)
     } getOrElse {
-      log info s"Unable to find $uuid"
       Future.successful(false)
     }
     val cancellation =
@@ -165,7 +164,6 @@ class NoCacheByteStreams(id: CloudID,
     */
   private def disposeUUID(uuid: UUID): Option[Future[StreamEndpoint]] = {
     (iteratees remove uuid) map { e =>
-      log info s"Disposed $uuid"
       Try(streamChanged()) recover {
         case t => log.error(s"Unable to notify of changed streams", t)
       }

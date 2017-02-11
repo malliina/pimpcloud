@@ -41,7 +41,7 @@ object PlayBuild {
 
   val pimpcloudSettings = jenkinsSettings ++ linuxSettings ++ scalaJSSettings ++ Seq(
     buildInfoKeys += BuildInfoKey("frontName" -> (name in frontend).value),
-    version := "1.6.8",
+    version := "1.6.9",
     scalaVersion := "2.11.8",
     resolvers += Resolver.bintrayRepo("malliina", "maven"),
     libraryDependencies ++= Seq(

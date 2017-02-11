@@ -1,11 +1,12 @@
 package tests
 
 import com.malliina.musicpimp.messaging.{APNSRequest, PushResult, PushTask, Pusher}
+import com.malliina.oauth.GoogleOAuthCredentials
 import com.malliina.pimpcloud.CloudComponents
 import com.malliina.play.http.{AuthedRequest, FullRequest}
 import com.malliina.play.models.Username
 import com.malliina.push.apns.{APNSMessage, APNSToken}
-import controllers.{OAuthRoutes, PimpAuth, Push}
+import controllers.{PimpAuth, Push}
 import play.api.ApplicationLoader.Context
 import play.api.libs.json.Json
 import play.api.mvc._
@@ -14,11 +15,11 @@ import play.api.test.Helpers._
 
 import scala.concurrent.Future
 
-class TestComponents(context: Context) extends CloudComponents(context, TestPusher) {
-  override lazy val oauthRoutes = TestOAuthRoutes
+class TestComponents(context: Context) extends CloudComponents(
+  context,
+  TestPusher,
+  GoogleOAuthCredentials("id", "secret", "scope")) {
   override lazy val prodAuth = TestAuth
-
-  def ok = Action(Results.Ok)
 }
 
 object TestAuth extends PimpAuth {
@@ -33,20 +34,6 @@ object TestAuth extends PimpAuth {
     val fakeRequest = new FullRequest(testUser, req, None)
     f(fakeRequest)
   }
-
-  override def eject = Results.Ok
-
-  override def messageKey = "message"
-
-  def ok = Action(Results.Ok)
-}
-
-object TestOAuthRoutes extends OAuthRoutes {
-  override def initiate = ok
-
-  override def redirResponse = ok
-
-  def ok = Action(Results.Ok)
 }
 
 object TestPusher extends Pusher {

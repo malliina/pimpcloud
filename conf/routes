@@ -36,9 +36,9 @@ GET         /assets/*file                      controllers.Assets.at(path = "/pu
 # Admin
 GET         /admin                             controllers.Logs.index
 GET         /admin/logs                        controllers.Logs.logs
-GET         /oauth                             controllers.OAuthRoutes.initiate
+GET         /oauth                             controllers.AdminOAuth.initiate
 # Must match a callback defined in the Google OAuth developer console
-GET         /oauthcb                           controllers.OAuthRoutes.redirResponse
+GET         /oauthcb                           controllers.AdminOAuth.redirResponse
 GET         /admin/eject                       controllers.AdminAuth.eject
 GET         /admin/ws                          controllers.Logs.openSocket
 GET         /admin/usage                       controllers.UsageStreaming.openSocket

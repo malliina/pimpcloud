@@ -1,18 +1,14 @@
 package controllers
 
 import akka.stream.Materializer
-import play.api.http.Writeable
+import play.api.mvc.Action
 import play.api.mvc.Results.Ok
-import play.api.mvc.{Action, EssentialAction, RequestHeader}
 
 /** TODO remove this code; seems to wrap unnecessarily.
   */
-class AdminAuth(oauth: PimpAuth, tags: CloudTags, val mat: Materializer) {
+class AdminAuth(auth: PimpAuth, oauth: AdminOAuth, tags: CloudTags, val mat: Materializer) {
   // HTML
-  def logout = oauth.ejectAction
+  def logout = auth.authAction(_ => oauth.eject.withNewSession)
 
-  def eject = oauth.logged(Action(req => Ok(tags.eject(req.flash.get(oauth.messageKey)))))
-
-  def navigate[C: Writeable](f: RequestHeader => C): EssentialAction =
-    oauth.authAction(req => Ok(f(req)))
+  def eject = auth.logged(Action(req => Ok(tags.eject(req.flash.get(oauth.messageKey)))))
 }

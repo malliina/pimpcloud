@@ -2,6 +2,7 @@ package com.malliina.pimpcloud
 
 import buildinfo.BuildInfo
 import com.malliina.musicpimp.messaging.{ProdPusher, Pusher}
+import com.malliina.oauth.{GoogleOAuthCredentials, GoogleOAuthReader}
 import com.malliina.play.app.DefaultApp
 import com.malliina.play.controllers.AccountForms
 import controllers._
@@ -13,15 +14,14 @@ import router.Routes
 
 class CloudLoader extends DefaultApp(new ProdComponents(_))
 
-class ProdComponents(context: Context) extends CloudComponents(context, ProdPusher.fromConf) {
-  val adminAuth = new AdminOAuth(materializer)
-  override lazy val oauthRoutes: OAuthRoutes = new WebOAuthRoutes(adminAuth)
+class ProdComponents(context: Context) extends CloudComponents(context, ProdPusher.fromConf, GoogleOAuthReader.load) {
   override lazy val prodAuth: PimpAuth = new ProdAuth(new OAuthCtrl(adminAuth))
 }
 
 abstract class CloudComponents(context: Context,
-                      pusher: Pusher) extends BuiltInComponentsFromContext(context) {
-  def oauthRoutes: OAuthRoutes
+                      pusher: Pusher,
+                               oauthCreds: GoogleOAuthCredentials) extends BuiltInComponentsFromContext(context) {
+  val adminAuth = new AdminOAuth(oauthCreds, materializer)
 
   def prodAuth: PimpAuth
 
@@ -40,10 +40,10 @@ abstract class CloudComponents(context: Context,
   lazy val push = new Push(pusher)
   lazy val p = new Phones(tags, cloudAuths, ps, auth)
   lazy val sc = new ServersController(cloudAuths, auth)
-  lazy val aa = new AdminAuth(prodAuth, tags, materializer)
+  lazy val aa = new AdminAuth(prodAuth, adminAuth, tags, materializer)
   lazy val l = new Logs(tags, prodAuth, materializer)
   lazy val w = new Web(tags, cloudAuths, materializer.executionContext, forms)
   lazy val us = new UsageStreaming(s, ps, prodAuth)
   lazy val as = new Assets(httpErrorHandler)
-  lazy val router = new Routes(httpErrorHandler, p, w, push, ps, sc, s, as, l, oauthRoutes, aa, us)
+  lazy val router = new Routes(httpErrorHandler, p, w, push, ps, sc, s, as, l, adminAuth, aa, us)
 }

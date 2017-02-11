@@ -37,7 +37,7 @@ object PlayBuild {
     .settings(pimpcloudSettings: _*)
 
   val malliinaGroup = "com.malliina"
-  val utilPlayDep = malliinaGroup %% "util-play" % "3.5.2"
+  val utilPlayDep = malliinaGroup %% "util-play" % "3.5.3-SNAPSHOT"
 
   val pimpcloudSettings = jenkinsSettings ++ linuxSettings ++ scalaJSSettings ++ Seq(
     buildInfoKeys += BuildInfoKey("frontName" -> (name in frontend).value),

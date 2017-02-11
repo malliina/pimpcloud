@@ -19,7 +19,10 @@ abstract class SocketJS(wsPath: String) {
   def openSocket(pathAndQuery: String) = {
     val wsUrl = s"$wsBaseUrl$pathAndQuery"
     val socket = new dom.WebSocket(wsUrl)
-    socket.onopen = (_: Event) => setFeedback("Connected.")
+    socket.onopen = (_: Event) => {
+      socket.send(PimpJSON.write(Command.Subscribe))
+      setFeedback("Connected.")
+    }
     socket.onmessage = (event: MessageEvent) => onMessage(event)
     socket.onclose = (_: CloseEvent) => setFeedback("Connection closed.")
     socket.onerror = (_: ErrorEvent) => setFeedback("Connection error.")

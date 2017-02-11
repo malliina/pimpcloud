@@ -57,7 +57,8 @@ class NoCacheByteStreams(id: CloudID,
       StreamParsers.multiPartByteStreaming(
         bytes => info.send(bytes)
           .map(analyzeResult(info, bytes, _))
-          .recoverWith(onOfferError(uuid, info, bytes)),
+          .recoverWith(onOfferError(uuid, info, bytes))
+          .map(_ => ()),
         maxUploadSize)(mat)
     }
   }
@@ -196,7 +197,7 @@ class NoCacheByteStreams(id: CloudID,
     }
   }
 
-  protected def onOfferError(uuid: UUID, dest: StreamEndpoint, bytes: ByteString): PartialFunction[Throwable, Future[Unit]] = {
+  protected def onOfferError(uuid: UUID, dest: StreamEndpoint, bytes: ByteString): PartialFunction[Throwable, Future[Boolean]] = {
     case iae: IllegalStateException if Option(iae.getMessage).contains("Stream is terminated. SourceQueue is detached") =>
       log.info(s"Client disconnected $uuid")
       remove(uuid, shouldAbort = true)

@@ -20,7 +20,7 @@ import webscalajs.WebScalaJS.autoImport.{scalaJSPipeline, scalaJSProjects}
 
 object PlayBuild {
 
-  lazy val frontend = Project("frontend", file("frontend"))
+  lazy val frontend = Project("frontend", file("pimpcloud") / "frontend")
     .enablePlugins(ScalaJSPlugin, ScalaJSWeb)
     .settings(
       persistLauncher := true,
@@ -32,7 +32,7 @@ object PlayBuild {
       )
     )
 
-  lazy val pimpcloud = PlayProject.default("pimpcloud")
+  lazy val pimpcloud = PlayProject.default("pimpcloud", file("pimpcloud"))
     .enablePlugins(BuildInfoPlugin)
     .settings(pimpcloudSettings: _*)
 

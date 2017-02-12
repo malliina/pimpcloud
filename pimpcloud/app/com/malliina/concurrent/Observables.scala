@@ -1,8 +1,8 @@
 package com.malliina.concurrent
 
+import com.malliina.concurrent.ExecutionContexts.cached
 import rx.lang.scala.Observable
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Future, Promise}
 
